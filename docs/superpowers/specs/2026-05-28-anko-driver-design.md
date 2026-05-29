@@ -71,7 +71,7 @@ anko_driver/
 │       │   ├── store.py           # SQLite 持久化
 │       │   └── knowledge.py       # 知识库搜索（FTS5 + 未来 sqlite-vec）
 │       ├── rulebook/
-│       │   ├── loader.py          # YAML 规则书加载 + schema 校验
+│       │   ├── loader.py          # 规则书加载（Markdown→知识库，YAML→数据结构）
 │       │   └── schema.py          # 规则书数据结构定义
 │       ├── paradigm/
 │       │   ├── core.py            # 6 种基础范式实现
@@ -89,11 +89,19 @@ anko_driver/
 │   └── orc_dnd/
 │       ├── manifest.yml
 │       ├── world/
+│       │   ├── setting.md
+│       │   ├── factions.md
+│       │   └── locations.md
 │       ├── rules/
-│       │   └── paradigm_overrides.yml  # 可选
+│       │   ├── combat.md
+│       │   └── paradigm_overrides.yml
 │       ├── data/
+│       │   ├── items.yml
+│       │   └── enemies.yml
 │       ├── ai/
-│       └── scripts/               # 可选
+│       │   ├── guidelines.md
+│       │   └── style.md
+│       └── scripts/
 ├── adapters/                      # Agent 安装脚本
 │   └── claude_code/
 │       ├── install.sh
@@ -332,30 +340,35 @@ CREATE TABLE notes (
 
 ### 目录结构
 
+规则书以 **Markdown 为主体**，YAML/JSON 仅用于结构化数据。Markdown 文件在加载时灌入知识库（FTS5），AI 通过 `knowledge_search` 即可检索。
+
 ```
 rulebooks/<rulebook_id>/
-├── manifest.yml              # 必需：元数据
-│   # id, name, version, description, author
-├── world/                    # 世界设定（导入 knowledge 库）
-│   ├── setting.yml           # 世界观概述
-│   ├── factions.yml          # 阵营
-│   ├── locations.yml         # 地点
-│   └── npcs.yml              # NPC 数据
+├── manifest.yml              # 必需：元数据 (id, name, version, description, author)
+├── world/                    # 世界设定（Markdown → 知识库）
+│   ├── setting.md            # 世界观概述
+│   ├── factions.md           # 阵营描述
+│   ├── locations.md          # 地点介绍
+│   └── npcs.md               # NPC 叙述（数值部分可用 Markdown 内嵌 YAML frontmatter）
 ├── rules/                    # 游戏规则
-│   ├── paradigm_overrides.yml  # 可选：范式覆盖/扩展
-│   ├── dice.yml              # 可选：自定义骰子规则
-│   └── combat.yml            # 可选：战斗规则
-├── data/                     # 游戏数据（导入 data 表）
-│   ├── items.yml
-│   ├── random_tables.yml
-│   └── enemies.yml
-├── ai/                       # AI 指南
-│   ├── guidelines.yml        # 叙事指南、骰子尊重规则
+│   ├── combat.md             # 战斗规则叙述
+│   └── paradigm_overrides.yml  # 可选：范式覆盖/扩展（唯一必须结构化的规则文件）
+├── data/                     # 游戏数据（YAML → 结构化数据表）
+│   ├── items.yml             # 物品数据
+│   ├── enemies.yml           # 怪物/敌人面板
+│   └── random_tables.yml     # 随机表（名字、遭遇、宝藏...）
+├── ai/                       # AI 指南（Markdown → 知识库 + 上下文注入）
+│   ├── guidelines.md         # 叙事指南、骰子尊重规则
 │   └── style.md              # 叙事风格示例
 └── scripts/                  # 可选：Python 脚本
     ├── init.py               # 场景初始化
     └── custom_dice.py        # 自定义骰子/判定逻辑
 ```
+
+**格式划分原则**：
+- **Markdown**：叙事性、指导性内容（世界观、规则叙述、AI 指南）— 加载时灌入 FTS5 知识库
+- **YAML/JSON**：可计算的结构化数据（物品面板、随机表、范式参数）— 加载时解析为数据结构
+- **YAML frontmatter**：Markdown 文件可内嵌结构化数据（如 NPC 叙述 + 属性面板）
 
 ### 范式覆盖（paradigm_overrides.yml）
 
