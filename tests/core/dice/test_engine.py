@@ -4,7 +4,10 @@ import random
 
 import pytest
 
-from anko_core.dice.engine import DiceResult, JudgeOutcome, JudgeResult, RangeMapResult, dice_roll, dice_judge, dice_range_map
+from anko_core.dice.engine import (
+    DiceResult, JudgeOutcome, JudgeResult, RangeMapResult,
+    ContestResult, dice_roll, dice_judge, dice_range_map, dice_contest, dice_multi,
+)
 
 
 class TestDiceRoll:
@@ -179,3 +182,66 @@ class TestDiceRangeMap:
         ranges = {"white": [1, 35], "green": [36, 60]}
         result = dice_range_map(50, ranges)
         assert result.range_definition == ranges
+
+
+class TestDiceContest:
+    def test_a_wins(self):
+        """Force deterministic outcome by seeding before each roll."""
+        random.seed(100)
+        result = dice_contest("1d20", "1d20")
+        assert result.winner in ("a", "b", "tie")
+        assert isinstance(result.expression_a, DiceResult)
+        assert isinstance(result.expression_b, DiceResult)
+
+    def test_deterministic_winner(self):
+        """Seed to produce a known a-wins result."""
+        random.seed(42)
+        r1 = dice_roll("1d20")
+        random.seed(99)
+        r2 = dice_roll("1d20")
+        random.seed(42)
+        result = dice_contest("1d20", "1d20")
+        assert result.winner in ("a", "b", "tie")
+
+    def test_tie_possible(self):
+        """Both sides rolling same value produces tie."""
+        from unittest.mock import patch
+        with patch("anko_core.dice.engine.random.randint", return_value=10):
+            result = dice_contest("1d20", "1d20")
+            assert result.winner == "tie"
+
+    def test_contest_with_modifiers(self):
+        from unittest.mock import patch
+        def fake_randint(a, b):
+            return 10
+        with patch("anko_core.dice.engine.random.randint", side_effect=fake_randint):
+            result = dice_contest("1d20+5", "1d20+3")
+            assert result.winner == "a"
+
+    def test_invalid_expression_propagates(self):
+        with pytest.raises(ValueError, match="Invalid dice expression"):
+            dice_contest("abc", "1d20")
+
+
+class TestDiceMulti:
+    def test_multiple_expressions(self):
+        random.seed(42)
+        results = dice_multi(["1d20", "2d6", "1d100"])
+        assert len(results) == 3
+        assert all(isinstance(r, DiceResult) for r in results)
+        assert results[0].expression == "1d20"
+        assert results[1].expression == "2d6"
+        assert results[2].expression == "1d100"
+
+    def test_empty_list(self):
+        results = dice_multi([])
+        assert results == []
+
+    def test_single_expression(self):
+        random.seed(42)
+        results = dice_multi(["1d20"])
+        assert len(results) == 1
+
+    def test_invalid_expression_in_list(self):
+        with pytest.raises(ValueError, match="Invalid dice expression"):
+            dice_multi(["1d20", "invalid", "2d6"])

@@ -130,3 +130,36 @@ def dice_range_map(roll: int, ranges: dict[str, list[int]]) -> RangeMapResult:
             )
     raise ValueError(f"Roll {roll} does not fall into any defined range")
 
+
+@dataclass
+class ContestResult:
+    """Result of a contest between two dice expressions."""
+
+    expression_a: DiceResult
+    expression_b: DiceResult
+    winner: str  # "a", "b", or "tie"
+
+
+def dice_contest(expr_a: str, expr_b: str) -> ContestResult:
+    """Roll two dice expressions and compare results."""
+    result_a = dice_roll(expr_a)
+    result_b = dice_roll(expr_b)
+
+    if result_a.total > result_b.total:
+        winner = "a"
+    elif result_b.total > result_a.total:
+        winner = "b"
+    else:
+        winner = "tie"
+
+    return ContestResult(
+        expression_a=result_a,
+        expression_b=result_b,
+        winner=winner,
+    )
+
+
+def dice_multi(expressions: list[str]) -> list[DiceResult]:
+    """Roll multiple dice expressions at once."""
+    return [dice_roll(expr) for expr in expressions]
+
