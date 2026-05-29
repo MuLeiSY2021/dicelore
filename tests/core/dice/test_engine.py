@@ -4,7 +4,7 @@ import random
 
 import pytest
 
-from anko_core.dice.engine import DiceResult, JudgeOutcome, JudgeResult, dice_roll, dice_judge
+from anko_core.dice.engine import DiceResult, JudgeOutcome, JudgeResult, RangeMapResult, dice_roll, dice_judge, dice_range_map
 
 
 class TestDiceRoll:
@@ -134,3 +134,48 @@ class TestDiceJudge:
         assert result.modifier == 2
         assert result.total == 17
         assert result.outcome == JudgeOutcome.SUCCESS
+
+
+class TestDiceRangeMap:
+    def test_basic_mapping(self):
+        ranges = {"white": [1, 35], "green": [36, 60], "blue": [61, 85], "gold": [86, 100]}
+        result = dice_range_map(50, ranges)
+        assert result.label == "green"
+        assert result.roll == 50
+
+    def test_boundary_low(self):
+        ranges = {"white": [1, 35], "green": [36, 60]}
+        result = dice_range_map(1, ranges)
+        assert result.label == "white"
+
+    def test_boundary_high(self):
+        ranges = {"white": [1, 35], "green": [36, 60]}
+        result = dice_range_map(60, ranges)
+        assert result.label == "green"
+
+    def test_boundary_between(self):
+        ranges = {"white": [1, 35], "green": [36, 60]}
+        result = dice_range_map(35, ranges)
+        assert result.label == "white"
+        result2 = dice_range_map(36, ranges)
+        assert result2.label == "green"
+
+    def test_first_range_hit(self):
+        ranges = {"white": [1, 35], "green": [36, 60]}
+        result = dice_range_map(20, ranges)
+        assert result.label == "white"
+
+    def test_roll_outside_all_ranges(self):
+        ranges = {"white": [1, 35], "green": [36, 60]}
+        with pytest.raises(ValueError, match="does not fall into any defined range"):
+            dice_range_map(100, ranges)
+
+    def test_invalid_range_bounds(self):
+        ranges = {"white": [1]}
+        with pytest.raises(ValueError, match="must have exactly 2 values"):
+            dice_range_map(10, ranges)
+
+    def test_preserves_range_definition(self):
+        ranges = {"white": [1, 35], "green": [36, 60]}
+        result = dice_range_map(50, ranges)
+        assert result.range_definition == ranges

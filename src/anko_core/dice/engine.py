@@ -100,3 +100,33 @@ def dice_judge(
         total=total,
         outcome=outcome,
     )
+
+
+@dataclass
+class RangeMapResult:
+    """Result of mapping a roll to a range label."""
+
+    roll: int
+    label: str
+    range_definition: dict[str, list[int]]
+
+
+def dice_range_map(roll: int, ranges: dict[str, list[int]]) -> RangeMapResult:
+    """Map a roll value to a label based on range definitions.
+
+    Example: {"white": [1, 35], "green": [36, 60], "blue": [61, 85]}
+    """
+    for label, bounds in ranges.items():
+        if len(bounds) != 2:
+            raise ValueError(
+                f"Range for '{label}' must have exactly 2 values, got {len(bounds)}"
+            )
+        low, high = bounds
+        if low <= roll <= high:
+            return RangeMapResult(
+                roll=roll,
+                label=label,
+                range_definition=ranges,
+            )
+    raise ValueError(f"Roll {roll} does not fall into any defined range")
+
