@@ -1,91 +1,93 @@
 # 跨 agent 与适配层
 
-> **本页职责**：回答"怎么做到嫁接任意 AI agent，而不绑死某一个"。
-> **上游依赖**：[总体架构](总体架构.md)。
-> **状态**：🟢 已成型（2026-06-01）。
+> **本页职责**：回答"v1 骑哪个 agent 基底、core 与基底绑定怎么切、hook 怎么承重、未来怎么演进到 GUI"。
+> **上游依赖**：[总体架构](总体架构.md)、[技术选型 §6 基底 / §6.1 分发](技术选型.md)、[01 卡位重述](../01-业务分析/问题域.md)。
+> **状态**：🟢 已成型（2026-06-01；**2026-06-02 据定位重述重写**）。
 
 ---
 
 ## 0. 一句话
 
-**通用核心扛塑形，adapter 只接线。** 框架的塑形能力活在与 agent 无关的载体里（MCP 标准 + markdown skill + SQLite）；adapter 是把它们装进目标 agent 的**薄安装脚本**；agent 专属配置（Hook / 裁判 / 安装路径）只是**可选优化层**，缺了也能跑。这是 [01 卡位](../01-业务分析/问题域.md)"可嫁接任意 agent 的行为塑形层"的落地。
+**core 是标准件，v1 骑定 Claude Code 基底、承重地用它的 hook / skill / subagent。** 框架的塑形能力，一部分活在与基底无关的标准载体里（MCP + markdown skill + SQLite + 团本），一部分**有意地、承重地**交给 Claude Code 的专属机制（hook 注入、subagent 裁判、skill 装载）。可移植性兑现在**模型层**（Claude Code model-agnostic，可接各种大模型，含国产）而非 agent 层。未来用 GUI 隐藏终端 / Claude Code。这是 [01 卡位重述](../01-业务分析/问题域.md) + [技术选型 §6](技术选型.md) 的落地。
+
+> **与旧版的根本变化（2026-06-02）**：旧版把"可嫁接任意 agent、hook 仅可选优化、绝不依赖某 agent 专属能力"当立身。重述后——**可移植不是目标，效果 / 分发 / 低开发成本才是**：core 保持标准不锁死，但 v1 明确骑 Claude Code，**hook 从"可选降级"升为"承重"**（详见 §5）。
 
 ---
 
-## 1. 通用核心 vs adapter：哪些可移植、哪些是接线
+## 1. core（标准、不锁死） vs Claude Code 绑定（承重）
 
-| 层 | 属于 | 可移植性 | 说明 |
+| | 内容 | 绑定 | 换基底时 |
 |---|---|---|---|
-| **MCP server**（行动层 + 数据工具 + `narrate`） | **通用核心** | 高 | MCP 是开放协议，任何 MCP 客户端通吃 |
-| **Skills 包**（L2 GM 教条） | **通用核心** | 内容高、注入机制需接 | markdown 教条本身不绑 agent；怎么塞进去因 agent 而异（§4） |
-| **SQLite store + 团本** | **通用核心** | 高 | 每局一文件，随存档走，与 agent 无关 |
-| **adapter** | 接线层 | —— | 把上面三者**装进**目标 agent：注册 MCP、放置 / 注入 skill、（可选）装 Hook / 裁判 |
+| **core（标准件）** | `anko-mcp-server`（MCP 协议）、Skill 教条（markdown）、SQLite store + 团本 | 不绑——协议 / 格式标准 | 可搬（理论上） |
+| **Claude Code 绑定（v1 承重）** | 安装配置（`.claude/` + `settings.json`：注册 MCP / 放 skill / 配 hook）、**hook（被动 rule 召回、timer 到期注入、L3 审计）**、subagent 裁判、（未来）GUI 包裹 | 绑 Claude Code | 需重做这层 |
 
-> **Skills 是核心、不是 adapter 的一部分**：GM 教条是框架的灵魂，必须可移植；adapter 只是"安装器"，负责把核心**接到**某个 agent 的插槽上，不持有教条本身。
+> **可移植在模型层、不在 agent 层**：Claude Code 本身 model-agnostic，所以"窄绑一个 harness"不锁模型——用户真正在乎的"用哪个大模型"仍自由（含国产）。这就是重述后"可移植"的确切含义。
 
 ---
 
-## 2. 三个塑形杠杆的"过 agent 边界"能力分级
+## 2. 三个塑形杠杆怎么落在基底上
 
-[02 §4](../02-领域模型/核心概念.md) 的 L1/L2/L3，跨 agent 时移植性递减——这正解释了**为什么换 agent 塑形不失效**：
+[02 §4](../02-领域模型/核心概念.md) 的 L1/L2/L3，落到 Claude Code：
 
-| 杠杆 | 载体 | 跨 agent 移植性 | 缺失 / 换 agent 时 |
+| 杠杆 | 载体 | 绑定 | 说明 |
 |---|---|---|---|
-| **L1 工具强制** | MCP 工具 schema | **最高**：MCP 是标准，结构强制随工具走 | 几乎不受影响——只要 agent 是 MCP 客户端 |
-| **L2 skill 教** | markdown 教条 | **内容可移植，注入机制 agent-specific** | 内容不变，换 agent 只换"怎么注入"（§4） |
-| **L3 Hook 审计** | agent 专属 Hook / 裁判 subagent | **最低，agent-specific** | 缺了只少**事后审计**，不影响当下塑形——**优雅降级** |
+| **L1 工具强制** | MCP 工具 schema | **core 标准** | MCP 标准，结构强制随工具走 |
+| **L2 skill 教** | markdown 教条 | 内容 core 标准、**装载走 Claude Code skill 机制** | 教条本身可搬；放 `.claude/skills/` 由 Claude Code 装载 |
+| **L3 + 被动注入** | Claude Code hook / subagent | **绑 Claude Code、v1 承重** | 被动 rule 召回、timer 到期、掷骰绕过 / 后果-叙事审计、裁判 subagent——都靠 hook |
 
-→ **GM 教条的硬骨头（L1 必掷骰/后果在先、L2 反讨好措辞）都落在可移植载体上**；唯一绑 agent 的是 L3 事后审计，而它本就是兜底、可缺。所以"换 agent 不应导致 GM 教条失效"成立。
-
----
-
-## 3. adapter 的核心活：Skill 注入机制因 agent 而异
-
-L2 教条内容统一，但**怎么让目标 agent 读到它**因 agent 而异——这是 adapter 最主要的工作：
-
-| 目标 agent | skill 注入方式 | L3 / 增强 |
-|---|---|---|
-| **Claude Code** | 放 `.claude/skills/`，`settings.json` 配 MCP + Hook | 原生支持 Hook 审计、裁判 subagent |
-| **其它 MCP-capable agent** | 教条注入 system prompt / 等价的指令插槽 | 视该 agent 能力，有 Hook 则装、无则降级 |
-| **无 skill 机制的 agent** | 把教条**塞进 system prompt / 上下文** | 退化为纯 L1+L2-in-prompt，仍能跑 |
-
-**`narrate` 的降级**（呼应 [总体架构 §4.1](总体架构.md)）：chat 原生 agent 的 adapter 可把 `narrate` 工具降级为"**直接 talk + 自动捕获写 event**"——输出照样落 event、照样可被审计，只是少了一次显式工具调用。
+→ 与旧版差别：旧版说"L3 可缺、优雅降级"。**重述后 hook 承重**——被动 rule 召回、timer 到期是核心玩法的一部分（[内层 §2.2 / §2.4](../04-子系统设计/内层能力库.md)），不是可有可无的事后审计。我们用"绑 Claude Code"换"这些承重机制白嫖、不自研"。
 
 ---
 
-## 4. 两根正交轴（本页关键认知）
+## 3. hook：v1 承重机制（不再是可选优化）
 
-跨 agent 容易和别的维度混。立两根**互不耦合**的轴：
+Claude Code 的 hook 承担三类**核心**活（实现落 [04 adapter 与 L3 审计](../04-子系统设计/adapter与L3审计.md)）：
+
+1. **被动 rule 召回**：AI 描述某情节时，hook 把相关 rule 约束注入下一轮提示词（rule 被动拉取、AI 只读，[内层 §2.4](../04-子系统设计/内层能力库.md)）。
+2. **timer 到期注入**：hook 在回合开始比对 sheet 钟、把到期 timer 注入（[内层 §2.2](../04-子系统设计/内层能力库.md)）。
+3. **L3 审计**：掷骰绕过率、后果-叙事一致性（比对叙述窗口的 verdict / mutation vs narrate）、裁判 subagent 二次纠偏。
+
+**跨端约束**（因 npm 包跨 Win/Mac/Linux 分发，[技术选型 §6.1](技术选型.md)）：
+- **hook 脚本一律用 Node 写、不用 bash**——否则 Windows 跑不了。
+- **路径平台感知**（app-data 目录），不写死 POSIX 路径。
+
+---
+
+## 4. skill 注入 = Claude Code 专属（唯一路径）
+
+L2 教条内容是 core 标准件，但**装载走 Claude Code 的 skill 机制**：放 `.claude/skills/`，`settings.json` 配 MCP + hook。由 `anko` CLI 的 `init` 一键写好（[技术选型 §6.1](技术选型.md)）。
+
+> 不再"因 agent 而异列多种注入方式"——v1 只认 Claude Code 这一条路。core 标准件保证未来换基底时教条本身可搬，但 **v1 不为别的 agent 做注入适配**。
+
+---
+
+## 5. 为什么接受"绑 Claude Code"（定位重述的核心取舍）
+
+旧版红线"**绝不让核心塑形依赖某 agent 专属能力**"——**重述后翻掉**。新取舍：
+
+- **可移植不是目标**（[01](../01-业务分析/问题域.md) / [技术选型 §6](技术选型.md)）：为"嫁接任意 agent"做工程，是为不需要的东西付费、还牺牲效果。
+- **绑 harness ≠ 绑模型 ≠ 闭环产品**：Claude Code model-agnostic（模型层仍可移植）；core 是开源标准件（未来可搬、不自跑模型）。绑的只是"用哪套 hook / skill / subagent 机制"。
+- **承重 hook 白嫖**：被动召回、timer、裁判这些自研太重（违低开发成本），Claude Code 现成。
+- **底线仍在**：core（MCP / Skill / SQLite / 团本）保持标准、不锁死——这是"未来想搬就能搬"的保险，也是和闭环产品的实质区别。
+
+---
+
+## 6. 两根正交轴（保留，呈现层具体化）
 
 ```
-轴一（本页 §1）：通用核心  ⟂  adapter 接线
-                 塑形能力住在核心        agent 专属只是装法
-
-轴二：           "谁当 GM"  ⟂  "玩家怎么看"
-                 跨 agent（哪个 AI 内核）   呈现层（chat / 未来前端）
+轴一（§1）：core 标准件   ⟂   Claude Code 绑定（承重交付）
+轴二：       "用哪个模型"  ⟂   "玩家怎么看"
+             模型层可移植(经 Claude Code)    呈现层(终端 → 未来 GUI)
 ```
 
-- **轴一**：换 agent 改的是 adapter（装法），不是核心（塑形）。
-- **轴二**："哪个 AI 当 GM"（跨 agent）和"玩家通过什么界面看"（呈现层）是两件事。
-  - **未来可能的玩家前端**＝ store / `narrate` 输出之上的**呈现客户端**（读 SQLite 展示人物卡 / 剧情 / 卡池），**不耦合 adapter**：换 GM 内核不影响前端，换前端不影响 GM 内核。
-  - TS 全栈对此顺风：未来 TS 前端可与后端**共享类型**、直读 `better-sqlite3` store。
-  - 按路线图纪律，前端是"可能"的未来层，本页只锚定它的**正交位置**，不展开设计。
+- **轴一**：core 标准、交付绑基底——但"绑"是**有意承重**，非旧版"可选装法"。
+- **轴二 · 呈现层 = 未来 GUI**：v1 是终端（玩家用 `anko play` / `claude`）；**未来把 Claude Code / 终端隐藏在简易图形界面后**（Tauri 那类轻量跨端壳，非 Electron 几百 M），玩家不碰命令行。GUI 读 SQLite store / `narrate` 输出展示人物卡 / 剧情 / 卡池，**与"哪个模型当 GM"正交**。按纪律仍是"未来层"，本页只锚定其位置与轨迹。
 
 ---
 
-## 5. agent 专属配置 = 可选优化层
+## 7. 本页**不**负责定的
 
-`claude.json` / Hook / 裁判 subagent / skill 安装路径等 agent 专属物，定位是**有则增强、无则降级**：
-
-- **有**：L3 事后审计（掷骰绕过率、后果-叙事一致性）、更强的结构约束、裁判 agent 二次纠偏。
-- **无**：框架靠 L1（MCP 强制）+ L2（教条注入）照常运行，只是少了事后兜底。
-
-→ **绝不能让核心塑形依赖某个 agent 的专属能力**，否则就退化成"只支持某 agent"、丢掉 01 卡位。
-
----
-
-## 6. 本页**不**负责定的
-
-- 各 agent 的 adapter 具体实现、`.claude/` 目录结构、Hook 脚本、裁判 subagent 设计 → [04-子系统设计](../04-子系统设计/)
-- 未来玩家前端的技术栈与界面设计 → 未来
-- 多人论坛安价的远程部署（Streamable HTTP）与多端适配 → 未来（[场景 B](../01-业务分析/用户与场景.md)）
+- hook 脚本（Node）、`.claude/` 目录结构、裁判 subagent、L3 审计实现 → [04 adapter 与 L3 审计](../04-子系统设计/adapter与L3审计.md)
+- `anko` CLI / npm 包 / 一键安装的实现 → [04-子系统设计](../04-子系统设计/) / [技术选型 §6.1](技术选型.md)
+- 未来 GUI 的技术栈与界面 → 未来
+- 多人论坛安价的远程部署（Streamable HTTP）→ 未来（[场景 B](../01-业务分析/用户与场景.md)）
