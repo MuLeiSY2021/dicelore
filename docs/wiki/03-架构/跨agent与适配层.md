@@ -35,7 +35,7 @@
 | **L2 skill 教** | markdown 教条 | 内容 core 标准、**装载走 Claude Code skill 机制** | 教条本身可搬；放 `.claude/skills/` 由 Claude Code 装载 |
 | **L3 + 被动注入** | Claude Code hook / subagent | **绑 Claude Code、v1 承重** | 被动 rule 召回、timer 到期、掷骰绕过 / 后果-叙事审计、裁判 subagent——都靠 hook |
 
-→ 与旧版差别：旧版说"L3 可缺、优雅降级"。**重述后 hook 承重**——被动 rule 召回、timer 到期是核心玩法的一部分（[内层 §2.2 / §2.4](../04-子系统设计/内层能力库.md)），不是可有可无的事后审计。我们用"绑 Claude Code"换"这些承重机制白嫖、不自研"。
+→ 与旧版差别：旧版说"L3 可缺、优雅降级"。**重述后 hook 承重**——被动 rule 召回、timer 到期是核心玩法的一部分（[内层 §4.4 / §4.2](../04-子系统设计/内层能力库.md)），不是可有可无的事后审计。我们用"绑 Claude Code"换"这些承重机制白嫖、不自研"。
 
 ---
 
@@ -43,9 +43,9 @@
 
 Claude Code 的 hook 承担三类**核心**活（实现落 [04 adapter 与 L3 审计](../04-子系统设计/adapter与L3审计.md)）：
 
-1. **被动 rule 召回**：AI 描述某情节时，hook 把相关 rule 约束注入下一轮提示词（rule 被动拉取、AI 只读，[内层 §2.4](../04-子系统设计/内层能力库.md)）。
-2. **timer 到期注入**：hook 在回合开始比对 sheet 钟、把到期 timer 注入（[内层 §2.2](../04-子系统设计/内层能力库.md)）。
-3. **L3 审计**：掷骰绕过率、后果-叙事一致性（比对叙述窗口的 verdict / mutation vs narrate）、裁判 subagent 二次纠偏。
+1. **被动 rule 召回**：AI 描述某情节时，hook 把相关 rule 约束注入下一轮提示词（rule 被动拉取、AI 只读，[内层 §4.4](../04-子系统设计/内层能力库.md)）。
+2. **timer 到期注入**：hook 在回合开始比对 sheet 钟、把到期 timer 注入（[内层 §4.2](../04-子系统设计/内层能力库.md)）。
+3. **L3 审计**：掷骰绕过率、后果-叙事一致性（**回合末 Stop hook** 比对本轮——一个 agent 回合——的 verdict / mutation vs narrate）、裁判 subagent 二次纠偏。
 
 **跨端约束**（因 npm 包跨 Win/Mac/Linux 分发，[技术选型 §6.1](技术选型.md)）：
 - **hook 脚本一律用 Node 写、不用 bash**——否则 Windows 跑不了。

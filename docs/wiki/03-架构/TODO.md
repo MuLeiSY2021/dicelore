@@ -42,10 +42,58 @@
 
 已改：**02 §3** 引子重写为"行动层 = resolver（选择者 × 结果形状 label/verdict/number/content）"+ §3.1/§3.2 reframe + 状态骰下沉前向指针 + §0 三层图；**03 §4** 引子同步（resolver → 工具映射）；**术语表** 加 `resolver` / `sheet 钟` 词条、三骰条目 reframe。
 
+### D. narrate 升格 stream + 一轮范式（= agent 回合）+ 输出层三流　✅ 已落地（2026-06-03）
+
+**触发**：填 04 MCP工具面时发现 narrate「一回合终结步骤」定位错——真实是一轮内可多次的 stream 输出。连带重定义"一轮"与玩家呈现。合并了原 P1（输出层升格）+ P4（数据流范式）。
+
+**已聊定（待落 02/03/内层）**：
+
+- **一轮 = agent 一个自然回合**（玩家输入 → 回合自然结束），AI 在其中**像作者写一段**：**任何 MCP 调用都可重复任意次、任意顺序穿插**（掷两次骰、改三版 sheet、穿插数段 narrate）。多次可调是常态、非 narrate 特权。narrate = 散文 stream、轮内可多次、**非终结步骤**。
+- **resolve_choice = 暂存下轮选项+后果**（轮内可反复改写、末次为准），**agent 回合结束才经 Stop hook 物化呈现给玩家**——不是"调用即阻塞"。anti-F2 仍立（后果相对玩家 pick 锁定，改写发生在玩家可见之前）。
+- **三流分工**：① narrate 散文 → 进对话（在 AI 上下文，本就 AI 产）；② **输出层**（hook/CLI 渲染器）读 store/event（按 `visible` 过滤）渲染机械回显 + 状态菜单 + 待选项，**不进 AI 上下文（零额外 token）**；③ resolver/sheet_update 结构化结果**只回 AI**（最小 token）。**AI 不吐状态菜单/数值，只 narrate 色彩**（"你掂了掂鼓胀的钱袋"，具体"金钱 77"由流②渲染）。
+- **L3 叙述窗口重定义**（内层 §4.2）：窗口 = **一个 agent 回合**；L3 审计 = **Stop hook** 扫本轮 event 比对叙述 vs verdict/mutation。取代旧"两个 narrate 标记间"（narrate 已成 stream，旧定义塌）。
+- **新 L3 硬规矩**：非终局轮回合结束时**必须留有暂存 choice**，否则违规（把玩家晾着、没给能动性）；Stop hook 当场可查。
+- **终局出口**（唯二非 choice 结束）：`game_end` / `you_death`（=game_end 特例）→ 之后 AI 复盘（饼/future）。终局信号是否做成显式工具 → 细化。
+
+**要改的页**：02 §6 数据流；03 §4.1（narrate 重定位）+ §6（数据流改"一轮+三流"图）+ §5/§8（**输出层从纯未来层 → v1 一等概念**）；内层 §4.2（L3 窗口）。
+**依赖**：输出层的 `visible` 过滤 → 见 E（可见性，R2）；`time_*` 插点 → 见 F（time 决定不升格、仍用 `sheet_update`，R3）。
+
+### E. 可见性模型：`visible` 列 + show 白名单 + shot 快照　✅ 已落地（2026-06-03）
+
+**触发**：R1 输出层三流要按"可见性"过滤渲染（流②只渲染玩家可见的），但项目此前无可见性概念。补齐 deny-by-default 的可见性模型，供输出层引用。
+
+**已聊定（待落 02/03/内层）**：
+
+- **存储 = `visible` 列**（不用前缀，避免和 `前缀:键` 约定打架）：sheet 加第 4 列 `(entity, attr, value, visible)`；`world_doc` / `world_pool` / `event` 各加 `visible` 列。
+- **默认全隐藏（deny-by-default）**：sheet / world 两域**全部默认隐藏**。event 按 `kind` 写入时定默认——`narrate` / `verdict` / `mutation` / `timer_fired`（给玩家的散文 + 要回显的机械事实）**默认可见**；`note`（AI 写的伏笔 / GM 注记）**默认隐藏**；`event_append` 可**显式覆盖**默认。
+- **`sheet_show` / `world_show` = 持久白名单**：翻 `visible=true`、输出层**每轮渲染实时值**（跟着变）。给"该长期可见"的东西。**玩家自己人物卡也默认隐藏 → AI 开局 `sheet_show` 一次**（接受"多一次 show"代价）；NPC 卡、暗值默认隐着。
+- **show 粒度 = 混合（丙）**：默认 **attr 级**显式授权；另给 **entity 级递归**当便利档（show 整 entity → 其下全部 cell 可见）；但带 **`强制隐藏` 标记的 cell（暗值）即使 entity-show 也不露**。**entity 级授权 = 长效策略**（覆盖该 entity 未来新增的 attr，贴"权限组"语义），靠强制隐藏标记兜暗值。
+- **`shot` = 一次性快照披露（第三态，中优先级披露动作）**：把某隐藏 cell **此刻的值以冻结副本披露一次**，**不翻持久可见位**；底层 `visible` 仍隐藏、值继续暗变,玩家见的是那一刻旧值,**下次 shot 才刷新**。给"瞥一眼 / 侦查 / 占卜"。**落点 = 写一条「可见 event」**——快照 `{attr, value@该 seq}`、`visible=true`：① 不碰 sheet `visible` 列（底层始终隐藏，语义干净）；② "每次 shot 才更新"自动成立（每次新 event 行、旧行留历史、随时间陈旧）；③ 输出层按 `visible` 同管道渲染。**粒度暂定单 cell**（整 entity 窥探罕见、可多次单 cell 拼；待实现表现再定）。
+- **un-show 降边角**：`shot` 顶掉了"情报重新成谜"主需求（根本不 show、只 shot，底层一直是谜）。仅剩"曾持久 `show` 的东西要收回"（如中毒看不清自己 HP）这种罕见情形 → **不单设工具**，让 `sheet_show` 传 `visible=false` 兜底，不做一等公民。
+
+**要改的页**：02 §2（四域补"`visible` 事实"一句）+ 术语表（`visible` / `show` / `shot` / 强制隐藏标记 词条）；03 §3 数据表（各域补 `visible` 列 + `sheet_show` / `world_show` / `shot` 工具）+ §5/§6（输出层流②按 `visible` 过滤渲染，承接 D）+ §7 工具清单；内层（`visible` 列存储 + 强制隐藏标记 + `shot`=event append 的求值语义）。
+**依赖**：被 D 的输出层三流依赖（流②的"按 visible 过滤"就指本条）。
+
+### F. time 不升格：留 `sheet_update` + skill 声明钟属性　✅ 已落地（2026-06-03）
+
+**触发**：D 的 timer / hook 机制要比对"游戏时间"，需确认 time 是不是独立通道。结论是**维持现状、不新增设计**。
+
+**已聊定（几乎不用改页，主要记决策）**：
+
+- **time 不升格**：游戏时间 = sheet 的某 attr（如 `世界.时间` / `世界.回合`），用 `sheet_update` 写（可带骰 `时间 +1d4`），**不单设存储、不单设 `time_*` 工具**。最贴术语表 line 20 既定口径"框架不内置回合概念、推进由 rule 定"。
+- **钟属性靠 skill / rule 声明**：哪个 attr 是"钟"，由团本 skill / rule 声明（如 `clock = 世界.时间`），框架不写死；`timer_set` 登记到期、hook 每轮读该 attr 比对触发；无声明则退化按 `seq` 计。
+- **与"砍框架 turn 计数器"调和**：框架级只保留单调 `seq`（event 序号，供排序 / L3 审计窗口）；"游戏时间 / 回合"全是 sheet 事实 + rule 解释。**术语表 line 20 已是此口径，R3 不新增框架级回合概念。**
+- **被推迟（乙，待观测）**：专用 `time_advance` / `time_set` 薄工具 + "该走时间却没走"的 L1 审计 —— **仅当测试发现"时间乱流逝"是 AI 本能失败模式时再升格**；当前判收益不抵复杂度。
+
+**要改的页**：基本无（术语表 line 20 已是此口径）。仅 03 §3 / §4 可顺手点明"timer / 钟 attr 靠 rule 声明"；主要落点是 ADR-0011 记"决定不升格"。
+
 ## 待写 ADR
 
 - [x] **ADR-0007 状态骰下沉**（roll_value 并入 sheet_update）——已写（2026-06-02）。
 - [x] **ADR-0008 定位重述**——已写（2026-06-02）。
+- [x] **ADR-0009 narrate 升格 stream + 一轮范式 + 输出层三流**（含 resolve_choice 暂存 / Stop hook 物化、L3 窗口=回合）——R1，已写（2026-06-03）。
+- [x] **ADR-0010 可见性模型（`visible` 列 + show 白名单 + shot 快照合入 event）**——R2，已写（2026-06-03）。（含 deny-by-default、show 混合粒度+强制隐藏标记防暗值泄漏、shot=可见 event 冻结副本、un-show 降边角）
+- [x] **ADR-0011 time 不升格（留 `sheet_update` + skill 声明钟属性）**——R3，已写（2026-06-03）。（被否：专用 `time_*` 独立通道，待"时间乱流逝"失败模式实证再议）
 
 ## 小涟漪（非专轮；路过 / 写到对应页时顺手补，别现在 drip-edit）
 

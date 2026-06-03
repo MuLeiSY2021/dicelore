@@ -53,10 +53,37 @@
 - **决策**：**可移植不再是目标**。v1 **骑定 Claude Code 作 agent 基底**（原生 skill / hook / MCP / subagent，正是塑形要用的原语）；**core 产物（MCP / Skill / SQLite / 团本）保持标准、不锁死**；交付机制（hook 注入、subagent 裁判、skill 装载）**明确绑 Claude Code 且承重**。"可接入各种大模型"在**模型层**兑现（Claude Code 本身 model-agnostic，含国产）。分发 = npm 包 + `anko` CLI、跨端（Win/Mac/Linux）预编译；未来 GUI 取代终端。
 - **后果**：hook 从"可选 L3 优化"升为**承重机制**（被动 rule 召回 + timer 到期都靠它）；**翻掉**旧"绝不让核心依赖某 agent 专属能力"红线。与 AI Dungeon 类闭环产品的实质区别仍在（开源、不自跑模型、core 标准可搬）。**被否**：① 嫁接任意 agent（过度工程、hook 类塑形难跨 agent 承重）；② 自研 agent runtime（太重，违低开发成本）；③ 全 Claude 原生连 core 也焊死（未来换基底 / 多人远程代价大）。落地见 [问题域 §0/§1](../01-业务分析/问题域.md)、[技术选型 §6/§6.1](../03-架构/技术选型.md)、[跨agent与适配层](../03-架构/跨agent与适配层.md)（整页重写）。
 
+## ADR-0009 narrate 升格散文 stream + 一轮范式（= agent 回合）+ 输出层三流
+
+- **背景**：[总体架构](../03-架构/总体架构.md) §4.1 原把 `narrate` 当"一回合的终结步骤"（一轮一次、卡成时序锚点）。填 [04 MCP工具面](../04-子系统设计/MCP工具面.md) 时发现与真实跑团流不符——AI 一轮内**像作者写一段**，`narrate` 是可多次穿插的 stream，其余工具也可多次任意序调用。且现行 prompt 惯例让 AI 自己吐"状态菜单"，**占 token 又易错**。
+- **决策**：
+  - **一轮 = agent 一个自然回合**（玩家输入 → 回合自然结束）；轮内**任何 MCP 调用可重复任意次、任意顺序**。`narrate` = 散文 stream、**非终结步骤**。
+  - `resolve_choice` = **暂存**下轮选项+后果（轮内可反复改写、末次为准），**回合末经 Stop hook 物化呈现**给玩家（anti-F2 仍立：后果先于玩家可见即锁，改写在玩家看见前）。
+  - **输出层升格 v1 一等概念**：hook/CLI 渲染器读 store/event、按 `visible` 过滤，渲染机械回显 + 状态菜单 + 待选项给玩家；**AI 不吐数值菜单、只 narrate 色彩**（零额外 token）。**三流分工**：① narrate 散文 → 对话 + AI 上下文；② 输出层渲染 → 玩家（不进 AI 上下文）；③ resolver/sheet_update 结构化结果 → 只回 AI（最小 token）。
+  - **L3 窗口重定义 = 一个 agent 回合**（Stop hook 审计本轮 event）；取代旧"两个 narrate 标记之间"（narrate 已成 stream）。**新硬规矩**：非终局轮回合末必须留有暂存 `resolve_choice`，否则违规。**唯二终局出口**：`game_end` / `you_death`。
+- **后果**：修订 [总体架构 §4.1/§5/§6/§7/§8](../03-架构/总体架构.md)、[02 §6](../02-领域模型/核心概念.md)、[内层 §4.2](../04-子系统设计/内层能力库.md)（L3 窗口）。narrate / `game_end` schema、Stop hook 实现归 04 / [跨agent](../03-架构/跨agent与适配层.md)。**被否**：narrate 作单次终结步骤（与作者式多次穿插的真实创作流不符，且逼 AI 吐状态菜单费 token）。
+
+## ADR-0010 可见性模型：`visible` 列 + show 白名单 + shot 快照（合入 event）
+
+- **背景**：ADR-0009 的输出层"流②"要按"玩家可见性"过滤渲染，但项目此前无可见性概念；且跑团有**暗值（好感度暗值）/ 隐藏 DC / GM 私有信息**需求。
+- **决策**：**deny-by-default 的白名单可见性**（GM 全见，显式授权玩家所见）。
+  - **存储 = `visible` 列**：sheet / `world_doc` / `world_pool` / `event` 各加一列（用列、不用键前缀，免撞 `前缀:键` 约定）。sheet 三态：`0` 默认隐 / `1` 已 show / `2` 强制隐（暗值）。
+  - **默认**：world / sheet 全隐；event 按 `kind`——散文与机械事实（narrate/verdict/mutation/timer_fired/reveal）默认可见、GM 注记（note）默认隐，`event_append` 可覆盖。
+  - **show（持久揭示，渲染实时值）**：`sheet_show` / `world_show`，**attr 级**或 **entity 级递归**（长效、覆盖未来新增 attr）；带 `强制隐藏(=2)` 标记的 cell 即使 entity-show 也不露——防暗值泄漏。玩家自己人物卡默认隐，AI 开局 show 一次。每次 show 写一条 `kind=note`、`visible=0`（对玩家隐）的审计 event。
+  - **shot（快照披露，中优先级，多态）**：把某隐藏**目标**（sheet cell **或 world 条目**）此刻内容**以冻结副本披露一次** = **append 一条 `kind=reveal` 的可见 event**；不翻目标 `visible`（底层仍隐）。对 sheet（值暗变）→"玩家见旧值、下次 shot 才刷新"自动成立；对（基本静态的）world → 一次性披露、不入持久可见集。**用 event 域实现"副本"**。
+  - **un-show 降边角**：`shot` 顶掉"情报重新成谜"主需求；罕见"曾持久 show 要收回"由 `sheet_show` 传 `visible=false` 兜底，不做一等公民。
+- **后果**：落 [02 §2 要点5 / 术语表](../02-领域模型/核心概念.md)、[03 §3.1](../03-架构/总体架构.md)、[内层四域 schema](../04-子系统设计/内层能力库.md)。`shot` 粒度暂定单 cell（待实现表现再定）。**被否**：① 默认可见（泄漏暗值）；② 纯 `前缀:键` 约定存可见性（撞既有约定）；③ entity-show 无强制隐藏标记（会泄漏暗值）。
+
+## ADR-0011 time 不升格：留 `sheet_update` + skill 声明钟属性
+
+- **背景**：ADR-0009 的 timer / hook 机制要比对"游戏时间"，需确认 time 是否该升格为独立通道（曾考虑 `time_set` / `time_advance` / `time_timer` 工具族）。
+- **决策**：**time 不升格**。游戏内时间 / 回合 = sheet 的某 attr（如 `世界.时间`），用 `sheet_update` 写（可带骰）；**哪个 attr 是"钟"由团本 rule / skill 声明**，框架不写死、不内置回合概念，自身只保留单调事件序号 `seq`。`timer_set` 登记到期、hook 每轮读该钟 attr 比对触发。
+- **后果**：几乎不改页（[术语表「sheet 钟」](../02-领域模型/术语表.md) 早是此口径）；[03 §3](../03-架构/总体架构.md) 顺手点明。**镜像 [ADR-0007](#)（状态骰下沉）**——同属"不为一类 sheet 写单设独立工具"。**被否（待观测再议）**：专用 `time_*` 独立通道 + "该走时间却没走"的 L1 审计——**仅当测试证实"时间乱流逝"是 AI 本能失败模式时再升格**，当前判收益不抵复杂度。
+
 ---
 
 ## 待决策（记录但未定，勿当结论引用）
 
 - **注入机制**：guideline 规则是"安装时焊进 skill 本体" vs "运行时 MCP 读取"——倾向前者，未定稿。
-- **offer_choice 是否两阶段**（declare 锁定 / resolve 揭示）以落地"声明后果在先"。
+- ~~**resolve_choice 是否两阶段**~~ → **已由 [ADR-0009](#adr-0009-narrate-升格散文-stream--一轮范式-agent-回合--输出层三流) 决议**：暂存（轮内可改写）+ 回合末 Stop hook 物化，落地"声明后果在先"。
 - **骰面语义**：是否给骰子引擎加"零基(0–9)"模式，还是约定映射。
