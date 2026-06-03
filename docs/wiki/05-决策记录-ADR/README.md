@@ -80,10 +80,16 @@
 - **决策**：**time 不升格**。游戏内时间 / 回合 = sheet 的某 attr（如 `世界.时间`），用 `sheet_update` 写（可带骰）；**哪个 attr 是"钟"由团本 rule / skill 声明**，框架不写死、不内置回合概念，自身只保留单调事件序号 `seq`。`timer_set` 登记到期、hook 每轮读该钟 attr 比对触发。
 - **后果**：几乎不改页（[术语表「sheet 钟」](../02-领域模型/术语表.md) 早是此口径）；[03 §3](../03-架构/总体架构.md) 顺手点明。**镜像 [ADR-0007](#)（状态骰下沉）**——同属"不为一类 sheet 写单设独立工具"。**被否（待观测再议）**：专用 `time_*` 独立通道 + "该走时间却没走"的 L1 审计——**仅当测试证实"时间乱流逝"是 AI 本能失败模式时再升格**，当前判收益不抵复杂度。
 
+## ADR-0012 guideline 载体：焊进 skill 本体（静态 markdown），非运行时 MCP 读取
+
+- **背景**：填 [04 Skills 包](../04-子系统设计/Skills包.md) 需先拍 L2 教条（dispatcher/guideline/补刀措辞）的载体——"待决策"原列两个候选：① **安装时焊进 skill 本体**（`anko init` 写进 `.claude/skills/` 的静态 markdown）vs ② **运行时 MCP 读取**（MCP 工具/`reminders` 动态供给）。该选择直接决定 Skills 包形态。
+- **决策**：**焊进 skill 本体**（候选①）。guideline 作静态 markdown，走 [跨agent §2/§4](../03-架构/跨agent与适配层.md) 既定的 Claude Code skill 装载路径（放 `.claude/skills/`）。**这不是回头路**——[技术选型 §2](../03-架构/技术选型.md)（**Skill 承载 L2 / MCP 承载 L1**）+ 跨agent §2（**L2 教条放 `.claude/skills/` 装载**）**已蕴含焊进**；本 ADR 只把原"待决策"升格收口，不改 02/03。
+- **后果**：教条内容（markdown）是 **core 标准件、未来可搬**；装载机制绑 Claude Code skill（[跨agent §1](../03-架构/跨agent与适配层.md) 的 core/绑定边界）。**补刀分工随之确定**：MCP `reminders` 只内置极小 L1 基线（terse 反射），丰富措辞活在焊进的 guideline 里（L2）；**v1 不让 hook 往 `reminders` 塞 L2 富文本**——MCP §5"可由 guideline/hook 增补"读作"AI 用内化 doctrine 增补输出"。**被否**：运行时 MCP 读取 guideline——会让 **MCP 承载 L2 = 范畴错误**（[03 §5](../03-架构/总体架构.md) 警告"把正交轴误当一层"），且须开回头路改 [技术选型 §2](../03-架构/技术选型.md)。**措辞终稿**留实现期 eval-loop（with/without baseline；可复用 L3 审计信号作 assertions）调，非本 ADR 范围。落地见 [04 Skills 包 §6](../04-子系统设计/Skills包.md)。
+
 ---
 
 ## 待决策（记录但未定，勿当结论引用）
 
-- **注入机制**：guideline 规则是"安装时焊进 skill 本体" vs "运行时 MCP 读取"——倾向前者，未定稿。
+- ~~**注入机制**：guideline 规则是"安装时焊进 skill 本体" vs "运行时 MCP 读取"~~ → **已由 [ADR-0012](#adr-0012-guideline-载体焊进-skill-本体静态-markdown非运行时-mcp-读取) 决议**：焊进 skill 本体（静态 markdown，走 Claude Code skill 装载）。
 - ~~**resolve_choice 是否两阶段**~~ → **已由 [ADR-0009](#adr-0009-narrate-升格散文-stream--一轮范式-agent-回合--输出层三流) 决议**：暂存（轮内可改写）+ 回合末 Stop hook 物化，落地"声明后果在先"。
 - **骰面语义**：是否给骰子引擎加"零基(0–9)"模式，还是约定映射。

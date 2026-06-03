@@ -27,6 +27,21 @@
 
 - [x] **session 解析**：人类可读名 + `ANKO_SESSION` env 定位；开库自建四域 schema；`session_meta` 记团本 id+版本 / created_at / display_name / `schema_version`；建库灌注团本（import 归团本页）；瘦 CLI 管理。
 
+## Skills 包（组件3）— ✅ 已写定（2026-06-03），整页见 [Skills包.md](Skills包.md)
+
+**已锁定**：
+
+- [x] **结构 = 两层**：常驻 **GM 核心 skill**（`anko-gm-core`：dispatcher + guideline + 补刀指针在 body，深表入 `references/`）+ **流程 skill 库**（`anko-flow-*` 各一独立 skill、manifest 选、genre-context 触发）。dispatcher+guideline 合在常驻核心（都"每轮必在"，拆开翻倍 under-trigger 风险）。
+- [x] **dispatcher 形态 = 决策表**（非流程图）：**两道闸 + 形状表**。闸 A 谁拥有决定（自主→`resolve_choice`）；闸 B 该不该骰（公认裁决律：不确定∧失败有意义，否则别骰直接 narrate）；形状表镜像 resolver 二轴（label→`resolve_outcome`/verdict→`resolve_contest`/number→`sheet_update`带骰/content→`world_sample`）。补丁：安全vs冒险、打平降级。顶部立 anti 两极端（别什么都骰/别什么都选）。**扎 [01 §2c 语料](../01-业务分析/调研-论坛语料痛点.md) + 桌游公认律（Vincent Baker/AW）+ resolver 二轴三角证据。**
+- [x] **guideline 组织 = F 轴 + 两新范式簇**：F1 必掷 / F2 别软着陆（恶龙团"分层范式"作可教范本）/ F3 薄（指 dispatcher）/ **一轮范式纪律**（作者式创作·narrate 非终结·非终局留暂存 choice·不吐数值菜单）/ **可见性纪律**（开局 show 玩家卡·暗值强制隐·别在 narrate 吐隐藏值）。写法：imperative + 讲 why、忌硬 MUST、串成"一轮怎么走"（skill-creator）。
+- [x] **载体 = 焊进** `.claude/skills/`（[ADR-0012](../05-决策记录-ADR/)）：静态 markdown、走 Claude Code skill 装载（顺技术选型§2/跨agent§2、非回头路）。被否运行时 MCP 读取（=MCP 承载 L2 范畴错误）。
+- [x] **补刀分工**：MCP `reminders` = 极小 L1 基线（terse 反射，归 [MCP工具面 §5](MCP工具面.md) 挂载点）；丰富措辞 + why = 焊进 guideline（L2，`references/reminders.md`）。v1 不让 hook 往 reminders 塞 L2 富文本。
+- [x] **流程库起步清单**：`anko-flow-gacha`(world_sample)/`-contest`(resolve_contest)/`-anka`(resolve_choice)/`-explore`(world_search/shot)；开放扩展。流程 skill 只编排已有工具调用序、不新增工具/不碰 schema/存储。
+
+**印证 skill-creator（写进页面、未改决策）**：渐进式披露三级（metadata 恒在/body 触发载/references 按需，<500 行）；`description` 是唯一触发器且 under-trigger → 核心写 pushy 常驻描述、流程写 genre-context；**简单查询可能不触发** → 常驻*保证*（CLAUDE.md 指针/系统上下文/hook 强化）踢给 [adapter](adapter与L3审计.md)；措辞终稿靠 eval-loop（with/without baseline），**F1/F2/F3 可客观验证 → L3 审计信号（掷骰绕过率/后果-叙事一致）复用作 assertions**。
+
+**跨页联动 / 留给下游**：注入与常驻保证 → [adapter 与 L3 审计](adapter与L3审计.md)；manifest 选 skill → [团本与 manifest](团本与manifest.md)；补刀字段挂载点 → [MCP工具面 §5](MCP工具面.md)；存储 → [内层能力库](内层能力库.md)。
+
 ## 工具面已定决策（✅ 已落 [MCP工具面](MCP工具面.md) 整页，2026-06-03）
 
 - [x] 全员 **`anko_` 前缀**（防多 server 撞名）。
