@@ -18,7 +18,7 @@
 - [x] **event 域 schema（2026-06-02 锁定）**：
   - 一张统一 `event(seq[=FTS5 rowid], kind, content, data_json, tags, game_time?, created_at)`，`kind ∈ {narrate, verdict, mutation, note, timer_fired}`；`content` 走 FTS5(jieba) 只索引散文(narrate/note)、结构进 `data_json`(UNINDEXED)、`tags` 兜底召回。
   - **时间观拆分**：框架只拥有单调 `seq`（通用排序）；**"游戏时间/回合"是团本定义的 sheet 钟**（`世界.回合`/`世界.时间`），由团本 rule 推进、AI 用 `sheet_update` 改；**砍框架 turn 计数器**。
-  - **L3 分组 = "叙述窗口"**（两个 narrate 标记间的 event，按 seq）——机械范围，非游戏时间；narrate 不推进游戏时间。
+  - **L3 分组 = "一个 agent 回合"**（玩家输入→回合末 Stop hook，按 seq 圈定本轮 event）——机械范围，非游戏时间；narrate 不推进游戏时间。（2026-06-03 R1 重定义，取代旧"两个 narrate 标记间"——narrate 已升格 stream。）
   - `event.game_time?` = 写入时对 sheet 钟拍的可选快照(文本)，仅供回看展示/召回，框架不解释。
   - 溢出后续优化（压缩 / RAG），v1 不做。
 - [x] **timer 单独表**：`timer(id, created_seq, fire_condition, payload, status)`；`fire_condition` = 对 sheet 钟的条件(`{世界.回合}>=15`)或文本(AI/hook 判)；**hook 在回合开始比对触发**（[03 TODO B](../03-架构/TODO.md)）；fired 后落一条 `event(kind=timer_fired)`、status→fired。属 event 域、域内两表。
@@ -27,7 +27,7 @@
 
 - [x] **session 解析**：人类可读名 + `ANKO_SESSION` env 定位；开库自建四域 schema；`session_meta` 记团本 id+版本 / created_at / display_name / `schema_version`；建库灌注团本（import 归团本页）；瘦 CLI 管理。
 
-## 工具面已定决策（待 [MCP工具面](MCP工具面.md) 页展开）
+## 工具面已定决策（✅ 已落 [MCP工具面](MCP工具面.md) 整页，2026-06-03）
 
 - [x] 全员 **`anko_` 前缀**（防多 server 撞名）。
 - [x] 裁决族统一 **`anko_resolve_*`**：`resolve_choice` / `resolve_outcome` / `resolve_contest`。
@@ -35,8 +35,9 @@
 - [x] **sheet 读拆两工具**：`anko_sheet_get`（单 cell）+ `anko_sheet_list`（前缀扫，取整卡/整库存）。不用 `_like`（泄漏 SQL）。
 - [x] **mutation 用结构化数组** `[{attr, op, expr}]`；`expr` 统一命名（弃 operand），值表达式用 B（字符串 DSL + `{}` 引用），随 op 多态，交内层求值器。
 - [x] **mcp 用法教条 → [Skills包](Skills包.md)**：一个"工具选择决策树"skill（三条掷的路怎么选；F3 的 L2 二层保险）。
-- [ ] 是否为保 L1 再分出掷骰名（纯塑形取舍）。
-- [ ] `anko_event_timer_set` 命名是否对齐 `event_` 前缀（小项）。
+- [x] 是否为保 L1 再分出掷骰名（纯塑形取舍）→ **否**：合一 `sheet_update`，靠 L2+L3（[ADR-0007](../05-决策记录-ADR/)）。
+- [x] `timer_set` 命名 → **`anko_timer_set`**（独立名、不挂 `event_` 前缀，与全 wiki 既有用法一致）。
+- [x] **R1-R3 带来的工具面新增**（已落页）：`narrate` schema `{text,tags?}→{event_id,reminders?}`（无 game_time、stream）；`resolve_choice` 暂存语义（回合末 Stop hook 物化）；可见性工具 `sheet_show`/`world_show`/`shot`（多态 sheet+world）；写工具可选 `visible` 参（`sheet_update` mutation / `event_append` / `world_register`）；**补刀 = 出参可选 `reminders` 字段**（内置 L1 基线 + Skills 增强，措辞归 Skills）；终局 `game_end`/`you_death`（v1 极简、复盘是饼）。
 
 ## resolver 模型（行动层核心，2026-06-02 锁定；resolver 概念待升格 → 见 [03 TODO](../03-架构/TODO.md) C）
 
