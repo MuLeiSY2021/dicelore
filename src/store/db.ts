@@ -1,0 +1,48 @@
+import Database from "better-sqlite3";
+
+export type DB = Database.Database;
+
+export function openDb(path: string): DB {
+  const db = new Database(path);
+  db.pragma("journal_mode = WAL");
+  db.pragma("foreign_keys = ON");
+  return db;
+}
+
+// 幂等建表。event 在本 plan 是普通表(全文检索归 Plan 2)。
+export function initSchema(db: DB): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sheet (
+      entity TEXT NOT NULL, attr TEXT NOT NULL, value TEXT NOT NULL,
+      visible INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (entity, attr)
+    );
+    CREATE TABLE IF NOT EXISTS event (
+      seq INTEGER PRIMARY KEY AUTOINCREMENT,
+      content TEXT, kind TEXT NOT NULL, data_json TEXT, tags TEXT,
+      visible INTEGER NOT NULL DEFAULT 1, game_time TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS watcher (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      created_seq INTEGER, condition TEXT NOT NULL, payload TEXT NOT NULL,
+      mode TEXT NOT NULL DEFAULT 'once', armed INTEGER NOT NULL DEFAULT 1,
+      last_fired_seq INTEGER, status TEXT NOT NULL DEFAULT 'active'
+    );
+    CREATE TABLE IF NOT EXISTS world_doc (
+      name TEXT, content TEXT, category TEXT, tags TEXT, visible INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS world_pool (
+      pool TEXT, row_json TEXT, weight REAL NOT NULL DEFAULT 1, source TEXT NOT NULL DEFAULT 'author',
+      visible INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS rule_doc (
+      name TEXT, content TEXT, category TEXT, version INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE TABLE IF NOT EXISTS session_meta ( key TEXT PRIMARY KEY, value TEXT );
+    CREATE TABLE IF NOT EXISTS pending_choice (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      seq_staged INTEGER, prompt TEXT, options_json TEXT, status TEXT
+    );
+  `);
+}
