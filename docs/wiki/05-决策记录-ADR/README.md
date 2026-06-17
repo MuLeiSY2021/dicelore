@@ -84,6 +84,8 @@
 
 ## ADR-0012 guideline 载体：焊进 skill 本体（静态 markdown），非运行时 MCP 读取
 
+> **改名注解（2026-06-17）**：本 ADR 内的 `guideline` 已统一更名为 **Principles**（PbtA 术语对齐回头路，见 [ADR-0016](#)；语义不变）。下文决策原文保留 `guideline` 作历史记录。
+
 - **背景**：填 [04 Skills 包](../04-子系统设计/Skills包.md) 需先拍 L2 教条（dispatcher/guideline/补刀措辞）的载体——"待决策"原列两个候选：① **安装时焊进 skill 本体**（`anko init` 写进 `.claude/skills/` 的静态 markdown）vs ② **运行时 MCP 读取**（MCP 工具/`reminders` 动态供给）。该选择直接决定 Skills 包形态。
 - **决策**：**焊进 skill 本体**（候选①）。guideline 作静态 markdown，走 [跨agent §2/§4](../03-架构/跨agent与适配层.md) 既定的 Claude Code skill 装载路径（放 `.claude/skills/`）。**这不是回头路**——[技术选型 §2](../03-架构/技术选型.md)（**Skill 承载 L2 / MCP 承载 L1**）+ 跨agent §2（**L2 教条放 `.claude/skills/` 装载**）**已蕴含焊进**；本 ADR 只把原"待决策"升格收口，不改 02/03。
 - **后果**：教条内容（markdown）是 **core 标准件、未来可搬**；装载机制绑 Claude Code skill（[跨agent §1](../03-架构/跨agent与适配层.md) 的 core/绑定边界）。**补刀分工随之确定**：MCP `reminders` 只内置极小 L1 基线（terse 反射），丰富措辞活在焊进的 guideline 里（L2）；**v1 不让 hook 往 `reminders` 塞 L2 富文本**——MCP §5"可由 guideline/hook 增补"读作"AI 用内化 doctrine 增补输出"。**被否**：运行时 MCP 读取 guideline——会让 **MCP 承载 L2 = 范畴错误**（[03 §5](../03-架构/总体架构.md) 警告"把正交轴误当一层"），且须开回头路改 [技术选型 §2](../03-架构/技术选型.md)。**措辞终稿**留实现期 eval-loop（with/without baseline；可复用 L3 审计信号作 assertions）调，非本 ADR 范围。落地见 [04 Skills 包 §6](../04-子系统设计/Skills包.md)。
@@ -121,6 +123,18 @@
   - **⑤ 节奏 = 分阶段·边建边审**：①世界观→②NPC→③卡池→④机制→⑤选 flow+manifest 收口；每阶段 agent 产一块、用户即时审阅修正再进下一阶段，阶段间可回退。错误早发现、长小说可分块喂、贴即写即读回路。
   - **⑥ 素材 = 先建检索库、按阶段检索**：整本小说切块建库，每阶段 agent 按需检索相关片段。**起步关键词 FTS5 + jieba**（复用运行时基建、零新依赖），**语义向量列未来**（与 RAG spike 同档）。检索库是构建期临时品、不进成品包。
 - **后果**：[04 组件5/组件6](../04-子系统设计/) 两页从骨架定稿；新增"团本构建台"为作者侧子系统；[adapter 页](../04-子系统设计/adapter与L3审计.md) 补一句"构建期 Web ≠ 运行时 GUI"的澄清（不改其运行时裁定）。**未越界**：读写层/检索库属 core 标准件、不绑 Claude Code（构建 skill / MCP 注册才绑基底，同既有边界）。**被否**：① SQLite 草稿库为产物（偏离 MD+CSV 假设、对 git 不友好）；② 静态 HTML 只读预览 / 纯终端文本视图（审阅体验弱于可交互，长团本尤甚）；③ 实时双向同步（要双向同步 + 冲突处理，最重、scope 易爆，即写即读已够）；④ 一把梭末尾总审（错误集中末尾、长文上下文压力大）；⑤ 用户喂浓缩二手材料（门槛回升，违"丢一整本"愿景）；⑥ 自主分块全文通读（token 重、慢，且与分阶段检索相比无额外收益）。
+
+## ADR-0016 全盘对齐 PbtA 术语 + 新增 Agenda 层 + F2 双边护栏（fail-forward）+ Front/Clock 团本内容类型
+
+- **背景**：04 全区定稿后做了一轮英文 TRPG 设计正典调研（PbtA / Dungeon World 的 Agenda·Principles·Moves、Alexandrian 节点式剧本、Gnome Stew 的 fail-forward、五房间地下城、AW Fronts/Clocks），与现架构逐层比对。结论：**anko 独立重建出的 GM 塑形架构，本质就是 PbtA 最硬核的分支**——差别只在 PbtA 靠社会约定让人类 GM 自律，而 anko 面对的"GM"是有讨好本能、无社交羞耻心的 LLM，凡 PbtA 信任 GM 自律之处 anko 都须机械强制。比对暴露三处可落地缺口（F2 只防单边、缺顶层 Agenda、团本无"会自己推进的威胁"单元）+ 一处术语未对齐。决定全盘对齐。
+- **决策**（五连）：
+  - **① 术语全盘对齐**：有 PbtA 强对应物的升为一等术语——`guideline → Principles（原则）`、`dispatcher 形状表 + 两道闸 → Moves（动作）+ 判定时机`、`resolve_outcome 概念对齐三档结果（完全/部分/失败）`（**工具名不改**，仅文档对齐）。**边界 = 保留独有抽象**：anko 独有的更强 / 正交抽象（`resolver 二轴` / `四业务域` / `三层 L1·L2·L3` / `F1·F2·F3 失败模式诊断` / **`watcher` 底层触发器**）**保留原名不动**，不为对齐硬套 PbtA 壳。
+  - **② 新增 Agenda 议程层**：塑形层 L2 教条采 PbtA 三段式 **Agenda（为什么）→ Principles（怎么）→ Moves（做什么）**。Agenda 四条，**第 0 条"你是世界的诚实仲裁者，不是玩家的取悦者"为 anko 特有、凌驾其余**（人类 GM 无讨好病，这是 anko 与 PbtA 的分水岭，也是定位陈述的祈使版）；其余三条（描绘活世界 / 让选择有真后果 / play to find out）借自 DW。Agenda 给 F 轴提供"为什么"的根——F2 同时违背"后果要真"与"不预定结局"。
+  - **③ F2 升级为双边护栏**：坏结果**既不能被洗成好结果**（上边界 = anti-讨好，原 F2）、**也不能退化成"什么都没发生"**（下边界 = anti-死胡同，借自 PbtA fail-forward）。引入可教 craft（三档结果 / 软招·硬招 / 后果手法菜单 / 末日钟=Clock / "有时失败就是失败"），落 Principles + `references/consequences.md`。
+  - **④ 新增 Front/Clock 团本内容类型**：`Clock`（倒计时钟）= sheet 钟 attr + 监视它的 watcher 的封装；`Front`（阵线）= 名字 + 利害 + Clock + 阶梯凶兆表，落地为一组**预声明 watcher**。建在已有 `watcher` + `sheet 钟`之上，**非新底层机制**。**推进 [ADR-0013](#)**：把"团本预声明 watcher"从其"留未来"裁定**提前纳入 v1**——PbtA 正典表明 Front（预置威胁 + 倒计时）是作者备团的核心单元，非锦上添花；watcher 底层早已就绪，只差团本预声明入口。组件6 定 `fronts/*.md` 格式 + 包→四域 import 映射（frontmatter 钟→sheet、凶兆阶梯→预声明 watcher、阵线散文→world_doc）。
+  - **⑤ 定位陈述 + 洋葱层旁证**（纯阐释，不改结构）：定位陈述（anko = PbtA 纪律的机械强制版）入 [02 §4](../02-领域模型/核心概念.md)；AW 的"洋葱层优雅坍缩"≈ anko 的"L2 漏 → L1 工具地板兜底 → L3 审计网"（anko 轴 = 强制力冗余，AW 轴 = 规则复杂度回退）入 [03 三层节](../03-架构/总体架构.md)。
+- **回头路纪律**：按单向推导 02 → 03 → 04 一次扫全 `guideline→Principles` / `dispatcher→Moves`；**旧 ADR（0012 等）正文不回改**，在 [ADR-0012](#) 顶部加改名注解（沿用 [ADR-0010](#) 的 `shot→reveal_once` 风格）。**[01 调研-期待与预测](../01-业务分析/调研-期待与预测.md) 里的 `dispatcher` 是外部开发者（meyomeyome）做法的引用、与 anko 术语巧合同词，不在改名范围。**
+- **后果**：落 02（术语表 / 核心概念）、03（总体架构 / TODO）、04（Skills包 / 团本与manifest / MCP工具面 / adapter / 内层 / TODO / README）、05（本 ADR + 0012 注解）。塑形层教条从两段式（guideline + dispatcher）升为**三段式（Agenda / Principles / Moves）**；团本多一类"会自己上发条"的 Front/Clock 内容；F2 有了可教的 fail-forward 手法表。**被否**：① 只锚注不改名（框架不吸收新结构，放弃 Agenda / Front 的实际收益）；② 最大化套壳（连 resolver 二轴 / 四域 / F 轴也套 PbtA 词——用为人类设计的词去装 anko 针对 AI 的独有机制，损失精度）；③ Front 仍留未来（放弃作者备团的核心单元，与正典背离）。
 
 ---
 
