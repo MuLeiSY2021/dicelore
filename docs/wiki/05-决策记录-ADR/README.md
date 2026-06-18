@@ -136,6 +136,28 @@
 - **回头路纪律**：按单向推导 02 → 03 → 04 一次扫全 `guideline→Principles` / `dispatcher→Moves`；**旧 ADR（0012 等）正文不回改**，在 [ADR-0012](#) 顶部加改名注解（沿用 [ADR-0010](#) 的 `shot→reveal_once` 风格）。**[01 调研-期待与预测](../01-业务分析/调研-期待与预测.md) 里的 `dispatcher` 是外部开发者（meyomeyome）做法的引用、与 anko 术语巧合同词，不在改名范围。**
 - **后果**：落 02（术语表 / 核心概念）、03（总体架构 / TODO）、04（Skills包 / 团本与manifest / MCP工具面 / adapter / 内层 / TODO / README）、05（本 ADR + 0012 注解）。塑形层教条从两段式（guideline + dispatcher）升为**三段式（Agenda / Principles / Moves）**；团本多一类"会自己上发条"的 Front/Clock 内容；F2 有了可教的 fail-forward 手法表。**被否**：① 只锚注不改名（框架不吸收新结构，放弃 Agenda / Front 的实际收益）；② 最大化套壳（连 resolver 二轴 / 四域 / F 轴也套 PbtA 词——用为人类设计的词去装 anko 针对 AI 的独有机制，损失精度）；③ Front 仍留未来（放弃作者备团的核心单元，与正典背离）。
 
+## ADR-0017 状态回滚 = 回合快照（checkpoint），非逆运算 / 非纯重放；快照机制下沉 MCP/core hook
+
+- **背景**：用户深度体验 SillyTavern 后提三个问题（用网络语"口胡"=信口开河编情节 / 偷换扭曲规则取胜作隐喻）：**P1 缺剧情大纲**（情节全靠 AI 即兴）、**P2 数值/规则随心意致出戏**、**P3 状态回滚**（撤回 / 删除当前对话回合时，存储状态须逆回上一回合）。逐一核对：**P1 已被 [ADR-0016](#) 的 Front/Clock 覆盖**（解药不是写死大纲＝railroading，而是"会自己上发条"的长程压力对象给 AI 即兴施加引力）；**P2 已被 [ADR-0005](#)（rule 只读）/ 状态归属（随机与取数全在 MCP 内、AI 只给引用）/ [02 §4](../02-领域模型/核心概念.md) 的 F1·F2·F3 覆盖**（守纪律即可、非新工作）。**唯 P3 是新决策**。用户另提两点关联意图：(a) "迟早会面临**自研 agent** 这个命题"；(b) 设想"**所有需开发的 MCP + 我们自有的那几个 MCP，提供一个 hook 来支持快照模式**"。
+- **决策**（回合快照）：
+  - **回滚机制 = 快照（snapshot per 回合），否逆运算、否纯重放。**
+    - **被否·逆运算 / undo log**：撞破坏性写（`sheet_update` 的 UPSERT 覆盖旧值，不另存就逆不回）＋ watcher 级联效果难逆、`once` watcher 须手动 re-arm。业界应用层基本不碰，只在 DB 内核用。
+    - **被否·纯重放（fold events）**：回滚要从头重算 → 强加"**确定性税**"（骰子必须钉进 event、watcher 重算不准重掷）。
+    - **选定·快照**：每个**回合边界**（[ADR-0009](#) 定义的 agent 自然回合）存一份游戏状态；撤回当前回合 ＝ 丢当前、加载上一份。**O(1) 回滚，且把骰子非确定性问题直接消掉**（存结果、不重算）。anko 单局状态小（几张 sheet / event / 账本），快照成本可忽略——故 Claude Code 那种要快照整个文件树的场景都用快照，anko 更无负担。**业界主流佐证**：Claude Code（每个 user prompt 一个 checkpoint、快照式、独立于 git、存会话 jsonl）、Cursor、SillyTavern（checkpoint＋消息树分支）回滚一律用快照而非逆运算；DB 界的 checkpoint＋WAL ＝ 快照＋事件日志。
+  - **快照范围 ＝ 游戏推进态**：sheet 全表（含 `visible`）＋ world（运行期 AI 现编部分）＋ event（到该 `seq`）＋ **watcher 运行时态**（`armed` / `fired` / `mode`）＋ `seq` 指针。**不含 rule**——rule 人类侧写、版本化（[ADR-0005](#)，AI 只读），其变更走**带外**，不随游戏回合回滚。
+  - **机制下沉 MCP / core 层 hook**：快照 / 回滚做成**内层 core ＋ MCP 层的统一能力（快照 hook）**，所有自有 MCP 复用，**不绑 Claude Code**——与 Claude Code 自带的 file checkpoint **正交、互不依赖**（CC 的 checkpoint 管文件、管不了我们的 store）。兑现用户设想 (b)。
+  - **铁律（普适，与机制无关）**：**凡逃出"被记录边界"的状态变更都救不回来。** Claude Code 官方明示其 checkpoint 回滚不了 bash 副作用 / DB / API / MCP 外部状态（故跑这类命令前必请授权）。翻译到 anko ＝ **一切游戏状态变更必须走 store 记录通道**；AI 不得在 prompt / `narrate` 散文里直接改数，dice 不得在 watcher 重算里偷掷。守此，快照即完备。
+  - **event log 保留作分支底物**：框架只拥有单调 `seq`（[内层「时间观」](../04-子系统设计/内层能力库.md)）。保留 event **不为重放，而为未来 branch / swipe**——酒馆品类真正想要的"不满意当前回合→从上一快照开新分支重生成"，而非只能删了重来；外加审计回看。branch 属未来，但"快照＋event"底物使其廉价。
+- **后果**：新增"**回合快照**"为 v1 数据层一等机制。**与 [ADR-0010](#) 的 reveal_once「快照」同词不同物**——后者是 event 域的"可见性冻结副本披露（单 cell / 单条目）"，本条是**整局状态的 checkpoint**，文档中须明确区分避免混淆。落 [03 §3.2](../03-架构/总体架构.md)（新增）＋ [03 TODO G](../03-架构/TODO.md)；快照存储形态（全量 / 增量 / COW）、watcher 运行时态序列化、与 Stop hook 回合边界的接线归 [04](../04-子系统设计/) / 未来。**触及 [ADR-0008](#) 的"被否·自研 agent runtime（太重）"**：用户提"迟早面临自研 agent"——本 ADR **不翻 ADR-0008**，但把"快照机制做成 agent 无关的 MCP/core hook"作为**对冲**（即便将来换基底 / 自研 agent，快照能力随 core 走、不重做，符合 [ADR-0008](#) 的"core 不锁死"），自研 agent 本身仍记为未来待议。**骰子边界**（`src/dice`）：快照下"掷骰结果进 event"**不再是回滚的正确性要求**，但仍是 **branch 的正确性要求**（swipe 时换结果重掷 vs 沿用同掷——产品决策），边界建议实现期立。**被否**：① 逆运算 / undo log（破坏性写＋级联难逆）；② 纯重放（确定性税）；③ 把回滚绑死 Claude Code 自带 checkpoint（回滚不了 store，且违 core 不锁死）。
+- **细化落地（2026-06-18 第二轮 brainstorming，"实现待 04"诸项收敛）**：
+  - **存储形态 = 全量快照行 / 回合（解耦子系统）**：新增 `snapshot(id, parent_id, transcript_anchor, turn_start_seq, turn_end_seq, blobs_json, created_at)` 表，**不碰四域 schema**。否增量 / COW（状态小、不值复杂度）。
+  - **IoC 参与者注册表（解耦快照与各模块）**：快照 core **零编译期依赖**具体域——各模块注册 `SnapshotParticipant{name, capture(), restore()}`，`checkpoint` 遍历收集、`restore` 派发覆写。**范围 = 哪些模块注册（config 化）**：v1 注册 sheet / world.runtime / watcher；**rule 不注册 → 自动不随回合回滚**（"范围不含 rule"从硬编码变注册事实）；团本自定义域注册即入快照、不碰快照代码。**"watcher 运行时态序列化"开放项消解**（整表 dump、restore 整体覆写、不逆级联）。
+  - **event 是时间线脊柱、不入快照**：append-only、永不删；当前分支 event 历史 = 快照祖先链的 `[start,end]` seq 区间拼接 → **无需 `branch_id` 列**。
+  - **branch 进 v1**（原"属未来"上修）：快照 `transcript_anchor` 锚 CC transcript UUID 树 → 快照树继承其形状，branch 是自然产物。**swipe 默认重掷**（从上一快照重生成、自然新掷骰；沿用同掷需钉骰＝确定性税，已否）。**dice 不外部播种**（结果已落 event、按 UUID 播种破 agent 无关边界）；反刷骰＝稳定键播种记**未来 config 旋钮**（键用 core seq/snapshot id、非 UUID）。
+  - **回滚触发 = auto-sync Claude Code /rewind**：Stop hook 写快照、UserPromptSubmit hook 检测 transcript head 错位→restore 对齐；**不进 AI 工具面**（玩家元动作）。**兜底 = 人类侧 CLI**（`anko rewind`，transcript 关联不可靠时的逃生口）。机制（快照 core）agent 无关、关联检测吃 CC 专属（住 adapter）——**比"人类 CLI 回滚"更精确的 [ADR-0008](#) 对冲**。
+  - **rule 带外与回滚交互**：rule 不注册 participant → restore 永不碰 rule、热更自动留存、restore 出的态跑当前 rule。
+  - 落 [内层 §4.5](../04-子系统设计/内层能力库.md)（快照 core）＋ [adapter §8 / §3.1 / §3.3](../04-子系统设计/adapter与L3审计.md)（hook 接线）＋ [MCP §7](../04-子系统设计/MCP工具面.md)（不进工具面）＋ [03 §3.2](../03-架构/总体架构.md)（指针更新）。
+
 ---
 
 ## 待决策（记录但未定，勿当结论引用）
@@ -143,3 +165,7 @@
 - ~~**注入机制**：guideline 规则是"安装时焊进 skill 本体" vs "运行时 MCP 读取"~~ → **已由 [ADR-0012](#adr-0012-guideline-载体焊进-skill-本体静态-markdown非运行时-mcp-读取) 决议**：焊进 skill 本体（静态 markdown，走 Claude Code skill 装载）。
 - ~~**resolve_choice 是否两阶段**~~ → **已由 [ADR-0009](#adr-0009-narrate-升格散文-stream--一轮范式-agent-回合--输出层三流) 决议**：暂存（轮内可改写）+ 回合末 Stop hook 物化，落地"声明后果在先"。
 - **骰面语义**：是否给骰子引擎加"零基(0–9)"模式，还是约定映射。
+- ~~**回合分支（branch / swipe）是否 v1**~~ → **已细化（[ADR-0017](#) "细化落地 2026-06-18"）**：branch **进 v1**（快照锚 transcript UUID 树、branch 是自然产物）；**swipe 默认重掷**（从上一快照重生成、不钉骰、不外部播种；反刷骰=稳定键播种记未来 config）。
+- ~~**快照存储形态**~~ → **已细化（[ADR-0017](#) "细化落地 2026-06-18"）**：全量快照行 / 回合（解耦子系统）+ **IoC 参与者注册表**（watcher 整表 dump，"运行时态序列化"开放项消解）；接线 = Stop 写 / UserPromptSubmit 检测 restore（[adapter §8](../04-子系统设计/adapter与L3审计.md)）。
+- ~~**rule 带外变更与回滚的交互**~~ → **回滚交互已细化**（[ADR-0017](#)：rule 不注册为快照 participant → restore 永不碰 rule、热更自动留存）；**仅"进行中存档遇 rule 版本热更的迁移语义"（`schema_version` / 团本版本迁移）仍待**未来。
+- **自研 agent**（呼应 [ADR-0008](#) 被否项）：记为未来待议；对冲已细化（[ADR-0017](#)）= **快照 core agent 无关、仅"对话回退↔快照"关联检测吃基底专属、住 adapter**，换基底只重写关联 hook。

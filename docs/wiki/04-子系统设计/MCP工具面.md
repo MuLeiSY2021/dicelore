@@ -272,6 +272,8 @@ game_end: { reason: z.string(), outcome?: z.string() } → { ended: true, event_
 
 > **裸骰子永居内层、AI 调不到**——限制工具面本身即 L1（[03 §2](../03-架构/总体架构.md)）。
 
+> **回滚 / 快照不在本工具面**（[ADR-0017](../05-决策记录-ADR/)、[内层 §4.5](内层能力库.md)、[adapter §8](adapter与L3审计.md)）：撤回 / branch / swipe 是**玩家元动作、非游戏动作**——快照由 Stop hook 写、回滚由 UserPromptSubmit hook auto-sync（兜底 CLI），**不给 AI 工具**（防 AI 把回滚当叙事手段滥用）。故上表无 `rollback` / `checkpoint` 类工具。
+
 ### 7.1 工具注解（MCP annotations）
 
 > `openWorldHint` 全局 `false`（封闭世界、无外部实体），下表略。

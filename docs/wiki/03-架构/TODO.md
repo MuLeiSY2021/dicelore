@@ -89,6 +89,27 @@
 
 **要改的页**：基本无（术语表 line 20 已是此口径）。仅 03 §3 / §4 可顺手点明"timer / 钟 attr 靠 rule 声明"；主要落点是 ADR-0011 记"决定不升格"。
 
+### G. P3 状态回滚 = 回合快照（checkpoint，非逆运算 / 非纯重放）　✅ 决策已落 + 04 细化已落（2026-06-18）
+
+**触发**：2026-06-18 用户深度体验 SillyTavern 后提三问（"口胡"隐喻）。核对后 **P1（缺大纲）已被 [ADR-0016](../05-决策记录-ADR/README.md) Front/Clock 覆盖、P2（规则随心意）已被 [ADR-0005](../05-决策记录-ADR/README.md) + F1/F2/F3 覆盖**，唯 **P3（撤回 / 删除当前回合→状态逆回上一回合）是新决策**。
+
+**已聊定（决策落 [ADR-0017](../05-决策记录-ADR/README.md) + [03 §3.2](总体架构.md)）**：
+
+- **机制 = 快照 per 回合**，否逆运算（破坏性写 + watcher 级联难逆）、否纯重放（确定性税）。O(1) 回滚、把骰子非确定性消掉；单局状态小、成本可忽略。业界主流（Claude Code / Cursor / SillyTavern）皆快照。
+- **粒度 = [ADR-0009](../05-决策记录-ADR/README.md) 的 agent 自然回合边界**；**范围** = sheet + world(运行期) + event + watcher 运行时态 + seq 指针，**不含 rule**（人类侧、带外、不随回合回滚）。
+- **铁律** = 逃出 store 记录通道的变更回滚不了 → 一切游戏态变更必经 store（dice 不在 watcher 重算里偷掷、AI 不在 narrate 直接改数）。
+- **机制归属** = 内层 core + MCP 层 hook、agent 无关，与 CC 自带 file checkpoint 正交。
+- **event log 保留作 branch/swipe 底物**（酒馆品类能力，属未来）。
+
+**要改 / 待实现的页**：
+
+- [x] 03 §3.2（新增回合快照节）、05 ADR-0017 ——已落（2026-06-18）。
+- [x] **04 内层能力库 / MCP工具面 / adapter**：已细化（2026-06-18 第二轮）——[内层 §4.5](../04-子系统设计/内层能力库.md)（全量快照行 + **IoC 参与者注册表** + event 脊柱）、[adapter §8/§3.1/§3.3](../04-子系统设计/adapter与L3审计.md)（Stop 写快照 / UserPromptSubmit 检测 restore / auto-sync CC /rewind + CLI 兜底）、[MCP §7](../04-子系统设计/MCP工具面.md)（回滚不进 AI 工具面）。watcher 序列化开放项随 IoC 消解（整表 dump）。
+- [x] **细化（已落 [ADR-0017](../05-决策记录-ADR/README.md) "细化落地"）**：branch **进 v1**（锚 transcript UUID 树）；**swipe 默认重掷**（不钉骰、不外部播种；反刷骰=稳定键播种记未来 config）；rule 带外**回滚交互**已定（rule 不注册 participant、热更留存）。
+- [ ] **仍待未来**：① 反刷骰 config 旋钮（稳定键播种，键用 core seq/snapshot id）；② "进行中存档遇 rule 版本热更"的 `schema_version` / 团本版本迁移语义；③ 自研 agent（[ADR-0008](../05-决策记录-ADR/README.md) 被否项，对冲＝快照 core agent 无关、关联检测住 adapter）。
+
+**不影响**：内层能力库是 agent 无关 core，快照 hook 正落于此；定位 / 基底怎么变都不动它。
+
 ## 待写 ADR
 
 - [x] **ADR-0007 状态骰下沉**（roll_value 并入 sheet_update）——已写（2026-06-02）。
@@ -96,6 +117,7 @@
 - [x] **ADR-0009 narrate 升格 stream + 一轮范式 + 输出层三流**（含 resolve_choice 暂存 / Stop hook 物化、L3 窗口=回合）——R1，已写（2026-06-03）。
 - [x] **ADR-0010 可见性模型（`visible` 列 + show 白名单 + reveal_once 快照合入 event）**——R2，已写（2026-06-03）。（含 deny-by-default、show 混合粒度+强制隐藏标记防暗值泄漏、reveal_once=可见 event 冻结副本、un-show 降边角）
 - [x] **ADR-0011 time 不升格（留 `sheet_update` + skill 声明钟属性）**——R3，已写（2026-06-03）。（被否：专用 `time_*` 独立通道，待"时间乱流逝"失败模式实证再议）
+- [x] **ADR-0017 状态回滚 = 回合快照（checkpoint）**——P3，已写（2026-06-18）。（否逆运算 / 否纯重放；范围不含 rule；机制 = agent 无关 MCP/core hook；event log 留作 branch 底物；触及 ADR-0008 自研 agent 待议项）
 
 ## 小涟漪（非专轮；路过 / 写到对应页时顺手补，别现在 drip-edit）
 
