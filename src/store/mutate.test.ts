@@ -44,6 +44,10 @@ describe("applyMutations", () => {
       { attr: "状态", op: "-", expr: "1" },
     ])).toThrow();
     expect(sheetGet(db, "张三", "HP")).toBeUndefined(); // 回滚:第一项也没写进
+    expect(eventSince(db, 0)).toHaveLength(0); // event 也在事务内,一并回滚
+  });
+  test("{ref}*N 不被误判为词条,推回值表达式后因不支持 * 报错", () => {
+    expect(() => applyMutations(db, "张三", [{ attr: "库存", op: "+", expr: "{李四.数量}*2" }])).toThrow();
   });
   test("写完触发 watcher,结果带 fired_watchers", () => {
     sheetSetRaw(db, "张三", "HP", "30");

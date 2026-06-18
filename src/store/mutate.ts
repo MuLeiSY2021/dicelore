@@ -33,10 +33,12 @@ export interface MutationResult {
 
 // 词条字面量:形如 "药水*3"(成员名*数量)或 "药水"(数量默认 1)
 function parseMember(expr: string): { name: string; qty: number } | null {
-  const m = expr.match(/^(.+?)\*(\d+)$/);
+  const s = expr.trim();
+  // 值表达式特征:含引用 / 含 ± / 纯整数 / 骰子 → 不是词条
+  if (/[{}]/.test(s) || /[+\-]/.test(s) || /^\d+$/.test(s) || /^\d+[dD]\d+$/.test(s)) return null;
+  const m = s.match(/^(.+?)\*(\d+)$/);
   if (m) return { name: m[1].trim(), qty: Number(m[2]) };
-  if (/^\{.*\}$/.test(expr) || /[+\-]/.test(expr) || /^\d+$/.test(expr) || /^\d+[dD]\d+$/.test(expr)) return null;
-  return { name: expr.trim(), qty: 1 };
+  return { name: s, qty: 1 };
 }
 
 export function applyMutations(
