@@ -1,4 +1,5 @@
-import { evalPredicate, type EvalCtx } from "../expr/predicate.js";
+import { evalPredicate } from "../expr/predicate.js";
+import type { EvalCtx } from "../expr/evaluate.js";
 import { eventAppend } from "./event.js";
 import type { DB } from "./db.js";
 

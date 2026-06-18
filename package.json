@@ -6,6 +6,7 @@
   "engines": { "node": ">=20" },
   "scripts": {
     "test": "vitest run",
+    "typecheck": "tsc --noEmit",
     "anko": "tsx src/cli.ts"
   },
   "dependencies": {

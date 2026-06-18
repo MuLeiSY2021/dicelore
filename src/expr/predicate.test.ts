@@ -1,7 +1,8 @@
 import { describe, expect, test } from "vitest";
 import { evalPredicate } from "./predicate.js";
 
-const getRef = (e: string, a: string) => ({ "张三|HP": "20", "世界|天": "18" }[`${e}|${a}`]);
+const refs: Record<string, string> = { "张三|HP": "20", "世界|天": "18" };
+const getRef = (e: string, a: string) => refs[`${e}|${a}`];
 
 describe("evalPredicate", () => {
   test("小于成立", () => {

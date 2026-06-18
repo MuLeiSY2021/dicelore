@@ -1,7 +1,8 @@
 import { describe, expect, test } from "vitest";
 import { evalExpr } from "./evaluate.js";
 
-const getRef = (e: string, a: string) => ({ "张三|力量": "7", "张三|状态": "活着" }[`${e}|${a}`]);
+const refs: Record<string, string> = { "张三|力量": "7", "张三|状态": "活着" };
+const getRef = (e: string, a: string) => refs[`${e}|${a}`];
 
 describe("evalExpr", () => {
   test("骰子+引用-整数,账本与总和", () => {
