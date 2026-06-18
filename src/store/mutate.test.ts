@@ -1,0 +1,55 @@
+import { beforeEach, describe, expect, test } from "vitest";
+import { initSchema, openDb, type DB } from "./db.js";
+import { sheetGet, sheetSetRaw } from "./sheet.js";
+import { applyMutations } from "./mutate.js";
+import { watcherSet } from "./watcher.js";
+import { eventSince } from "./event.js";
+
+let db: DB;
+beforeEach(() => { db = openDb(":memory:"); initSchema(db); });
+
+describe("applyMutations", () => {
+  test("标量减(带骰)→ rolled 账本 + 写回", () => {
+    sheetSetRaw(db, "张三", "HP", "30");
+    const r = applyMutations(db, "张三", [{ attr: "HP", op: "-", expr: "1d6" }], { rng: () => 0 }); // 1d6=1
+    expect(r.applied[0]).toMatchObject({ attr: "HP", kind: "rolled", old: "30", new: "29", rolls: [1] });
+    expect(sheetGet(db, "张三", "HP")!.value).toBe("29");
+  });
+  test("赋数(=,无骰)→ set 账本", () => {
+    const r = applyMutations(db, "张三", [{ attr: "金币", op: "=", expr: "100" }]);
+    expect(r.applied[0]).toMatchObject({ kind: "set", old: null, new: "100" });
+  });
+  test("引用他者属性", () => {
+    sheetSetRaw(db, "李四", "力量", "5");
+    const r = applyMutations(db, "张三", [{ attr: "攻击", op: "=", expr: "{李四.力量} + 2" }]);
+    expect(r.applied[0].new).toBe("7");
+  });
+  test("集合增(词条) → attr:词条 +N", () => {
+    applyMutations(db, "张三", [{ attr: "库存", op: "+", expr: "药水*3" }]);
+    expect(sheetGet(db, "张三", "库存:药水")!.value).toBe("3");
+  });
+  test("集合减到 0 删 cell", () => {
+    sheetSetRaw(db, "张三", "库存:药水", "2");
+    applyMutations(db, "张三", [{ attr: "库存", op: "-", expr: "药水*2" }]);
+    expect(sheetGet(db, "张三", "库存:药水")).toBeUndefined();
+  });
+  test("赋文本", () => {
+    const r = applyMutations(db, "张三", [{ attr: "状态", op: "=", expr: "中毒" }]);
+    expect(r.applied[0].new).toBe("中毒");
+  });
+  test("非数值算术 → 整批回滚", () => {
+    sheetSetRaw(db, "张三", "状态", "活着");
+    expect(() => applyMutations(db, "张三", [
+      { attr: "HP", op: "=", expr: "10" },
+      { attr: "状态", op: "-", expr: "1" },
+    ])).toThrow();
+    expect(sheetGet(db, "张三", "HP")).toBeUndefined(); // 回滚:第一项也没写进
+  });
+  test("写完触发 watcher,结果带 fired_watchers", () => {
+    sheetSetRaw(db, "张三", "HP", "30");
+    watcherSet(db, { condition: "{张三.HP} < 10", payload: "濒死" });
+    const r = applyMutations(db, "张三", [{ attr: "HP", op: "=", expr: "5" }]);
+    expect(r.fired_watchers).toEqual([{ id: 1, payload: "濒死" }]);
+    expect(eventSince(db, 0).some((e) => e.kind === "mutation")).toBe(true);
+  });
+});
