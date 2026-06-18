@@ -1,4 +1,5 @@
 import Database from "better-sqlite3";
+import { FTS_TABLES, ftsTableDDL } from "./fts.js";
 
 export type DB = Database.Database;
 
@@ -45,4 +46,8 @@ export function initSchema(db: DB): void {
       seq_staged INTEGER, prompt TEXT, options_json TEXT, status TEXT
     );
   `);
+
+  // ===== FTS5 全文检索虚表(Plan 2)=====
+  // 与并行「回合快照线」的 snapshot 表互不重叠;改动只在此集中,便于对方 rebase。
+  for (const t of FTS_TABLES) db.exec(ftsTableDDL(t));
 }

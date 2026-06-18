@@ -15,4 +15,13 @@ describe("schema", () => {
     initSchema(db);
     expect(() => initSchema(db)).not.toThrow();
   });
+
+  test("初始化建出 FTS 虚表", () => {
+    const db = openDb(":memory:");
+    initSchema(db);
+    const names = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((r: any) => r.name);
+    for (const t of ["event_fts", "world_doc_fts", "rule_doc_fts"]) {
+      expect(names).toContain(t);
+    }
+  });
 });
