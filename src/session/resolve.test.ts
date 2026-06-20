@@ -5,12 +5,12 @@ import { join } from "node:path";
 import { metaGet, openSession, sessionDbPath } from "./resolve.js";
 
 let dir: string;
-beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "anko-")); process.env.ANKO_SESSIONS_DIR = dir; });
-afterEach(() => { delete process.env.ANKO_SESSIONS_DIR; rmSync(dir, { recursive: true, force: true }); });
+beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "dicelore-")); process.env.DICELORE_SESSIONS_DIR = dir; });
+afterEach(() => { delete process.env.DICELORE_SESSIONS_DIR; rmSync(dir, { recursive: true, force: true }); });
 
 describe("session", () => {
-  test("ANKO_SESSIONS_DIR 覆盖根目录", () => {
-    expect(sessionDbPath("修仙团")).toBe(join(dir, "anko_driver", "sessions", "修仙团.db"));
+  test("DICELORE_SESSIONS_DIR 覆盖根目录", () => {
+    expect(sessionDbPath("修仙团")).toBe(join(dir, "dicelore", "sessions", "修仙团.db"));
   });
   test("openSession 建库 + 写 meta", () => {
     const s = openSession("修仙团");

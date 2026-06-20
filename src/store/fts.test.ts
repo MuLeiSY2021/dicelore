@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, test } from "vitest";
 import { buildFtsQuery, escapeLike, ftsMode, tokenizeForIndex } from "./fts.js";
 
-afterEach(() => { delete process.env.ANKO_FTS_MODE; });
+afterEach(() => { delete process.env.DICELORE_FTS_MODE; });
 
 describe("ftsMode", () => {
   test("默认 jieba", () => { expect(ftsMode()).toBe("jieba"); });
-  test("env 切 trigram", () => { process.env.ANKO_FTS_MODE = "trigram"; expect(ftsMode()).toBe("trigram"); });
+  test("env 切 trigram", () => { process.env.DICELORE_FTS_MODE = "trigram"; expect(ftsMode()).toBe("trigram"); });
 });
 
 describe("tokenizeForIndex", () => {

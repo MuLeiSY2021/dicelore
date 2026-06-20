@@ -6,7 +6,7 @@ import { initSchema, openDb, type DB } from "../store/db.js";
 const SCHEMA_VERSION = "1";
 
 function appDataRoot(): string {
-  if (process.env.ANKO_SESSIONS_DIR) return process.env.ANKO_SESSIONS_DIR;
+  if (process.env.DICELORE_SESSIONS_DIR) return process.env.DICELORE_SESSIONS_DIR;
   const home = homedir();
   switch (platform()) {
     case "win32": return process.env.APPDATA ?? join(home, "AppData", "Roaming");
@@ -16,7 +16,7 @@ function appDataRoot(): string {
 }
 
 export function sessionDbPath(name: string): string {
-  return join(appDataRoot(), "anko_driver", "sessions", `${name}.db`);
+  return join(appDataRoot(), "dicelore", "sessions", `${name}.db`);
 }
 
 export function metaGet(db: DB, key: string): string | undefined {
@@ -31,7 +31,7 @@ export function metaSet(db: DB, key: string, value: string): void {
 }
 
 export function openSession(name?: string): { db: DB; name: string; path: string } {
-  const sessionName = name ?? process.env.ANKO_SESSION ?? "default";
+  const sessionName = name ?? process.env.DICELORE_SESSION ?? "default";
   const path = sessionDbPath(sessionName);
   mkdirSync(dirname(path), { recursive: true });
   const db = openDb(path);

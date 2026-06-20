@@ -5,7 +5,7 @@ import type Database from "better-sqlite3";
 export type FtsMode = "jieba" | "trigram";
 
 export function ftsMode(): FtsMode {
-  return process.env.ANKO_FTS_MODE === "trigram" ? "trigram" : "jieba";
+  return process.env.DICELORE_FTS_MODE === "trigram" ? "trigram" : "jieba";
 }
 
 let _jieba: Jieba | undefined;
