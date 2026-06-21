@@ -1,4 +1,6 @@
-# Dicelore
+<p align="center">
+  <img src="docs/wiki/04-子系统设计/玩家客户端-视觉草图/dicelore-logo-dark.png" alt="Dicelore" width="440">
+</p>
 
 > 给 AI agent 套上的 **GM 行为塑形框架**——服务安科 / 安价（中文骰子 / 投票驱动的互动小说跑团），对抗 LLM 的讨好本能，让它当一个尊重骰子、不软着陆的诚实主持人。
 
