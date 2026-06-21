@@ -6,6 +6,7 @@ import { worldDocUpsert } from "../../store/world.js";
 import { eventSince } from "../../store/event.js";
 import { metaGet } from "../../session/resolve.js";
 import { ioTools } from "./io.js";
+import { DiceloreError } from "../../errors.js";
 
 function freshDb() { const db = openDb(":memory:"); initSchema(db); return db; }
 const byName = (n: string) => ioTools.find((t) => t.name === n)!;
@@ -59,5 +60,19 @@ describe("io handlers", () => {
     expect(meta.reason).toBe("队伍全灭");
     expect(meta.seq).toBe(out.event_id);
     expect(eventSince(db, 0).filter((e) => e.kind === "note")).toHaveLength(1);
+  });
+
+  it("下沉校验:形状违例抛 DiceloreError(原 schema refine)", () => {
+    const db = freshDb();
+    // sheet_show 既无 attrs 又非 recursive
+    expect(() => byName("sheet_show").handler(db, { entity: "张三", recursive: false })).toThrow(DiceloreError);
+    // world_show doc/pool_rowid 非二选一(都不给)
+    expect(() => byName("world_show").handler(db, {})).toThrow(DiceloreError);
+    // world_show doc 不存在 → NOT_FOUND
+    expect(() => byName("world_show").handler(db, { doc: "查无此条" })).toThrow(DiceloreError);
+    // reveal_once sheet/world 非二选一(都给)
+    expect(() => byName("reveal_once").handler(db, {
+      sheet: { entity: "门", attr: "状态" }, world: { rowid: 1 },
+    })).toThrow(DiceloreError);
   });
 });

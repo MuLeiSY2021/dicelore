@@ -4,6 +4,7 @@ import { openDb, initSchema } from "../../store/db.js";
 import { worldDocGet } from "../../store/world.js";
 import { ruleUpsert } from "../../store/rule.js";
 import { worldTools } from "./world.js";
+import { DiceloreError } from "../../errors.js";
 
 function freshDb() { const db = openDb(":memory:"); initSchema(db); return db; }
 const byName = (n: string) => worldTools.find((t) => t.name === n)!;
@@ -38,5 +39,17 @@ describe("world/rule handlers", () => {
     ruleUpsert(db, { name: "先攻", content: "战斗开始各掷 1d20 决定行动顺序" });
     const out = byName("rule_search").handler(db, { query: "先攻", k: 8 });
     expect(out.rules.some((r: any) => r.name === "先攻")).toBe(true);
+  });
+
+  it("world_register:target 与 payload 不匹配抛 DiceloreError(下沉校验)", () => {
+    const db = freshDb();
+    // target=doc 却给 pool
+    expect(() => byName("world_register").handler(db, {
+      target: "doc", pool: { pool: "p", row: {}, weight: 1 }, visible: 0,
+    })).toThrow(DiceloreError);
+    // target=pool 却给 doc
+    expect(() => byName("world_register").handler(db, {
+      target: "pool", doc: { name: "x", content: "y" }, visible: 0,
+    })).toThrow(DiceloreError);
   });
 });
