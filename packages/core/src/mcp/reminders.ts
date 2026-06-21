@@ -4,7 +4,8 @@ export function remindersFor(name: string, out: any, input: any): string[] {
   switch (name) {
     case "resolve_choice":
       return ["后续叙述须与已锁后果一致"];
-    case "resolve_outcome_hidden": {
+    case "resolve_outcome_hidden":
+    case "resolve_outcome_open": {
       const mins: number[] = (input?.bands ?? []).map((b: any) => b.min);
       if (mins.length && out?.band && out.band.min === Math.min(...mins)) {
         return ["尊重结果,别软着陆"];
