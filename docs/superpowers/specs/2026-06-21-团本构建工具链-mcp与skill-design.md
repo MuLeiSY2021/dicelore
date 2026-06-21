@@ -47,7 +47,7 @@ packages/core/
 │   │   ├── pack/          ① 团本包读写层(纯逻辑 CRUD over 文件 + 校验器)
 │   │   │   ├── manifest.ts  world.ts  npc.ts  pool.ts  param.ts
 │   │   │   ├── sheet.ts  rule.ts  front.ts  read.ts
-│   │   │   ├── validate.ts  layout.ts(包目录布局常量) csv.ts(列序/转义) frontmatter.ts
+│   │   │   ├── validate.ts  layout.ts(包目录布局常量) csv.ts(列序/转义) mdMeta.ts(markdown 元信息/列表/表格助手)
 │   │   │   └── *.test.ts
 │   │   └── retrieval/     ③ 素材检索库(切块 → 临时 SQLite+FTS5/jieba → 召回)
 │   │       ├── ingest.ts  search.ts  chunk.ts  db.ts  *.test.ts
@@ -73,7 +73,9 @@ packages/core/
 
 ## 3. ① 团本包读写层（纯逻辑核心）
 
-文件即真相、即写即读、无内存态（[ADR-0015](../../wiki/05-决策记录-ADR/README.md)）。每个函数吃进格式细节（CSV 列序、frontmatter、子目录布局），**调用者永不手搓 CSV 语法或 frontmatter**。
+文件即真相、即写即读、无内存态（[ADR-0015](../../wiki/05-决策记录-ADR/README.md)）。每个函数吃进格式细节（CSV 列序、markdown 元信息约定、子目录布局），**调用者永不手搓 CSV 语法或 markdown 元信息块**。
+
+> **格式修订（去 YAML，2026-06-21）**：本设计**修订** [组件6](../../wiki/04-子系统设计/团本与manifest.md) 的"manifest 用 YAML / world·rule·front 带 YAML frontmatter"——改为**纯 markdown**：`manifest.md`（H1=name、首段=description、`键: 值` 无序列表=标量字段、`## flows` 列表=流程 skill）；doc 元信息（visible/tags/source/version、front 的 clock/min/max/mode）一律落 **H1 后的 `键: 值` 无序列表**（缺省值不写）；front 凶兆阶梯、（未来）其它结构表用 **markdown 表格**。**pools/params/sheets 仍是 CSV**（纯表格数据，非 YAML）。组件6 wiki 页待同步。
 
 ### 3.1 函数签名
 
@@ -84,7 +86,7 @@ packages/core/
 interface ValidationIssue { level: "error" | "warn"; file: string; msg: string; hint?: string; }
 interface WriteResult { file: string; warnings: ValidationIssue[]; }
 
-// manifest.yaml —— 顶层声明(部分字段可增量 set,合并写回)
+// manifest.md —— 顶层声明(纯 markdown;部分字段可增量 set,合并写回)
 setManifest(packDir, m: {
   id?: string; version?: string; name?: string; description?: string;
   flows?: string[];        // 选用的流程 skill;校验"真实存在"见 §3.2
@@ -96,7 +98,7 @@ setManifest(packDir, m: {
 writeWorldDoc(packDir, d: {
   path: string;            // world 下相对路径,如 "门派/黄枫谷.md"
   content: string;         // 散文正文
-  tags?: string[]; visible?: 0 | 1; // frontmatter;visible 缺省隐(deny-by-default)
+  tags?: string[]; visible?: 0 | 1; // 落 H1 后键:值元信息列表;visible 缺省隐(deny-by-default)
 }): WriteResult;
 
 // NPC = 人设散文 doc + 可选机械数值 sheet 卡(同 entity 名)
@@ -125,7 +127,7 @@ setSheetCell(packDir, s: {
   cells: { entity: string; attr: string; value: string; visible?: 0 | 1 | 2 }[];
 }): WriteResult;
 
-// rules/*.md —— 机制规则,带 version frontmatter
+// rules/*.md —— 机制规则,带 version 元信息(H1 后键:值列表)
 writeRule(packDir, r: {
   name: string;            // → rules/<name>.md
   content: string; version: number;
@@ -244,7 +246,7 @@ skill 内容（gm-core / dicelore-build-pack）作为**可注入字符串**供 h
 |---|---|---|---|---|
 | `ingest` | 喂源文件/文本、建检索库 | retrieval.ingest | false | false |
 | `search` | 按阶段检索原文段 | retrieval.search | ✅ | false（随召回） |
-| `set_manifest` | 写/增量改 manifest.yaml | pack.setManifest | false | ✅ |
+| `set_manifest` | 写/增量改 manifest.md | pack.setManifest | false | ✅ |
 | `write_world` | 写世界设定/门派散文 doc | pack.writeWorldDoc | false | ✅（同 path 覆盖） |
 | `add_npc` | 加 NPC（人设散文 + 可选 sheet 卡） | pack.addNpc | false | ✅ |
 | `add_pool` | 加卡池/随机池行 | pack.addPool | false | false（追加行） |
@@ -321,7 +323,7 @@ body 只留骨架 + 何时进哪阶段的判断；深表进 references。
 
 ## 9. 测试策略
 
-- **读写层 + 校验器**：纯函数单测（CRUD 正确落列/落目录/写对 frontmatter；校验命中各类 error code）。地板。
+- **读写层 + 校验器**：纯函数单测（CRUD 正确落列/落目录/写对 markdown 元信息；校验命中各类 error code）。地板。
 - **检索库**：切块 + 召回测试（给定查询命中预期片段）。
 - **构建期 MCP**：handler 单测（in schema 校验、错误信封形状、`structuredContent` 成功路径）。
 - **BuildHost**：宿主单测（挂对 MCP、不挂 roll gate / turn-end / notify；driverFactory 注入构建 prompt）——**断言隔离不变量**（构建会话里 `TOOLS` 不出现、`BUILD_TOOLS` 出现）。
