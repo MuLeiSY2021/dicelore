@@ -1,0 +1,25 @@
+{
+  "id": "gacha-draw",
+  "title": "抽卡：d100 定品质 → 抽卡池 → 现编卡面",
+  "genre": "gacha",
+  "reference": {
+    "file": "docs/research/scraped/总之，来抽卡吧_67916530.md",
+    "beat": "抽卡 + 卡面生成 + 融合检定",
+    "note": "真人 GM 的做法（黄金标准）：① 抽卡走 d100 定品质，从卡池随机抽（结果空间来自池子、GM 不替玩家拍抽到啥 → resolve_outcome / world_sample）；② 抽到的卡面内容现编但落库（world_register）；③ 融合/强化走检定 vs 50/90 这类阈值（resolve_contest，DC=常数）。GM 不在散文里提前剧透抽到啥、尊重 d100 结果。"
+  },
+  "seed": {
+    "tone": "抽卡养成，卡面华丽，品质随机",
+    "rules": [
+      { "name": "抽卡品质", "content": "抽卡 d100 定品质：1-50 普通 / 51-90 稀有 / 91-100 传说。品质决定卡面强度。" },
+      { "name": "融合检定", "content": "融合两张卡 r vs 50（普通融合）或 90（高阶融合），过线则成。" }
+    ],
+    "sheets": [
+      { "entity": "玩家", "attr": "抽卡券", "value": "3", "show": true }
+    ]
+  },
+  "playerTurns": [
+    "我是玩家。我用一张抽卡券抽一张卡。",
+    "我想把刚抽到的卡和我手里另一张融合，赌一把高阶融合。"
+  ],
+  "focus": ["F1-跳骰", "明暗骰-玩家抽/赌用明骰", "narrate-leak", "不剧透-散文不提前吐结果"]
+}
