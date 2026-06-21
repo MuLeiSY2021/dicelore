@@ -22,6 +22,7 @@ description: Use on EVERY turn of running an anko/anki (dice/vote-driven interac
 
 ### 闸 A · 谁拥有这个决定?(能动性)
 - 玩家自主决策(往哪走、攻不攻、用什么策略)→ `resolve_choice`(后果必填、暂存到回合末物化)。
+- **玩家已自行明确决断**(已说死"去森林")→ 不补造假分叉,顺着走(进闸 B 或叙述);`resolve_choice` 是给"尚未决定"的岔路,不是每轮的形式。
 - 不是玩家自主(命中没、抽到啥、掉多少血)→ 进闸 B。
 
 ### 闸 B · 该不该骰?(不确定 ∧ 失败有意义)
@@ -40,7 +41,8 @@ description: Use on EVERY turn of running an anko/anki (dice/vote-driven interac
 ### 谁掷？明骰 vs 暗骰(L1 工具名分流)
 确定要骰之后,还要显式选「这一掷是玩家的还是 GM 的」——拆成不同工具名、非布尔参:
 - **玩家主动行动的检定**(你攻击/说服/潜行)→ **明骰** `resolve_outcome_open` / `resolve_contest_open`:玩家在客户端点击掷、亮 DC、见证成败。把"掷骰这个动作"交还玩家=参与感(否则玩家觉得"还不是 AI 替我定命")。
-- **NPC/世界/暗检定**(敌人攻击、暗感知、隐藏 DC)→ **暗骰** `resolve_*_hidden`:引擎自动掷。
+- **玩家掷自己的属性/建卡**(开局 r 六维、成长升点)→ 也是玩家的命,用**明骰**让玩家自己掷(真人安价里玩家自己打"r")。别当引擎 setup 替玩家暗掷。
+- **NPC/世界/暗检定**(敌人攻击、暗感知、隐藏 DC、随机表抽什么)→ **暗骰** `resolve_*_hidden` / `world_sample`:引擎自动掷。
 - 点数恒由引擎算(明暗皆然,anti-F1);明暗只差"谁触发 + 透不透明"。明骰阻塞:玩家掷完结果回合内回你,再据成败叙述。
 
 ### 两个补丁
@@ -57,7 +59,7 @@ description: Use on EVERY turn of running an anko/anki (dice/vote-driven interac
 - **F1 必掷骰**:该裁决处必经裁决工具——随机/取真值在引擎内、你给不出真值。识别该裁决的时机,别用散文绕过。*why*:玩家的风险感来自结果不可由你编造。
 - **F2 双边护栏**:上边界 anti-讨好——骰出坏结果照后果叙述,不挽救、不淡化、不强行转圜。下边界 anti-死胡同——坏结果也不能退化成"什么都没发生",要咬下去并打开新局面(fail-forward)。*why*:失败被真实计入才有重量;但失败让故事停摆同样糟。手法 → `references/consequences.md`。
 - **F3 选对方式**:谁拥有决定 → 谁来定结果(主力在上面 Moves 决策表)。
-- **一轮范式**:① 像作者写一段,任何工具轮内可多次任意序穿插;② `narrate` 是散文 stream、非终结步骤;③ 非终局轮回合末必须留有暂存的 `resolve_choice`(否则把玩家晾着=违规);④ 只 narrate 色彩、不吐数值菜单(机械回显由输出层渲染,你吐=费 token 又易错)。
+- **一轮范式**:① 像作者写一段,任何工具轮内可多次任意序穿插;② `narrate` 是散文 stream、非终结步骤;③ **行动轮**回合末必须留有暂存的 `resolve_choice`(否则把玩家晾着=违规);**纯开局/建卡轮**可用开放式"你做什么"收尾、不必硬造 choice;④ 只 narrate 色彩、不吐数值菜单(机械回显由输出层渲染,你吐=费 token 又易错)。
 - **明骰默认**(谁的命谁掷)：玩家主动行动的高风险掷,默认做成明骰、别替玩家拍板开骰——掷骰的"我来"这一拍是能动性的一部分;点数仍归引擎(anti-F1),玩家拿回的是"决定承担这一掷"。<sup>eval-pending</sup>
 - **可见性**:① 开局 `sheet_show` 玩家自己人物卡一次(默认全隐);② 暗值用强制隐藏焊死,entity-show 也不揭;③ 别在 `narrate` 里吐出隐藏数值(好感度暗值/隐藏 DC/GM 私有信息);④ 揭示用 `show`(持久)、一次性瞥用 `reveal_once`。playbook → `references/visibility-play.md`。
 
