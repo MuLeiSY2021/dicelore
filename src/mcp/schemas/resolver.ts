@@ -1,0 +1,44 @@
+// src/mcp/schemas/resolver.ts
+import { z } from "zod";
+
+// ===== resolver =====
+const choiceOption = z.object({ label: z.string(), consequence: z.string() });
+
+export const resolveChoiceIn = z
+  .object({ prompt: z.string(), options: z.array(choiceOption).min(2) })
+  .strict();
+export const resolveChoiceOut = z.object({
+  staged: z.literal(true),
+  options: z.array(choiceOption),
+  reminders: z.array(z.string()).optional(),
+});
+
+const band = z.object({
+  label: z.string(),
+  min: z.number(),
+  max: z.number(),
+  consequence: z.string(),
+});
+export const resolveOutcomeIn = z
+  .object({ context: z.string(), die: z.string(), bands: z.array(band).min(1) })
+  .strict();
+export const resolveOutcomeOut = z.object({
+  roll: z.number(),
+  die: z.string(),
+  band: z.object({ label: z.string(), consequence: z.string() }),
+  event_id: z.number(),
+  reminders: z.array(z.string()).optional(),
+});
+
+const contestSideIn = z.object({ name: z.string(), expr: z.string() });
+export const resolveContestIn = z
+  .object({ context: z.string(), a: contestSideIn, b: contestSideIn })
+  .strict();
+const contestSideOut = z.object({ name: z.string(), total: z.number(), rolls: z.array(z.number()) });
+export const resolveContestOut = z.object({
+  a: contestSideOut,
+  b: contestSideOut,
+  winner: z.enum(["a", "b", "tie"]),
+  event_id: z.number(),
+  reminders: z.array(z.string()).optional(),
+});
