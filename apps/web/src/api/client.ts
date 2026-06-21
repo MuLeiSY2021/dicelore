@@ -22,3 +22,21 @@ export async function listSessions(): Promise<SessionSummary[]> {
   if (!res.ok) throw new Error(`sessions 请求失败：${res.status}`);
   return ((await res.json()) as { sessions: SessionSummary[] }).sessions;
 }
+
+// 动作进：玩家自由文本输入(接口页 §2 POST /sessions/:id/messages)。
+export async function postMessage(sessionId: string, text: string): Promise<{ turnId: string }> {
+  const res = await fetch(`/sessions/${encodeURIComponent(sessionId)}/messages`, {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }),
+  });
+  if (!res.ok) throw new Error(`message 请求失败：${res.status}`);
+  return (await res.json()) as { turnId: string };
+}
+
+// 明骰：玩家点击触发掷骰(POST /sessions/:id/roll)。
+export async function postRoll(sessionId: string, eventId: number): Promise<{ turnId: string }> {
+  const res = await fetch(`/sessions/${encodeURIComponent(sessionId)}/roll`, {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ eventId }),
+  });
+  if (!res.ok) throw new Error(`roll 请求失败：${res.status}`);
+  return (await res.json()) as { turnId: string };
+}

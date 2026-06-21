@@ -7,35 +7,50 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import { useEffect, useState } from "react";
-import type { PresentationSnapshot } from "@dicelore/shared";
-import { getPresentation } from "../api/client.js";
+import { useState, type KeyboardEvent } from "react";
+import { useSession } from "../live/useSession.js";
 import { PresentationStage } from "../play/PresentationStage.js";
+import { RollCard } from "../play/RollCard.js";
 import "./PlayPage.css";
 
-// v1：会话选择(主页继续上次)尚未实现，跑团页先固定取 demo 会话的只读快照。
+// v1：会话选择(主页继续上次)尚未实现，跑团页先固定 demo 会话。
 const DEMO_SESSION = "demo";
 
 export default function PlayPage() {
-  const [snapshot, setSnapshot] = useState<PresentationSnapshot | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { snapshot, narration, pendingRoll, postMessage, roll } = useSession(DEMO_SESSION);
+  const [draft, setDraft] = useState("");
 
-  useEffect(() => {
-    let alive = true;
-    getPresentation(DEMO_SESSION)
-      .then((s) => { if (alive) setSnapshot(s); })
-      .catch((e: unknown) => { if (alive) setError(e instanceof Error ? e.message : String(e)); });
-    return () => { alive = false; };
-  }, []);
+  const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && draft.trim()) {
+      postMessage(draft.trim()).catch(() => {});
+      setDraft("");
+    }
+  };
 
   return (
     <div className="play">
       <aside className="rail" aria-label="活动轨">设定 / 规则 / 日志 / 会话</aside>
-      <section className="center">叙事 + 打字（中央贯穿区占位 · 流式待组件2 合并）</section>
+      <section className="center" aria-label="叙事">
+        <div className="narration">
+          {narration.length === 0
+            ? <p style={{ color: "var(--text3)" }}>等待 GM 开场……</p>
+            : narration.map((para, i) => <p key={i} style={{ color: "var(--text)" }}>{para}</p>)}
+        </div>
+        <div className="typer">
+          {pendingRoll
+            ? <RollCard pendingRoll={pendingRoll} onRoll={(id) => roll(id).catch(() => {})} />
+            : <input
+                aria-label="输入"
+                value={draft}
+                placeholder="你做什么？（回车发送）"
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={onKey}
+                style={{ width: "100%", padding: 10, background: "var(--surface2)", color: "var(--text)", border: "1px solid var(--line)", borderRadius: 6 }}
+              />}
+        </div>
+      </section>
       <aside className="stage" aria-label="呈现台">
-        {error
-          ? <div className="stage-error">呈现台加载失败：{error}</div>
-          : <PresentationStage snapshot={snapshot} />}
+        <PresentationStage snapshot={snapshot} />
       </aside>
     </div>
   );
