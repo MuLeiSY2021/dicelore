@@ -13,11 +13,14 @@
   "dependencies": {
     "@dicelore/core": "*",
     "@dicelore/shared": "*",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.185",
     "hono": "^4.6.0",
-    "@hono/node-server": "^1.13.0"
+    "@hono/node-server": "^1.13.0",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/ws": "^8.18.1",
     "tsx": "^4.0.0",
     "typescript": "^5.4.0",
     "vitest": "^2.0.0"

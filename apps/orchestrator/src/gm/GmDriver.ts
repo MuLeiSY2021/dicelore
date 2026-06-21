@@ -7,11 +7,13 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+export interface TurnInput { text: string }
 
-export default defineConfig({
-  plugins: [react()],
-  // 开发期代理到 orchestrator；ws:true 透传 /sessions/:id/ws 的 WebSocket 升级。
-  server: { proxy: { "/sessions": { target: "http://localhost:8787", ws: true, changeOrigin: true } } },
-});
+export type TurnEvent =
+  | { type: "narration"; text: string } // 一段散文(Phase 1 = narrate 工具调用粒度)
+  | { type: "turn_end" } // GM 本回合自然结束
+  | { type: "error"; message: string }; // 驱动/SDK 错误
+
+export interface GmDriver {
+  runTurn(input: TurnInput): AsyncIterable<TurnEvent>;
+}

@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { getPresentation, listSessions } from "./client.js";
+import { getPresentation, listSessions, postMessage, postRoll } from "./client.js";
 
 afterEach(() => { vi.restoreAllMocks(); });
 
@@ -46,5 +46,21 @@ describe("listSessions", () => {
   it("非 2xx 抛错", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 503 }));
     await expect(listSessions()).rejects.toThrow("503");
+  });
+});
+
+describe("postMessage / postRoll", () => {
+  it("postMessage 命中 /sessions/:id/messages(POST)", async () => {
+    const f = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ turnId: "t" }) });
+    vi.stubGlobal("fetch", f);
+    await postMessage("s1", "我推门");
+    expect(f).toHaveBeenCalledWith("/sessions/s1/messages", expect.objectContaining({ method: "POST" }));
+  });
+
+  it("postRoll 命中 /sessions/:id/roll(POST)", async () => {
+    const f = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ turnId: "t" }) });
+    vi.stubGlobal("fetch", f);
+    await postRoll("s1", 12);
+    expect(f).toHaveBeenCalledWith("/sessions/s1/roll", expect.objectContaining({ method: "POST" }));
   });
 });

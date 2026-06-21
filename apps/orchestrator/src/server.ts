@@ -9,10 +9,20 @@
 
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
+import { WebSocketServer } from "ws";
+import type { IncomingMessage } from "node:http";
+import type { Duplex } from "node:stream";
 import { openDb, initSchema, type DB } from "@dicelore/core";
 import type { SessionInfo, SessionSummary } from "@dicelore/shared";
+import { MessageRequestSchema, ChoiceRequestSchema, RollRequestSchema } from "@dicelore/shared";
 import { buildSnapshot } from "./presentation.js";
 import { listSessionSummaries } from "./sessions.js";
+import { getOrCreateHost, getHost } from "./session/registry.js";
+import type { SessionHost } from "./session/SessionHost.js";
+import type { GmDriver } from "./gm/GmDriver.js";
+import { AgentSdkDriver } from "./gm/AgentSdkDriver.js";
+import { FakeGmDriver } from "./gm/FakeGmDriver.js";
+import { restagePendingRolls } from "./recovery.js";
 
 export interface ServerDeps {
   openSession: (sessionId: string) => DB; // 读侧句柄(每会话一文件；测试可注入内存库)
@@ -42,19 +52,77 @@ export function createApp(deps: ServerDeps): Hono {
   return app;
 }
 
-// 生产入口：每会话按 DICELORE_SESSIONS_DIR/{id}.db 打开(读侧)。
+// 实时引擎面：动作进(POST messages/choices/roll) + 首屏快照，经 registry/SessionHost。
+export interface LiveDeps {
+  driverFactory: (host: SessionHost) => GmDriver;
+  openSession?: (id: string) => DB; // 省略则 SessionHost 用内存库(测试)
+}
+
+export function createLiveApp(deps: LiveDeps): Hono {
+  const app = new Hono();
+  const hostDeps = (id: string) => ({ db: deps.openSession?.(id), driverFactory: deps.driverFactory });
+
+  app.get("/sessions/:id/presentation", (c) => {
+    const id = c.req.param("id");
+    const host = getOrCreateHost(id, hostDeps(id));
+    return c.json(buildSnapshot(host.db, id));
+  });
+  app.get("/sessions/:id", (c) => {
+    const id = c.req.param("id");
+    const info: SessionInfo = { sessionId: id, ended: false, title: id };
+    return c.json(info);
+  });
+
+  app.post("/sessions/:id/messages", async (c) => {
+    const id = c.req.param("id");
+    const body = MessageRequestSchema.parse(await c.req.json());
+    const host = getOrCreateHost(id, hostDeps(id));
+    const { turnId } = await host.handleMessage(body.text);
+    return c.json({ turnId }, 202);
+  });
+  app.post("/sessions/:id/choices", async (c) => {
+    const id = c.req.param("id");
+    const body = ChoiceRequestSchema.parse(await c.req.json());
+    const host = getOrCreateHost(id, hostDeps(id));
+    const { turnId } = await host.handleMessage(`[choice ${body.eventId}#${body.optionIndex}]`);
+    return c.json({ turnId }, 202);
+  });
+  app.post("/sessions/:id/roll", async (c) => {
+    const id = c.req.param("id");
+    const body = RollRequestSchema.parse(await c.req.json());
+    const host = getHost(id);
+    if (!host || !host.handleRoll(body.eventId)) return c.json({ code: "no_pending_roll" }, 409);
+    return c.json({ turnId: id }, 202);
+  });
+
+  return app;
+}
 export function startServer(port: number): void {
   const dir = process.env.DICELORE_SESSIONS_DIR ?? ".";
-  const app = createApp({
-    openSession: (id) => {
-      const db = openDb(`${dir}/${id}.db`);
-      initSchema(db);
-      return db;
+  const openSession = (id: string) => { const db = openDb(`${dir}/${id}.db`); initSchema(db); return db; };
+  // DICELORE_FAKE_GM=1：用脚本化假 GM(端到端测试,不烧 LLM)；否则真 Agent SDK。
+  const driverFactory: (host: SessionHost) => GmDriver = process.env.DICELORE_FAKE_GM === "1"
+    ? () => new FakeGmDriver((input) => [{ type: "narration", text: `（GM）你说：「${input.text}」。门吱呀一声开了。` }, { type: "turn_end" }])
+    : (host) => new AgentSdkDriver({ mcpServer: host.mcpServer });
+
+  const app = createLiveApp({ driverFactory, openSession });
+  const server = serve({ fetch: app.fetch, port });
+  const wss = new WebSocketServer({ noServer: true });
+  (server as unknown as { on(ev: string, cb: (req: IncomingMessage, socket: Duplex, head: Buffer) => void): void }).on(
+    "upgrade",
+    (req, socket, head) => {
+      const m = /^\/sessions\/([^/]+)\/ws$/.exec(req.url ?? "");
+      if (!m) { socket.destroy(); return; }
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        const host = getOrCreateHost(decodeURIComponent(m[1]), { db: openSession(decodeURIComponent(m[1])), driverFactory });
+        const wsLike = ws as unknown as { send(d: string): void; readyState: number };
+        host.attachWs(wsLike);
+        restagePendingRolls(host); // 重连/重启 → 重弹未决掷骰卡
+        ws.on("close", () => host.detachWs(wsLike));
+      });
     },
-    listSessions: () => listSessionSummaries(dir),
-  });
-  serve({ fetch: app.fetch, port });
-  console.log(`[orchestrator] 只读 REST 监听 :${port}`);
+  );
+  console.log(`[orchestrator] live :${port}`);
 }
 
 // tsx src/server.ts 直接起
