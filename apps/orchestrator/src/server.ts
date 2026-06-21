@@ -9,6 +9,9 @@
 
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
+import { WebSocketServer } from "ws";
+import type { IncomingMessage } from "node:http";
+import type { Duplex } from "node:stream";
 import { openDb, initSchema, type DB } from "@dicelore/core";
 import type { SessionInfo, SessionSummary } from "@dicelore/shared";
 import { MessageRequestSchema, ChoiceRequestSchema, RollRequestSchema } from "@dicelore/shared";
@@ -17,6 +20,8 @@ import { listSessionSummaries } from "./sessions.js";
 import { getOrCreateHost, getHost } from "./session/registry.js";
 import type { SessionHost } from "./session/SessionHost.js";
 import type { GmDriver } from "./gm/GmDriver.js";
+import { AgentSdkDriver } from "./gm/AgentSdkDriver.js";
+import { restagePendingRolls } from "./recovery.js";
 
 export interface ServerDeps {
   openSession: (sessionId: string) => DB; // 读侧句柄(每会话一文件；测试可注入内存库)
@@ -93,16 +98,27 @@ export function createLiveApp(deps: LiveDeps): Hono {
 }
 export function startServer(port: number): void {
   const dir = process.env.DICELORE_SESSIONS_DIR ?? ".";
-  const app = createApp({
-    openSession: (id) => {
-      const db = openDb(`${dir}/${id}.db`);
-      initSchema(db);
-      return db;
+  const openSession = (id: string) => { const db = openDb(`${dir}/${id}.db`); initSchema(db); return db; };
+  const driverFactory = (host: SessionHost): GmDriver => new AgentSdkDriver({ mcpServer: host.mcpServer });
+
+  const app = createLiveApp({ driverFactory, openSession });
+  const server = serve({ fetch: app.fetch, port });
+  const wss = new WebSocketServer({ noServer: true });
+  (server as unknown as { on(ev: string, cb: (req: IncomingMessage, socket: Duplex, head: Buffer) => void): void }).on(
+    "upgrade",
+    (req, socket, head) => {
+      const m = /^\/sessions\/([^/]+)\/ws$/.exec(req.url ?? "");
+      if (!m) { socket.destroy(); return; }
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        const host = getOrCreateHost(decodeURIComponent(m[1]), { db: openSession(decodeURIComponent(m[1])), driverFactory });
+        const wsLike = ws as unknown as { send(d: string): void; readyState: number };
+        host.attachWs(wsLike);
+        restagePendingRolls(host); // 重连/重启 → 重弹未决掷骰卡
+        ws.on("close", () => host.detachWs(wsLike));
+      });
     },
-    listSessions: () => listSessionSummaries(dir),
-  });
-  serve({ fetch: app.fetch, port });
-  console.log(`[orchestrator] 只读 REST 监听 :${port}`);
+  );
+  console.log(`[orchestrator] live :${port}`);
 }
 
 // tsx src/server.ts 直接起
