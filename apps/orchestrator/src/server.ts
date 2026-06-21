@@ -21,6 +21,7 @@ import { getOrCreateHost, getHost } from "./session/registry.js";
 import type { SessionHost } from "./session/SessionHost.js";
 import type { GmDriver } from "./gm/GmDriver.js";
 import { AgentSdkDriver } from "./gm/AgentSdkDriver.js";
+import { FakeGmDriver } from "./gm/FakeGmDriver.js";
 import { restagePendingRolls } from "./recovery.js";
 
 export interface ServerDeps {
@@ -99,7 +100,10 @@ export function createLiveApp(deps: LiveDeps): Hono {
 export function startServer(port: number): void {
   const dir = process.env.DICELORE_SESSIONS_DIR ?? ".";
   const openSession = (id: string) => { const db = openDb(`${dir}/${id}.db`); initSchema(db); return db; };
-  const driverFactory = (host: SessionHost): GmDriver => new AgentSdkDriver({ mcpServer: host.mcpServer });
+  // DICELORE_FAKE_GM=1：用脚本化假 GM(端到端测试,不烧 LLM)；否则真 Agent SDK。
+  const driverFactory: (host: SessionHost) => GmDriver = process.env.DICELORE_FAKE_GM === "1"
+    ? () => new FakeGmDriver((input) => [{ type: "narration", text: `（GM）你说：「${input.text}」。门吱呀一声开了。` }, { type: "turn_end" }])
+    : (host) => new AgentSdkDriver({ mcpServer: host.mcpServer });
 
   const app = createLiveApp({ driverFactory, openSession });
   const server = serve({ fetch: app.fetch, port });
