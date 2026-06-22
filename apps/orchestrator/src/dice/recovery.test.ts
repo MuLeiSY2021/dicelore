@@ -9,8 +9,8 @@
 
 import { describe, it, expect } from "vitest";
 import { openDb, initSchema, stagePendingRoll } from "@dicelore/core";
-import { WsHub } from "./pkg/wsHub.js";
-import { PlayerRollGate } from "./dice/rollGate.js";
+import { WsHub } from "../pkg/wsHub.js";
+import { PlayerRollGate } from "./rollGate.js";
 import { restagePendingRolls } from "./recovery.js";
 
 describe("restagePendingRolls", () => {

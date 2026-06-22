@@ -15,14 +15,14 @@ import type { Duplex } from "node:stream";
 import { openDb, initSchema, type DB } from "@dicelore/core";
 import type { SessionInfo, SessionSummary } from "@dicelore/shared";
 import { MessageRequestSchema, ChoiceRequestSchema, RollRequestSchema } from "@dicelore/shared";
-import { buildSnapshot } from "./presentation.js";
-import { listSessionSummaries } from "./sessions.js";
+import { buildSnapshot } from "./dice/presentation.js";
+import { listSessionSummaries } from "./dice/sessions.js";
 import { getOrCreateHost, getHost } from "./dice/registry.js";
 import type { DiceSession } from "./dice/DiceSession.js";
 import type { Agent } from "./pkg/agent.js";
 import { DiceGm } from "./dice/DiceGm.js";
 import { FakeDiceGm } from "./dice/FakeDiceGm.js";
-import { restagePendingRolls } from "./recovery.js";
+import { restagePendingRolls } from "./dice/recovery.js";
 
 export interface ServerDeps {
   openSession: (sessionId: string) => DB; // 读侧句柄(每会话一文件；测试可注入内存库)

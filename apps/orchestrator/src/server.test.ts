@@ -13,7 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDb, initSchema, type DB } from "@dicelore/core";
 import { createApp } from "./server.js";
-import { listSessionSummaries } from "./sessions.js";
+import { listSessionSummaries } from "./dice/sessions.js";
 
 function memSessionFactory(): (id: string) => DB {
   const db = openDb(":memory:");

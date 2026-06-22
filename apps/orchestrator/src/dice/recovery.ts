@@ -9,8 +9,8 @@
 
 import { CLIENT_PROTOCOL, type StreamMessage } from "@dicelore/shared";
 import type { DB } from "@dicelore/core";
-import type { PlayerRollGate } from "./dice/rollGate.js";
-import type { WsHub } from "./pkg/wsHub.js";
+import type { PlayerRollGate } from "./rollGate.js";
+import type { WsHub } from "../pkg/wsHub.js";
 
 // 宕机恢复：扫描 awaiting 的 pending_roll → 重弹 roll_staged(玩家重连重掷)。返回重弹数。
 // (重驱 GM 的非阻塞喂回属 DiceSession.handleRoll fallback,本函数只负责重弹卡。)
