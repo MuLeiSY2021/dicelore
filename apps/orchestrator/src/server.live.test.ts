@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, it, expect } from "vitest";
-import { createLiveApp } from "./server.js";
+import { createLiveApp } from "./api/dice.js";
 import { FakeDiceGm } from "./dice/FakeDiceGm.js";
 
 describe("orchestrator 动作进", () => {

@@ -1,0 +1,94 @@
+// Copyright (C) 2026 MuLeiSY2021
+//
+// This file is part of Dicelore.
+//
+// Dicelore is free software: you can redistribute it and/or modify it under
+// the terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version. See <https://www.gnu.org/licenses/>.
+
+import { Hono } from "hono";
+import type { DB } from "@dicelore/core";
+import type { SessionInfo, SessionSummary } from "@dicelore/shared";
+import { MessageRequestSchema, ChoiceRequestSchema, RollRequestSchema } from "@dicelore/shared";
+import { buildSnapshot } from "../dice/presentation.js";
+import { getOrCreateHost, getHost } from "../dice/registry.js";
+import type { DiceSession } from "../dice/DiceSession.js";
+import type { Agent } from "../pkg/agent.js";
+
+export interface ServerDeps {
+  openSession: (sessionId: string) => DB; // 读侧句柄(每会话一文件；测试可注入内存库)
+  listSessions: () => SessionSummary[]; // 会话列表(主页继续上次/最近)
+}
+
+export function createApp(deps: ServerDeps): Hono {
+  const app = new Hono();
+
+  // 会话列表(主页继续上次 / 最近 Session)
+  app.get("/sessions", (c) => c.json({ sessions: deps.listSessions() }));
+
+  // 首屏 / 重连：全量呈现快照(接口页 §2)
+  app.get("/sessions/:id/presentation", (c) => {
+    const id = c.req.param("id");
+    const db = deps.openSession(id);
+    return c.json(buildSnapshot(db, id));
+  });
+
+  // 会话元信息(接口页 §2)。v1：终局/标题占位，待写侧接线后回填。
+  app.get("/sessions/:id", (c) => {
+    const id = c.req.param("id");
+    const info: SessionInfo = { sessionId: id, ended: false, title: id };
+    return c.json(info);
+  });
+
+  return app;
+}
+
+// 实时引擎面：动作进(POST messages/choices/roll) + 首屏快照，经 registry/DiceSession。
+export interface LiveDeps {
+  driverFactory: (host: DiceSession) => Agent;
+  openSession?: (id: string) => DB; // 省略则 DiceSession 用内存库(测试)
+  listSessions?: () => SessionSummary[]; // 会话列表(主页继续上次/最近);省略则空
+}
+
+export function createLiveApp(deps: LiveDeps): Hono {
+  const app = new Hono();
+  const hostDeps = (id: string) => ({ db: deps.openSession?.(id), driverFactory: deps.driverFactory });
+
+  app.get("/sessions", (c) => c.json({ sessions: deps.listSessions?.() ?? [] }));
+
+  app.get("/sessions/:id/presentation", (c) => {
+    const id = c.req.param("id");
+    const host = getOrCreateHost(id, hostDeps(id));
+    return c.json(buildSnapshot(host.db, id));
+  });
+  app.get("/sessions/:id", (c) => {
+    const id = c.req.param("id");
+    const info: SessionInfo = { sessionId: id, ended: false, title: id };
+    return c.json(info);
+  });
+
+  app.post("/sessions/:id/messages", async (c) => {
+    const id = c.req.param("id");
+    const body = MessageRequestSchema.parse(await c.req.json());
+    const host = getOrCreateHost(id, hostDeps(id));
+    const { turnId } = await host.handleMessage(body.text);
+    return c.json({ turnId }, 202);
+  });
+  app.post("/sessions/:id/choices", async (c) => {
+    const id = c.req.param("id");
+    const body = ChoiceRequestSchema.parse(await c.req.json());
+    const host = getOrCreateHost(id, hostDeps(id));
+    const { turnId } = await host.handleMessage(`[choice ${body.eventId}#${body.optionIndex}]`);
+    return c.json({ turnId }, 202);
+  });
+  app.post("/sessions/:id/roll", async (c) => {
+    const id = c.req.param("id");
+    const body = RollRequestSchema.parse(await c.req.json());
+    const host = getHost(id);
+    if (!host || !host.handleRoll(body.eventId)) return c.json({ code: "no_pending_roll" }, 409);
+    return c.json({ turnId: id }, 202);
+  });
+
+  return app;
+}

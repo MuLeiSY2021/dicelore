@@ -12,7 +12,7 @@ import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDb, initSchema, type DB } from "@dicelore/core";
-import { createApp } from "./server.js";
+import { createApp } from "./api/dice.js";
 import { listSessionSummaries } from "./dice/sessions.js";
 
 function memSessionFactory(): (id: string) => DB {
