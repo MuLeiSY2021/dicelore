@@ -13,7 +13,7 @@ import type { PlayerRollGate } from "./dice/rollGate.js";
 import type { WsHub } from "./pkg/wsHub.js";
 
 // 宕机恢复：扫描 awaiting 的 pending_roll → 重弹 roll_staged(玩家重连重掷)。返回重弹数。
-// (重驱 GM 的非阻塞喂回属 SessionHost.handleRoll fallback,本函数只负责重弹卡。)
+// (重驱 GM 的非阻塞喂回属 DiceSession.handleRoll fallback,本函数只负责重弹卡。)
 export function restagePendingRolls(host: { db: DB; gate: PlayerRollGate; hub: WsHub; sessionId: string }): number {
   const rows = host.db.prepare("SELECT event_id FROM pending_roll WHERE status='awaiting'").all() as { event_id: number }[];
   let n = 0;

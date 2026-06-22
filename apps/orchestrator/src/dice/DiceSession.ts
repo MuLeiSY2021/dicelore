@@ -10,26 +10,28 @@
 import { openDb, initSchema, createMcpServer, buildPresentationModel, runTurnEnd, type DB, type CanonWriteEvent } from "@dicelore/core";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WsHub, type WsLike } from "../pkg/wsHub.js";
-import { PlayerRollGate } from "../dice/rollGate.js";
-import { mapCanonWrite } from "../dice/notify.js";
-import { runTurn, type TurnEndResult } from "../dice/turnLoop.js";
+import { PlayerRollGate } from "./rollGate.js";
+import { mapCanonWrite } from "./notify.js";
+import { runTurn, type TurnEndResult } from "./turnLoop.js";
 import type { Agent } from "../pkg/agent.js";
+import type { Session } from "../pkg/session.js";
 
 let turnCounter = 0; // 进程内自增,测试稳定(不依赖随机/时间)
 function nextTurnId(sessionId: string): string { turnCounter += 1; return `${sessionId}-t${turnCounter}`; }
 
-export interface SessionHostDeps {
+export interface DiceSessionDeps {
   db?: DB; // 省略则内存库(测试)
-  driverFactory: (host: SessionHost) => Agent; // 每回合产一个 driver;真实现据 host.mcpServer 建 DiceGm
+  driverFactory: (host: DiceSession) => Agent; // 每回合产一个 driver;真实现据 host.mcpServer 建 DiceGm
 }
 
-// 每 session 一个宿主：db + in-process MCP(按实例注入 onCanonWrite/rollGate) + GmDriver + WsHub + turn-end hook。
-export class SessionHost {
+// dice 跑团运行单元：db + in-process MCP(按实例注入 onCanonWrite/rollGate) + Agent + WsHub + turn-end hook。
+export class DiceSession implements Session {
+  readonly kind = "dice" as const;
   readonly db: DB;
   readonly hub = new WsHub();
   readonly gate: PlayerRollGate;
   readonly mcpServer: McpServer;
-  constructor(public sessionId: string, private deps: SessionHostDeps) {
+  constructor(public sessionId: string, private deps: DiceSessionDeps) {
     this.db = deps.db ?? (() => { const d = openDb(":memory:"); initSchema(d); return d; })();
     this.gate = new PlayerRollGate(this.db, this.hub, sessionId);
     this.mcpServer = createMcpServer(this.db, {
