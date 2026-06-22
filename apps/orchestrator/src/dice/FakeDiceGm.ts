@@ -7,12 +7,12 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import type { GmDriver, TurnInput, TurnEvent } from "./GmDriver.js";
+import type { Agent, TurnInput, TurnEvent } from "../pkg/agent.js";
 
 type Script = TurnEvent[] | ((input: TurnInput) => TurnEvent[]);
 
 // 脚本化 GM 驱动：测试用，不烧 LLM。
-export class FakeGmDriver implements GmDriver {
+export class FakeDiceGm implements Agent {
   constructor(private script: Script) {}
   async *runTurn(input: TurnInput): AsyncIterable<TurnEvent> {
     const events = typeof this.script === "function" ? this.script(input) : this.script;

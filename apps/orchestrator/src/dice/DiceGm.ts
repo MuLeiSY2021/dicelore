@@ -9,18 +9,18 @@
 
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { GmDriver, TurnInput, TurnEvent } from "./GmDriver.js";
+import type { Agent, TurnInput, TurnEvent } from "../pkg/agent.js";
 
-export interface AgentSdkDriverDeps {
-  mcpServer: McpServer; // SessionHost 的 in-process MCP(已注入 onCanonWrite/rollGate)
+export interface DiceGmDeps {
+  mcpServer: McpServer; // DiceSession 的 in-process MCP(已注入 onCanonWrite/rollGate)
   model?: string; // 默认 env DICELORE_GM_MODEL ?? "opus"
   systemPrompt?: string; // gm-core 教条(组件3);Phase 1 可选
 }
 
 // 真 GM 驱动：@anthropic-ai/claude-agent-sdk query()，in-process 挂 dicelore MCP。
 // 鉴权沿用 env ANTHROPIC_BASE_URL/ANTHROPIC_AUTH_TOKEN(SDK 原生读)。不进单测(烧 LLM)。
-export class AgentSdkDriver implements GmDriver {
-  constructor(private deps: AgentSdkDriverDeps) {}
+export class DiceGm implements Agent {
+  constructor(private deps: DiceGmDeps) {}
 
   async *runTurn(input: TurnInput): AsyncIterable<TurnEvent> {
     const model = this.deps.model ?? process.env.DICELORE_GM_MODEL ?? "opus";

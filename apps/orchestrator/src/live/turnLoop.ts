@@ -9,7 +9,7 @@
 
 import type { DB } from "@dicelore/core";
 import { CLIENT_PROTOCOL, type StreamMessage } from "@dicelore/shared";
-import type { GmDriver, TurnInput } from "../gm/GmDriver.js";
+import type { Agent, TurnInput } from "../pkg/agent.js";
 import type { WsHub } from "./ws.js";
 
 export interface TurnEndResult {
@@ -17,7 +17,7 @@ export interface TurnEndResult {
 }
 export interface RunTurnDeps {
   db: DB;
-  driver: GmDriver;
+  driver: Agent;
   hub: WsHub;
   sessionId: string;
   turnId: string;

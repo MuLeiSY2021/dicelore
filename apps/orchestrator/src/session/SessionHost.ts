@@ -13,14 +13,14 @@ import { WsHub, type WsLike } from "../live/ws.js";
 import { PlayerRollGate } from "../live/rollGate.js";
 import { mapCanonWrite } from "../live/notify.js";
 import { runTurn, type TurnEndResult } from "../live/turnLoop.js";
-import type { GmDriver } from "../gm/GmDriver.js";
+import type { Agent } from "../pkg/agent.js";
 
 let turnCounter = 0; // 进程内自增,测试稳定(不依赖随机/时间)
 function nextTurnId(sessionId: string): string { turnCounter += 1; return `${sessionId}-t${turnCounter}`; }
 
 export interface SessionHostDeps {
   db?: DB; // 省略则内存库(测试)
-  driverFactory: (host: SessionHost) => GmDriver; // 每回合产一个 driver;真实现据 host.mcpServer 建 AgentSdkDriver
+  driverFactory: (host: SessionHost) => Agent; // 每回合产一个 driver;真实现据 host.mcpServer 建 DiceGm
 }
 
 // 每 session 一个宿主：db + in-process MCP(按实例注入 onCanonWrite/rollGate) + GmDriver + WsHub + turn-end hook。

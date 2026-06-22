@@ -14,6 +14,6 @@ export type TurnEvent =
   | { type: "turn_end" } // GM 本回合自然结束
   | { type: "error"; message: string }; // 驱动/SDK 错误
 
-export interface GmDriver {
+export interface Agent {
   runTurn(input: TurnInput): AsyncIterable<TurnEvent>;
 }

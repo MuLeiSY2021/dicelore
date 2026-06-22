@@ -19,9 +19,9 @@ import { buildSnapshot } from "./presentation.js";
 import { listSessionSummaries } from "./sessions.js";
 import { getOrCreateHost, getHost } from "./session/registry.js";
 import type { SessionHost } from "./session/SessionHost.js";
-import type { GmDriver } from "./gm/GmDriver.js";
-import { AgentSdkDriver } from "./gm/AgentSdkDriver.js";
-import { FakeGmDriver } from "./gm/FakeGmDriver.js";
+import type { Agent } from "./pkg/agent.js";
+import { DiceGm } from "./dice/DiceGm.js";
+import { FakeDiceGm } from "./dice/FakeDiceGm.js";
 import { restagePendingRolls } from "./recovery.js";
 
 export interface ServerDeps {
@@ -54,7 +54,7 @@ export function createApp(deps: ServerDeps): Hono {
 
 // 实时引擎面：动作进(POST messages/choices/roll) + 首屏快照，经 registry/SessionHost。
 export interface LiveDeps {
-  driverFactory: (host: SessionHost) => GmDriver;
+  driverFactory: (host: SessionHost) => Agent;
   openSession?: (id: string) => DB; // 省略则 SessionHost 用内存库(测试)
   listSessions?: () => SessionSummary[]; // 会话列表(主页继续上次/最近);省略则空
 }
@@ -104,9 +104,9 @@ export function startServer(port: number): void {
   const dir = process.env.DICELORE_SESSIONS_DIR ?? ".";
   const openSession = (id: string) => { const db = openDb(`${dir}/${id}.db`); initSchema(db); return db; };
   // DICELORE_FAKE_GM=1：用脚本化假 GM(端到端测试,不烧 LLM)；否则真 Agent SDK。
-  const driverFactory: (host: SessionHost) => GmDriver = process.env.DICELORE_FAKE_GM === "1"
-    ? () => new FakeGmDriver((input) => [{ type: "narration", text: `（GM）你说：「${input.text}」。门吱呀一声开了。` }, { type: "turn_end" }])
-    : (host) => new AgentSdkDriver({ mcpServer: host.mcpServer });
+  const driverFactory: (host: SessionHost) => Agent = process.env.DICELORE_FAKE_GM === "1"
+    ? () => new FakeDiceGm((input) => [{ type: "narration", text: `（GM）你说：「${input.text}」。门吱呀一声开了。` }, { type: "turn_end" }])
+    : (host) => new DiceGm({ mcpServer: host.mcpServer });
 
   const app = createLiveApp({ driverFactory, openSession, listSessions: () => listSessionSummaries(dir) });
   const server = serve({ fetch: app.fetch, port });

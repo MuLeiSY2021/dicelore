@@ -12,13 +12,13 @@ import { describe, it, expect } from "vitest";
 // 真 Agent SDK 冒烟：默认 skip(烧 LLM);RUN_LIVE=1 + relay env 才跑。
 const LIVE = process.env.RUN_LIVE === "1";
 
-describe.skipIf(!LIVE)("AgentSdkDriver 真 SDK 冒烟", () => {
+describe.skipIf(!LIVE)("DiceGm 真 SDK 冒烟", () => {
   it("跑一个真回合，至少产出 turn_end", async () => {
     const { openDb, initSchema, createMcpServer } = await import("@dicelore/core");
-    const { AgentSdkDriver } = await import("./AgentSdkDriver.js");
+    const { DiceGm } = await import("./DiceGm.js");
     const db = openDb(":memory:"); initSchema(db);
     const mcpServer = createMcpServer(db, {});
-    const drv = new AgentSdkDriver({ mcpServer });
+    const drv = new DiceGm({ mcpServer });
     const got: string[] = [];
     for await (const e of drv.runTurn({ text: "用一句话开场。" })) got.push(e.type);
     expect(got).toContain("turn_end");
