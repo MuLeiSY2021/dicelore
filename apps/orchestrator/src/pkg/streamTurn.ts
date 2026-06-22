@@ -7,30 +7,23 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import type { DB } from "@dicelore/core";
 import { CLIENT_PROTOCOL, type StreamMessage } from "@dicelore/shared";
-import type { Agent, TurnInput } from "../pkg/agent.js";
-import type { WsHub } from "../pkg/wsHub.js";
+import type { Agent, TurnInput } from "./agent.js";
+import type { WsHub } from "./wsHub.js";
 
-export interface TurnEndResult {
-  choices?: { eventId: number; options: { index: number; label: string; consequence: string }[] };
-}
-export interface RunTurnDeps {
-  db: DB;
+export interface StreamTurnDeps {
   driver: Agent;
   hub: WsHub;
   sessionId: string;
   turnId: string;
-  runTurnEnd: (db: DB) => TurnEndResult;
 }
 
-// 消费 GmDriver 事件流 → 广播 narration/error/turn 生命周期；回合末跑 turn-end hook → choices。
-// 呈现增量(presentation_delta)由 onCanonWrite 经 SessionHost→hub 异步发出,不在此处。
-export async function runTurn(deps: RunTurnDeps, input: TurnInput): Promise<void> {
+// 驱动 Agent 事件流 → 广播 turn_started + 逐条 narration_commit；遇 error 发 error 并返回 errored。
+// 不发 turn_ended——回合收尾由调用者按场景决定(dice 跑 turn-end hook,lore 直接结束)。
+export async function streamDriverTurn(deps: StreamTurnDeps, input: TurnInput): Promise<{ seq: number; errored: boolean }> {
   const { hub, sessionId, turnId } = deps;
   const send = (m: StreamMessage) => hub.broadcast(sessionId, m);
   send({ protocol: CLIENT_PROTOCOL, type: "turn_started", turnId });
-
   let seq = 0;
   try {
     for await (const ev of deps.driver.runTurn(input)) {
@@ -39,17 +32,14 @@ export async function runTurn(deps: RunTurnDeps, input: TurnInput): Promise<void
         send({ protocol: CLIENT_PROTOCOL, type: "narration_commit", seq, text: ev.text });
       } else if (ev.type === "error") {
         send({ protocol: CLIENT_PROTOCOL, type: "error", code: "gm_error", message: ev.message });
-        return;
+        return { seq, errored: true };
       } else if (ev.type === "turn_end") {
         break;
       }
     }
   } catch (e) {
     send({ protocol: CLIENT_PROTOCOL, type: "error", code: "driver_error", message: e instanceof Error ? e.message : String(e) });
-    return;
+    return { seq, errored: true };
   }
-
-  const res = deps.runTurnEnd(deps.db);
-  if (res.choices) send({ protocol: CLIENT_PROTOCOL, type: "choices", choices: res.choices });
-  send({ protocol: CLIENT_PROTOCOL, type: "turn_ended", turnId, seq });
+  return { seq, errored: false };
 }

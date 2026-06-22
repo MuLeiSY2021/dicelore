@@ -12,7 +12,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WsHub, type WsLike } from "../pkg/wsHub.js";
 import { PlayerRollGate } from "../live/rollGate.js";
 import { mapCanonWrite } from "../live/notify.js";
-import { runTurn, type TurnEndResult } from "../live/turnLoop.js";
+import { runTurn, type TurnEndResult } from "../dice/turnLoop.js";
 import type { Agent } from "../pkg/agent.js";
 
 let turnCounter = 0; // 进程内自增,测试稳定(不依赖随机/时间)
