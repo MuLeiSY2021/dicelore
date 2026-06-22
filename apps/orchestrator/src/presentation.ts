@@ -46,10 +46,10 @@ export function buildSnapshot(db: DB, sessionId: string): PresentationSnapshot {
 }
 
 function maxSeq(db: DB): number {
-  const r = db.prepare("SELECT MAX(seq) s FROM event").get() as { s: number | null };
+  const r = db.prepare("SELECT MAX(seq) s FROM log").get() as { s: number | null };
   return r.s ?? 0;
 }
 function narrativeCursor(db: DB): number {
-  const r = db.prepare("SELECT MAX(seq) s FROM event WHERE kind='narrate'").get() as { s: number | null };
+  const r = db.prepare("SELECT MAX(seq) s FROM log WHERE kind='narrate'").get() as { s: number | null };
   return r.s ?? 0;
 }

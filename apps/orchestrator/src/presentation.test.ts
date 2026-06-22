@@ -13,10 +13,10 @@ import { buildSnapshot } from "./presentation.js";
 
 // 用 core 内部 store 表直写播种最小态(schema 见 packages/core/src/store/db.ts initSchema)。
 function seedCell(db: ReturnType<typeof openDb>, entity: string, attr: string, value: string) {
-  db.prepare("INSERT INTO sheet (entity, attr, value, visible) VALUES (?,?,?,1)").run(entity, attr, value);
+  db.prepare("INSERT INTO state (entity, attr, value, visible) VALUES (?,?,?,1)").run(entity, attr, value);
 }
 function seedEvent(db: ReturnType<typeof openDb>, kind: string, content: string) {
-  db.prepare("INSERT INTO event (content, kind, visible) VALUES (?,?,1)").run(content, kind);
+  db.prepare("INSERT INTO log (content, kind, visible) VALUES (?,?,1)").run(content, kind);
 }
 
 describe("buildSnapshot", () => {

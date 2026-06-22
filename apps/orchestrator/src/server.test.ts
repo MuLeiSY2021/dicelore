@@ -18,7 +18,7 @@ import { listSessionSummaries } from "./sessions.js";
 function memSessionFactory(): (id: string) => DB {
   const db = openDb(":memory:");
   initSchema(db);
-  db.prepare("INSERT INTO sheet (entity, attr, value, visible) VALUES ('张三','HP','12',1)").run();
+  db.prepare("INSERT INTO state (entity, attr, value, visible) VALUES ('张三','HP','12',1)").run();
   return () => db;
 }
 
