@@ -11,7 +11,7 @@ import type { Rng } from "../dice/index.js";
 import type { DB } from "./db.js";
 import { ftsIndex, ftsSearch } from "./fts.js";
 
-export interface WorldDoc {
+export interface Lore {
   rowid: number;
   name: string;
   content: string;
@@ -21,7 +21,7 @@ export interface WorldDoc {
 }
 
 // 按 name 寻址(灌注不重名;AI/作者再写同名 = 覆盖)。name 无 UNIQUE 约束,代码层保证。
-export function worldDocUpsert(
+export function loreUpsert(
   db: DB,
   d: { name: string; content: string; category?: string; tags?: string; visible?: number },
 ): number {
@@ -42,16 +42,16 @@ export function worldDocUpsert(
   return rowid;
 }
 
-export function worldDocGet(db: DB, name: string): WorldDoc | undefined {
+export function loreGet(db: DB, name: string): Lore | undefined {
   return db
     .prepare("SELECT rowid, name, content, category, tags, visible FROM lore WHERE name=? LIMIT 1")
-    .get(name) as WorldDoc | undefined;
+    .get(name) as Lore | undefined;
 }
 
-export function worldDocSearch(db: DB, query: string, limit = 20): WorldDoc[] {
+export function loreSearch(db: DB, query: string, limit = 20): Lore[] {
   const hits = ftsSearch(db, "lore_fts", query, limit);
   const stmt = db.prepare("SELECT rowid, name, content, category, tags, visible FROM lore WHERE rowid=?");
-  return hits.map((h) => stmt.get(h.rowid) as WorldDoc | undefined).filter((r): r is WorldDoc => r !== undefined);
+  return hits.map((h) => stmt.get(h.rowid) as Lore | undefined).filter((r): r is Lore => r !== undefined);
 }
 
 export interface PoolAdd {

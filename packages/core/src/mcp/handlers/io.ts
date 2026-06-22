@@ -10,7 +10,7 @@
 // src/mcp/handlers/io.ts
 import type { DB } from "../../store/db.js";
 import { sheetShow, worldShow, revealOnce } from "../../store/visibility.js";
-import { worldDocGet } from "../../store/world.js";
+import { loreGet } from "../../store/world.js";
 import { logAppend } from "../../store/log.js";
 import { metaSet } from "../../session/resolve.js";
 import { DiceloreError } from "../../errors.js";
@@ -41,7 +41,7 @@ function worldShowHandler(db: DB, input: { doc?: string; pool_rowid?: number }) 
     throw new DiceloreError("INTERNAL", "world_show: doc 与 pool_rowid 二选一");
   }
   if (input.doc !== undefined) {
-    const d = worldDocGet(db, input.doc);
+    const d = loreGet(db, input.doc);
     if (!d) throw new DiceloreError("NOT_FOUND", `world_show: doc 不存在 "${input.doc}"`);
     worldShow(db, "lore", d.rowid);
   } else {
