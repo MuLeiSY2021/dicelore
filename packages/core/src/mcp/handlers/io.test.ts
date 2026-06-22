@@ -36,7 +36,7 @@ describe("io handlers", () => {
     const rowid = worldDocUpsert(db, { name: "密道", content: "通往地窖", visible: 0 });
     const out = byName("world_show").handler(db, { doc: "密道" });
     expect(out.ok).toBe(true);
-    const row = db.prepare("SELECT visible FROM world_doc WHERE rowid=?").get(rowid) as { visible: number };
+    const row = db.prepare("SELECT visible FROM lore WHERE rowid=?").get(rowid) as { visible: number };
     expect(row.visible).toBe(1);
   });
 

@@ -29,7 +29,7 @@ describe("world_doc", () => {
     worldDocUpsert(db, { name: "青云门", content: "旧设定" });
     worldDocUpsert(db, { name: "青云门", content: "新设定" });
     expect(worldDocGet(db, "青云门")!.content).toBe("新设定");
-    expect(db.prepare("SELECT COUNT(*) c FROM world_doc").get()).toMatchObject({ c: 1 });
+    expect(db.prepare("SELECT COUNT(*) c FROM lore").get()).toMatchObject({ c: 1 });
   });
   test("FTS 搜索命中(含按 name 召回)", () => {
     worldDocUpsert(db, { name: "青云门", content: "正道大派" });

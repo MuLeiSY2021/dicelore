@@ -38,10 +38,10 @@ describe("sheetShow", () => {
 });
 
 describe("worldShow", () => {
-  test("置 world_doc.visible=1 + 审计", () => {
+  test("置 lore.visible=1 + 审计", () => {
     const rowid = worldDocUpsert(db, { name: "青云门", content: "正道大派" });
-    worldShow(db, "world_doc", rowid);
-    expect(db.prepare("SELECT visible FROM world_doc WHERE rowid=?").get(rowid)).toMatchObject({ visible: 1 });
+    worldShow(db, "lore", rowid);
+    expect(db.prepare("SELECT visible FROM lore WHERE rowid=?").get(rowid)).toMatchObject({ visible: 1 });
     expect(logSince(db, 0).some((e) => e.kind === "note" && e.visible === 0)).toBe(true);
   });
 
@@ -80,7 +80,7 @@ it("revealOnce world_doc 不存在抛 ENTITY_NOT_FOUND", () => {
   const localDb = openDb(":memory:");
   initSchema(localDb);
   try {
-    revealOnce(localDb, { kind: "world_doc", rowid: 9999 });
+    revealOnce(localDb, { kind: "lore", rowid: 9999 });
   } catch (e) {
     expect((e as DiceloreError).code).toBe("ENTITY_NOT_FOUND");
   }

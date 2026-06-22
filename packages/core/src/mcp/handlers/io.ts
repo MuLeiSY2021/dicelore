@@ -43,7 +43,7 @@ function worldShowHandler(db: DB, input: { doc?: string; pool_rowid?: number }) 
   if (input.doc !== undefined) {
     const d = worldDocGet(db, input.doc);
     if (!d) throw new DiceloreError("NOT_FOUND", `world_show: doc 不存在 "${input.doc}"`);
-    worldShow(db, "world_doc", d.rowid);
+    worldShow(db, "lore", d.rowid);
   } else {
     worldShow(db, "world_pool", input.pool_rowid!);
   }
@@ -56,7 +56,7 @@ function revealOnceHandler(db: DB, input: { sheet?: { entity: string; attr: stri
   }
   const event_id = input.sheet
     ? revealOnce(db, { kind: "sheet", entity: input.sheet.entity, attr: input.sheet.attr })
-    : revealOnce(db, { kind: "world_doc", rowid: input.world!.rowid });
+    : revealOnce(db, { kind: "lore", rowid: input.world!.rowid });
   return { event_id };
 }
 
