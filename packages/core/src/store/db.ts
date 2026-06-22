@@ -27,6 +27,19 @@ export function initSchema(db: DB): void {
       visible INTEGER NOT NULL DEFAULT 0,
       PRIMARY KEY (entity, attr)
     );
+    CREATE TABLE IF NOT EXISTS state (
+      entity TEXT NOT NULL,
+      attr TEXT NOT NULL,
+      value TEXT NOT NULL,
+      visible INTEGER NOT NULL DEFAULT 0,
+      kind TEXT NOT NULL DEFAULT 'world',
+      rel_object TEXT,
+      rel_dim TEXT,
+      clock_min INTEGER,
+      clock_max INTEGER,
+      clock_mode TEXT,
+      PRIMARY KEY (entity, attr)
+    );
     CREATE TABLE IF NOT EXISTS event (
       seq INTEGER PRIMARY KEY AUTOINCREMENT,
       content TEXT, kind TEXT NOT NULL, data_json TEXT, tags TEXT,
