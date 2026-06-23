@@ -13,6 +13,8 @@ import { openDb, initSchema } from "../../store/db.js";
 import { logSince } from "../../store/log.js";
 import { watcherList, watcherSet } from "../../store/watcher.js";
 import { eventTools } from "./event.js";
+import { eventAppendOut } from "../schemas/event.js";
+import { wrapToolForTest } from "../server.js";
 
 function freshDb() { const db = openDb(":memory:"); initSchema(db); return db; }
 const byName = (n: string) => eventTools.find((t) => t.name === n)!;
@@ -64,5 +66,35 @@ describe("event handlers", () => {
     expect(out.fired_watchers).toBeDefined();
     expect(out.fired_watchers.length).toBe(1);
     expect(out.fired_watchers[0].payload).toBe("有新揭示");
+  });
+});
+
+// ===== eventAppendOut schema 回归 =====
+describe("eventAppendOut schema", () => {
+  it("接受含 fired_watchers 的输出(证明 schema 不剥离该字段)", () => {
+    expect(() =>
+      eventAppendOut.parse({ event_id: 1, fired_watchers: [{ id: 1, payload: "test" }] }),
+    ).not.toThrow();
+  });
+
+  it("fired_watchers 可省略(optional)", () => {
+    expect(() => eventAppendOut.parse({ event_id: 1 })).not.toThrow();
+  });
+});
+
+// ===== 经 wrapToolForTest(server 路径)端到端 =====
+describe("event_append 经 server 路径端到端", () => {
+  it("log-has watcher 触发时 structuredContent 含 fired_watchers 且不被校验拒", async () => {
+    const db = openDb(":memory:");
+    initSchema(db);
+    watcherSet(db, { condition: "{log:has(kind=reveal)}", payload: "秘密暴露提示", mode: "once" });
+    const invoke = wrapToolForTest(db, {});
+    const result = await invoke("event_append", { kind: "reveal", content: "重要秘密" }) as any;
+    expect(result.isError).toBeFalsy();
+    // structuredContent 是 SDK 传给 outputSchema 校验的对象——必须含 fired_watchers
+    expect(result.structuredContent).toBeDefined();
+    expect((result.structuredContent as any).fired_watchers).toBeDefined();
+    expect((result.structuredContent as any).fired_watchers.length).toBe(1);
+    expect((result.structuredContent as any).fired_watchers[0].payload).toBe("秘密暴露提示");
   });
 });
