@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { Hono } from "hono";
-import type { DB } from "@dicelore/core";
+import type { DB, CatalogDB } from "@dicelore/core";
 import type { SessionInfo, SessionSummary } from "@dicelore/shared";
 import { MessageRequestSchema, ChoiceRequestSchema, RollRequestSchema } from "@dicelore/shared";
 import { buildSnapshot } from "../dice/presentation.js";
@@ -49,11 +49,21 @@ export interface LiveDeps {
   driverFactory: (host: DiceSession) => Agent;
   openSession?: (id: string) => DB; // 省略则 DiceSession 用内存库(测试)
   listSessions?: () => SessionSummary[]; // 会话列表(主页继续上次/最近);省略则空
+  catalog?: CatalogDB; // 给「开局 import 团本」用
 }
 
 export function createLiveApp(deps: LiveDeps): Hono {
   const app = new Hono();
   const hostDeps = (id: string) => ({ db: deps.openSession?.(id), driverFactory: deps.driverFactory });
+
+  // 开新局:选一个团本版本 import → 物化运行库(信任闸门)。body {tuanbenId, ref}。
+  app.post("/sessions/:id/open", async (c) => {
+    const id = c.req.param("id");
+    const body = (await c.req.json()) as { tuanbenId: string; ref: string };
+    if (!deps.catalog) return c.json({ code: "no_catalog" }, 400);
+    getOrCreateHost(id, { ...hostDeps(id), importFrom: { catalog: deps.catalog, tuanbenId: body.tuanbenId, ref: body.ref } });
+    return c.json({ sessionId: id, imported: true }, 201);
+  });
 
   app.get("/sessions", (c) => c.json({ sessions: deps.listSessions?.() ?? [] }));
 
