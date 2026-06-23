@@ -68,7 +68,7 @@ export default function HomePage() {
   const statusLabel = (s: SessionSummary["status"]) => t(`status.${s}`);
 
   const QUICK = [
-    { Icon: Dices, qt: t("home.quick.newgame"), qd: t("home.quick.newgame.d"), to: "/play" },
+    { Icon: Dices, qt: t("home.quick.newgame"), qd: t("home.quick.newgame.d"), to: "/packs" },
     { Icon: Hammer, qt: t("home.quick.build"), qd: t("home.quick.build.d"), to: "/build" },
     { Icon: MessagesSquare, qt: t("home.quick.sessions"), qd: t("home.quick.sessions.d"), to: "/play" },
     { Icon: Settings, qt: t("home.quick.config"), qd: t("home.quick.config.d"), to: "/config" },
@@ -98,7 +98,7 @@ export default function HomePage() {
             <div className="scen">{last.title}</div>
             <div className="where">{statusLabel(last.status)}{last.updatedAt ? ` · ${new Date(last.updatedAt).toLocaleString()}` : ""}</div>
           </div>
-          <Link className="cont" to="/play"><Play className="lucide" />{t("home.continue")}</Link>
+          <Link className="cont" to={`/play/${encodeURIComponent(last.sessionId)}`}><Play className="lucide" />{t("home.continue")}</Link>
         </div>
       )}
 
@@ -120,7 +120,7 @@ export default function HomePage() {
           list.map((s) => {
             const Icon = STATUS_ICON[s.status];
             return (
-              <Link className="row" to="/play" key={s.sessionId}>
+              <Link className="row" to={`/play/${encodeURIComponent(s.sessionId)}`} key={s.sessionId}>
                 <Icon className="lucide" />
                 <span className="rs">{s.title}</span>
                 <span className={"tag" + (s.status === "active" ? " live" : "")}>{statusLabel(s.status)}</span>

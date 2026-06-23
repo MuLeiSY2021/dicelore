@@ -22,8 +22,8 @@ test.describe("跑团页 · 活动轨/浏览/呈现台", () => {
   });
 
   test("设定源浏览树展示真实 lore(黑风寨)", async ({ page }) => {
-    // 默认设定源；浏览树由 GET /browse 真实填充
-    await expect(page.getByText("黑风寨")).toBeVisible({ timeout: 10_000 });
+    // 默认设定源；浏览树由 GET /browse 真实填充(限定在浏览树内，避开会话栏同名选项)
+    await expect(page.locator(".browse .tree").getByText("黑风寨")).toBeVisible({ timeout: 10_000 });
   });
 
   test("会话栏(可隐藏次级 bar)列出本局会话并可折叠", async ({ page }) => {

@@ -32,10 +32,12 @@ export function useSession(sessionId: string) {
 
   useEffect(() => {
     refetch();
-    const proto = location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(`${proto}://${location.host}/sessions/${encodeURIComponent(sessionId)}/ws`);
-    wsRef.current = ws;
-    ws.onmessage = (e: MessageEvent) => {
+    let closed = false;
+    let retry = 0;
+    let ws: WebSocket | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const handle = (e: MessageEvent) => {
       let msg: StreamMessage;
       try { msg = JSON.parse(e.data) as StreamMessage; } catch { return; }
       switch (msg.type) {
@@ -56,7 +58,24 @@ export function useSession(sessionId: string) {
         default: break;
       }
     };
-    return () => ws.close();
+
+    // 连接 + 断线自动重连(指数退避，最长 5s)；重连后 refetch 全量对账补齐。
+    const connect = () => {
+      const proto = location.protocol === "https:" ? "wss" : "ws";
+      ws = new WebSocket(`${proto}://${location.host}/sessions/${encodeURIComponent(sessionId)}/ws`);
+      wsRef.current = ws;
+      ws.onopen = () => { retry = 0; };
+      ws.onmessage = handle;
+      ws.onclose = () => {
+        if (closed) return;
+        const delay = Math.min(5000, 500 * 2 ** retry);
+        retry += 1;
+        timer = setTimeout(() => { refetch(); connect(); }, delay);
+      };
+    };
+    connect();
+
+    return () => { closed = true; if (timer) clearTimeout(timer); ws?.close(); };
   }, [sessionId, refetch]);
 
   const postMessage = useCallback((text: string) => { setGenerating(true); return apiPostMessage(sessionId, text).catch((e) => { setGenerating(false); throw e; }); }, [sessionId]);

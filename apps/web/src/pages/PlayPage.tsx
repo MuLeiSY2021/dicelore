@@ -240,7 +240,7 @@ export default function PlayPage() {
           <div className="narr">
             {gameEnd && <div className="end" role="status"><Flag className="lucide" /><b>{gameEnd.outcome}</b><span>{gameEnd.reason}</span></div>}
             {narration.length === 0 && mechanics.length === 0 && !gameEnd ? (
-              <p className="empty">{t("play.narr.empty")}</p>
+              <p className="empty">{started ? t("play.narr.empty") : t("play.narr.prestart")}</p>
             ) : (
               <>
                 {narration.map((para, i) => <p key={i}>{para}</p>)}
@@ -266,7 +266,7 @@ export default function PlayPage() {
                 ))}
               </div>
             )}
-            {generating && <div className="gen"><Loader2 className="lucide spin" />{t("play.generating")}</div>}
+            {(generating || (kicked && narration.length === 0)) && !gameEnd && <div className="gen"><Loader2 className="lucide spin" />{t("play.generating")}</div>}
             {error && <div className="err"><AlertTriangle className="lucide" />{error}</div>}
           </div>
 

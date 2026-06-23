@@ -173,7 +173,7 @@
 .playwrap > .play { flex: 1; min-height: 0; height: auto; }
 .playbar { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 12px; flex: none; }
 .playbar > .lucide { width: 15px; height: 15px; color: var(--acc-soft); }
-.playbar .name { font-family: var(--serif); font-size: 14px; color: var(--text); }
+.playbar .name { font-family: var(--serif); font-size: 14px; color: var(--text); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: none; }
 .playbar .sessel { display: flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--line); border-radius: 6px; padding: 4px 9px; color: var(--text2); }
 .playbar .sessel .lucide { width: 13px; height: 13px; }
 .playbar .sessel select { background: none; border: none; color: var(--text); font: inherit; outline: none; cursor: pointer; max-width: 320px; }
