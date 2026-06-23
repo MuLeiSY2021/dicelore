@@ -27,6 +27,10 @@ export class Draft {
   private ruleDocs = new Map<string, string>();
   private pools = new Map<string, Record<string, string | number>[]>();
   private stateRows: StateCell[] = [];
+  private fronts: Record<string, string | number>[] = [];
+  private plotlines: Record<string, string | number>[] = [];
+  private foreshadows: Record<string, string | number>[] = [];
+  private anchors: Record<string, string | number>[] = [];
   private manifestName?: string;
   private manifestId?: string;
 
@@ -42,6 +46,11 @@ export class Draft {
     this.pools.set(pool, e);
   }
   setState(cells: StateCell[]): void { this.stateRows.push(...cells); }
+  // 叙事域(团本作者声明的一等对象):front 威胁层 / plotline 故事线 / foreshadow 伏笔 / anchor 关系。
+  addFront(rows: { id: string; name: string; stakes?: string; clock_ref?: string; status?: string }[]): void { this.fronts.push(...rows); }
+  addPlotline(rows: { id: string; title: string; summary?: string; status?: string }[]): void { this.plotlines.push(...rows); }
+  addForeshadow(rows: { id: string; content: string; status?: string }[]): void { this.foreshadows.push(...rows); }
+  addAnchor(rows: { owner_table: string; owner_id: string; target_table: string; target_id: string; role?: string }[]): void { this.anchors.push(...rows); }
 
   toPackFiles(): PackFile[] {
     const files: PackFile[] = [];
@@ -60,6 +69,10 @@ export class Draft {
         ),
       });
     }
+    if (this.fronts.length) files.push({ path: "fronts/main.csv", content: toCsv(this.fronts, ["id", "name", "stakes", "clock_ref", "status"]) });
+    if (this.plotlines.length) files.push({ path: "plotlines/main.csv", content: toCsv(this.plotlines, ["id", "title", "summary", "status"]) });
+    if (this.foreshadows.length) files.push({ path: "foreshadows/main.csv", content: toCsv(this.foreshadows, ["id", "content", "status"]) });
+    if (this.anchors.length) files.push({ path: "anchors/main.csv", content: toCsv(this.anchors, ["owner_table", "owner_id", "target_table", "target_id", "role"]) });
     return files;
   }
 }

@@ -11,15 +11,23 @@ import type { DB } from "../store/db.js";
 import { loreUpsert } from "../store/world.js";
 import { poolAdd } from "../store/world.js";
 import { ruleUpsert } from "../store/rule.js";
+import { frontUpsert } from "../store/front.js";
+import { plotlineUpsert } from "../store/plotline.js";
+import { foreshadowUpsert } from "../store/foreshadow.js";
+import { anchorAdd } from "../store/anchor.js";
 import { checkout, type PackFile } from "./catalog.js";
 import type { CatalogDB } from "./db.js";
 
-// 团本包 → per-session 运行库的物化映射(对齐 数据层 spec §9,只覆已落域 lore/rule/pool/state)。
-// 包路径约定: lore/<n>.md、rules/<n>.md、pools/<n>.csv、state/<n>.csv、manifest.md。
-const KNOWN_TOP = new Set(["lore", "rules", "pools", "state", "manifest.md"]);
+// 团本包 → per-session 运行库的物化映射(对齐 数据层 spec §9)。
+// 包路径约定: lore/<n>.md、rules/<n>.md、pools/<n>.csv、state/<n>.csv、manifest.md
+//   + 叙事域 fronts/<n>.csv、plotlines/<n>.csv、foreshadows/<n>.csv、anchors/<n>.csv。
+const KNOWN_TOP = new Set(["lore", "rules", "pools", "state", "fronts", "plotlines", "foreshadows", "anchors", "manifest.md"]);
 
 export interface ImportIssue { level: "error" | "warn"; path: string; msg: string }
-export interface ImportResult { lore: number; rules: number; pools: number; stateCells: number }
+export interface ImportResult {
+  lore: number; rules: number; pools: number; stateCells: number;
+  fronts: number; plotlines: number; foreshadows: number; anchors: number;
+}
 
 function topSeg(path: string): string {
   const i = path.indexOf("/");
@@ -66,6 +74,17 @@ export function validatePack(files: PackFile[]): { ok: boolean; issues: ImportIs
         issues.push({ level: "error", path: f.path, msg: "state CSV 缺 entity/attr/value 列" });
       }
     }
+    const REQ: Record<string, string[]> = {
+      fronts: ["id", "name"], plotlines: ["id", "title"], foreshadows: ["id", "content"],
+      anchors: ["owner_table", "owner_id", "target_table", "target_id"],
+    };
+    const req = REQ[topSeg(f.path)];
+    if (req) {
+      const rows = parseCsv(f.content);
+      if (rows.length && !req.every((c) => c in rows[0])) {
+        issues.push({ level: "error", path: f.path, msg: `${topSeg(f.path)} CSV 缺必需列(需 ${req.join("/")})` });
+      }
+    }
   }
   return { ok: !issues.some((i) => i.level === "error"), issues };
 }
@@ -79,7 +98,7 @@ export function importPack(catalogDB: CatalogDB, runDB: DB, tuanbenId: string, r
   if (!v.ok) {
     throw new Error(`团本包校验失败(信任闸门): ${v.issues.filter((i) => i.level === "error").map((i) => `${i.path}: ${i.msg}`).join("; ")}`);
   }
-  const res: ImportResult = { lore: 0, rules: 0, pools: 0, stateCells: 0 };
+  const res: ImportResult = { lore: 0, rules: 0, pools: 0, stateCells: 0, fronts: 0, plotlines: 0, foreshadows: 0, anchors: 0 };
   const stateStmt = runDB.prepare(
     `INSERT INTO state (entity, kind, attr, value, visible) VALUES (?,?,?,?,?)
      ON CONFLICT(entity, attr) DO UPDATE SET kind=excluded.kind, value=excluded.value, visible=excluded.visible`,
@@ -106,6 +125,26 @@ export function importPack(catalogDB: CatalogDB, runDB: DB, tuanbenId: string, r
         for (const r of parseCsv(f.content)) {
           stateStmt.run(r.entity, r.kind || "world", r.attr, r.value, r.visible ? Number(r.visible) : 0);
           res.stateCells++;
+        }
+      } else if (top === "fronts") {
+        for (const r of parseCsv(f.content)) {
+          frontUpsert(runDB, { id: r.id, name: r.name, stakes: r.stakes || undefined, clock_ref: r.clock_ref || undefined, status: r.status || undefined });
+          res.fronts++;
+        }
+      } else if (top === "plotlines") {
+        for (const r of parseCsv(f.content)) {
+          plotlineUpsert(runDB, { id: r.id, title: r.title, summary: r.summary || undefined, status: r.status || undefined });
+          res.plotlines++;
+        }
+      } else if (top === "foreshadows") {
+        for (const r of parseCsv(f.content)) {
+          foreshadowUpsert(runDB, { id: r.id, content: r.content, status: r.status || undefined });
+          res.foreshadows++;
+        }
+      } else if (top === "anchors") {
+        for (const r of parseCsv(f.content)) {
+          anchorAdd(runDB, { owner_table: r.owner_table, owner_id: r.owner_id, target_table: r.target_table, target_id: r.target_id, role: r.role || undefined });
+          res.anchors++;
         }
       }
       // manifest.md: 暂只作元信息载体,P5 接入 session_meta 时消费。

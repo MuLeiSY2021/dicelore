@@ -29,7 +29,7 @@ describe("importPack", () => {
     const r = commit(cat, { name: "凡人修仙传", files: PACK, message: "init", createdAt: "2026-01-01" });
     const run = openDb(":memory:"); initSchema(run);
     const res = importPack(cat, run, r.tuanbenId, r.commitId);
-    expect(res).toEqual({ lore: 1, rules: 1, pools: 2, stateCells: 2 });
+    expect(res).toEqual({ lore: 1, rules: 1, pools: 2, stateCells: 2, fronts: 0, plotlines: 0, foreshadows: 0, anchors: 0 });
     expect(loreGet(run, "黄枫谷")?.content).toBe("黄枫谷乃江南正道。");
     expect(ruleGet(run, "修炼体系")?.content).toBe("练气→筑基→结丹");
     expect((run.prepare("SELECT COUNT(*) n FROM pool").get() as { n: number }).n).toBe(2);

@@ -49,6 +49,18 @@ export const BUILD_SCHEMAS = {
   }).strict(),
   commit: z.object({ message: z.string() }).strict(),
   tag: z.object({ commitId: z.string(), label: z.string() }).strict(),
+  add_front: z.object({ rows: z.array(z.object({
+    id: z.string(), name: z.string(), stakes: z.string().optional(), clock_ref: z.string().optional(), status: z.string().optional(),
+  })).min(1) }).strict(),
+  add_plotline: z.object({ rows: z.array(z.object({
+    id: z.string(), title: z.string(), summary: z.string().optional(), status: z.string().optional(),
+  })).min(1) }).strict(),
+  add_foreshadow: z.object({ rows: z.array(z.object({
+    id: z.string(), content: z.string(), status: z.string().optional(),
+  })).min(1) }).strict(),
+  add_anchor: z.object({ rows: z.array(z.object({
+    owner_table: z.string(), owner_id: z.string(), target_table: z.string(), target_id: z.string(), role: z.string().optional(),
+  })).min(1) }).strict(),
 } as const;
 
 // 调一个构建工具(无 dicelore_build_ 前缀):校验入参 → 改 draft / commit。可测核心。
@@ -69,6 +81,10 @@ export function invokeBuildTool(ctx: BuildCtx, name: string, args: unknown): Bui
       return ok(r);
     }
     case "tag": tag(ctx.catalog, { tuanbenId: resolveId(ctx.name), commitId: a.commitId as string, label: a.label as string }); return ok({ ok: true });
+    case "add_front": ctx.draft.addFront(a.rows as Parameters<Draft["addFront"]>[0]); return ok({ ok: true });
+    case "add_plotline": ctx.draft.addPlotline(a.rows as Parameters<Draft["addPlotline"]>[0]); return ok({ ok: true });
+    case "add_foreshadow": ctx.draft.addForeshadow(a.rows as Parameters<Draft["addForeshadow"]>[0]); return ok({ ok: true });
+    case "add_anchor": ctx.draft.addAnchor(a.rows as Parameters<Draft["addAnchor"]>[0]); return ok({ ok: true });
     default: return err("UNKNOWN_TOOL", name);
   }
 }
