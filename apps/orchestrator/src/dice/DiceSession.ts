@@ -13,6 +13,7 @@ import { WsHub, type WsLike } from "../pkg/wsHub.js";
 import { PlayerRollGate } from "./rollGate.js";
 import { mapCanonWrite } from "./notify.js";
 import { runTurn, type TurnEndResult } from "./turnLoop.js";
+import { buildOpeningPrompt } from "./openingPrompt.js";
 import type { Agent } from "../pkg/agent.js";
 import type { Session } from "../pkg/session.js";
 
@@ -62,6 +63,9 @@ export class DiceSession implements Session {
 
   attachWs(ws: WsLike): void { this.hub.add(this.sessionId, ws); }
   detachWs(ws: WsLike): void { this.hub.remove(this.sessionId, ws); }
+
+  // 开场 prompt(signpost + 团本 prologue);driver 工厂取它作 systemPrompt → GM 不再裸奔。
+  get openingPrompt(): string { return buildOpeningPrompt(this.db); }
 
   async handleMessage(text: string): Promise<{ turnId: string }> {
     const turnId = nextTurnId(this.sessionId);

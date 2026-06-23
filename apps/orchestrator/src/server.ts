@@ -30,7 +30,7 @@ export function startServer(port: number): void {
   // dice 跑团 driver
   const driverFactory: (host: DiceSession) => Agent = fake
     ? () => new FakeDiceGm((input) => [{ type: "narration", text: `（GM）你说：「${input.text}」。门吱呀一声开了。` }, { type: "turn_end" }])
-    : (host) => new DiceGm({ mcpServer: host.mcpServer });
+    : (host) => new DiceGm({ mcpServer: host.mcpServer, systemPrompt: host.openingPrompt });
   // lore 构建 driver(同 SDK agent,挂构建 MCP;教条由构建 skill 提供,经 systemPrompt)
   const loreDriver: (host: LoreSession) => Agent = fake
     ? () => new FakeDiceGm((input) => [{ type: "narration", text: `（构建）收到：「${input.text}」` }, { type: "turn_end" }])
