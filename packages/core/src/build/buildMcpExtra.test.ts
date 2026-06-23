@@ -1,0 +1,399 @@
+// Copyright (C) 2026 MuLeiSY2021
+//
+// This file is part of Dicelore.
+//
+// Dicelore is free software: you can redistribute it and/or modify it under
+// the terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version. See <https://www.gnu.org/licenses/>.
+
+import { describe, it, expect } from "vitest";
+import Database from "better-sqlite3";
+import { openCatalog } from "../catalog/db.js";
+import { initRetrieval } from "./retrieval/db.js";
+import { Draft } from "./draft.js";
+import { invokeBuildTool, type BuildCtx } from "./buildMcp.js";
+
+function ctx(db?: Database.Database): BuildCtx {
+  const catalog = openCatalog(":memory:");
+  const draft = new Draft();
+  const retrievalDb = db ?? new Database(":memory:");
+  initRetrieval(retrievalDb);
+  return { catalog, draft, name: "凡人", retrievalDb };
+}
+
+// ── ingest ──────────────────────────────────────────────────────────────────
+describe("dicelore_build_ingest", () => {
+  it("返回 { chunks: N } 且 N > 0", () => {
+    const c = ctx();
+    const r = invokeBuildTool(c, "ingest", { text: "黄枫谷是一处幽静的山谷。\n\n墨大夫行医数十年。" });
+    expect(r.isError).toBeFalsy();
+    const out = JSON.parse(r.content[0].text) as { chunks: number };
+    expect(out.chunks).toBeGreaterThan(0);
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("空文本 → chunks 为 0（不报错）", () => {
+    const c = ctx();
+    const r = invokeBuildTool(c, "ingest", { text: "" });
+    expect(r.isError).toBeFalsy();
+    const out = JSON.parse(r.content[0].text) as { chunks: number };
+    expect(out.chunks).toBe(0);
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("缺 text 字段 → isError", () => {
+    const c = ctx();
+    const r = invokeBuildTool(c, "ingest", {});
+    expect(r.isError).toBe(true);
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+});
+
+// ── search ───────────────────────────────────────────────────────────────────
+describe("dicelore_build_search", () => {
+  it("端到端：ingest 后按关键词召回 hits", () => {
+    const c = ctx();
+    invokeBuildTool(c, "ingest", { text: "黄枫谷枫叶如火。\n\n墨大夫悬壶济世。" });
+    const r = invokeBuildTool(c, "search", { query: "黄枫谷" });
+    expect(r.isError).toBeFalsy();
+    const out = JSON.parse(r.content[0].text) as { hits: { idx: number; text: string }[] };
+    expect(out.hits.length).toBeGreaterThan(0);
+    expect(out.hits.some((h) => h.text.includes("黄枫谷"))).toBe(true);
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("k 参数生效 → 返回数量不超过 k", () => {
+    const c = ctx();
+    invokeBuildTool(c, "ingest", {
+      text: [
+        "铁剑门弟子修炼剑法。",
+        "蜜糖山熊族采蜜。",
+        "黄枫谷山门招新弟子。",
+        "墨大夫研习炼药技巧。",
+        "破剑阁险峰耸立。",
+      ].join("\n\n"),
+    });
+    const r = invokeBuildTool(c, "search", { query: "弟子", k: 2 });
+    expect(r.isError).toBeFalsy();
+    const out = JSON.parse(r.content[0].text) as { hits: { idx: number; text: string }[] };
+    expect(out.hits.length).toBeLessThanOrEqual(2);
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("未 ingest → hits 为空", () => {
+    const c = ctx();
+    const r = invokeBuildTool(c, "search", { query: "黄枫谷" });
+    expect(r.isError).toBeFalsy();
+    const out = JSON.parse(r.content[0].text) as { hits: { idx: number; text: string }[] };
+    expect(out.hits).toEqual([]);
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("hits 每项包含 idx(number) + text(string)", () => {
+    const c = ctx();
+    invokeBuildTool(c, "ingest", { text: "铁剑门弟子习武。" });
+    const r = invokeBuildTool(c, "search", { query: "铁剑" });
+    expect(r.isError).toBeFalsy();
+    const out = JSON.parse(r.content[0].text) as { hits: { idx: number; text: string }[] };
+    for (const h of out.hits) {
+      expect(typeof h.idx).toBe("number");
+      expect(typeof h.text).toBe("string");
+    }
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+});
+
+// ── validate ─────────────────────────────────────────────────────────────────
+describe("dicelore_build_validate", () => {
+  it("空 draft → ok=false（空团本包）", () => {
+    const c = ctx();
+    const r = invokeBuildTool(c, "validate", {});
+    expect(r.isError).toBeFalsy();
+    const out = JSON.parse(r.content[0].text) as { ok: boolean; issues: unknown[] };
+    // draft 无文件 → validate 报空包错误
+    expect(out.ok).toBe(false);
+    expect(out.issues.length).toBeGreaterThan(0);
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("有合法内容的 draft → ok=true", () => {
+    const c = ctx();
+    invokeBuildTool(c, "write_lore", { name: "设定", content: "江南正道。" });
+    const r = invokeBuildTool(c, "validate", {});
+    expect(r.isError).toBeFalsy();
+    const out = JSON.parse(r.content[0].text) as { ok: boolean; issues: unknown[] };
+    expect(out.ok).toBe(true);
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("issues 字段存在且是数组", () => {
+    const c = ctx();
+    const r = invokeBuildTool(c, "validate", {});
+    const out = JSON.parse(r.content[0].text) as { ok: boolean; issues: unknown[] };
+    expect(Array.isArray(out.issues)).toBe(true);
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+});
+
+// ── read ─────────────────────────────────────────────────────────────────────
+describe("dicelore_build_read", () => {
+  it("无 section 参数 → 回读全部域内容", () => {
+    const c = ctx();
+    invokeBuildTool(c, "set_manifest", { name: "凡人修仙传", id: "fanren" });
+    invokeBuildTool(c, "write_lore", { name: "黄枫谷", content: "正道" });
+    invokeBuildTool(c, "write_rule", { name: "修炼", content: "练气→筑基" });
+    const r = invokeBuildTool(c, "read", {});
+    expect(r.isError).toBeFalsy();
+    const out = JSON.parse(r.content[0].text) as Record<string, unknown>;
+    expect(out).toHaveProperty("manifest");
+    expect(out).toHaveProperty("world");
+    expect(out).toHaveProperty("rules");
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("section=manifest → 只返回 manifest 字段", () => {
+    const c = ctx();
+    invokeBuildTool(c, "set_manifest", { name: "凡人修仙传", id: "fanren" });
+    const r = invokeBuildTool(c, "read", { section: "manifest" });
+    expect(r.isError).toBeFalsy();
+    const out = JSON.parse(r.content[0].text) as Record<string, unknown>;
+    expect(out).toHaveProperty("manifest");
+    expect(out).not.toHaveProperty("lore");
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("section=world → 返回 world 键（lore/world 域）", () => {
+    const c = ctx();
+    invokeBuildTool(c, "write_lore", { name: "山门", content: "山门巍峨。" });
+    const r = invokeBuildTool(c, "read", { section: "world" });
+    expect(r.isError).toBeFalsy();
+    const out = JSON.parse(r.content[0].text) as Record<string, unknown>;
+    expect(out).toHaveProperty("world");
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("section=rules → 返回 rules 键", () => {
+    const c = ctx();
+    invokeBuildTool(c, "write_rule", { name: "炼丹", content: "入门炼丹。" });
+    const r = invokeBuildTool(c, "read", { section: "rules" });
+    expect(r.isError).toBeFalsy();
+    const out = JSON.parse(r.content[0].text) as Record<string, unknown>;
+    expect(out).toHaveProperty("rules");
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("section=pools → 返回 pools 键", () => {
+    const c = ctx();
+    invokeBuildTool(c, "add_pool", { pool: "灵根", rows: [{ 名称: "天灵根" }] });
+    const r = invokeBuildTool(c, "read", { section: "pools" });
+    expect(r.isError).toBeFalsy();
+    const out = JSON.parse(r.content[0].text) as Record<string, unknown>;
+    expect(out).toHaveProperty("pools");
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("section=fronts → 返回 fronts 键", () => {
+    const c = ctx();
+    invokeBuildTool(c, "add_front", {
+      id: "invasion",
+      name: "魔道入侵",
+      clock_attr: "世界.入侵进度",
+      clock_min: 0,
+      clock_max: 8,
+      omens: [{ threshold: 4, payload: "边境沦陷" }],
+    });
+    const r = invokeBuildTool(c, "read", { section: "fronts" });
+    expect(r.isError).toBeFalsy();
+    const out = JSON.parse(r.content[0].text) as Record<string, unknown>;
+    expect(out).toHaveProperty("fronts");
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("非法 section 值 → isError", () => {
+    const c = ctx();
+    const r = invokeBuildTool(c, "read", { section: "bogus" });
+    expect(r.isError).toBe(true);
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+});
+
+// ── add_front ─────────────────────────────────────────────────────────────────
+describe("dicelore_build_add_front", () => {
+  it("写出 fronts/<id>.md — frontmatter 含 clock/min/max/mode", () => {
+    const c = ctx();
+    const r = invokeBuildTool(c, "add_front", {
+      id: "invasion",
+      name: "魔道入侵",
+      clock_attr: "世界.入侵进度",
+      clock_min: 0,
+      clock_max: 8,
+      clock_mode: "once",
+      omens: [
+        { threshold: 3, payload: "边境小镇沦陷的消息传来" },
+        { threshold: 6, payload: "黄枫谷外围弟子折损" },
+        { threshold: 8, payload: "魔道破阵，正面决战" },
+      ],
+    });
+    expect(r.isError).toBeFalsy();
+
+    // 通过 toPackFiles 检查产出
+    const files = c.draft.toPackFiles();
+    const front = files.find((f) => f.path === "fronts/invasion.md");
+    expect(front).toBeDefined();
+
+    // frontmatter 含 clock/min/max/mode
+    expect(front!.content).toMatch(/^---/);
+    expect(front!.content).toContain("clock: 世界.入侵进度");
+    expect(front!.content).toContain("min: 0");
+    expect(front!.content).toContain("max: 8");
+    expect(front!.content).toContain("mode: once");
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("凶兆阶梯表格包含每个 threshold + payload", () => {
+    const c = ctx();
+    invokeBuildTool(c, "add_front", {
+      id: "inv2",
+      name: "天雷降临",
+      clock_attr: "世界.天雷",
+      clock_min: 0,
+      clock_max: 6,
+      omens: [
+        { threshold: 2, payload: "初现征兆" },
+        { threshold: 4, payload: "雷声隆隆" },
+        { threshold: 6, payload: "天雷落地" },
+      ],
+    });
+
+    const files = c.draft.toPackFiles();
+    const front = files.find((f) => f.path === "fronts/inv2.md");
+    expect(front).toBeDefined();
+    const content = front!.content;
+    // body 含凶兆阶梯表格行
+    expect(content).toContain("| 2 |");
+    expect(content).toContain("初现征兆");
+    expect(content).toContain("| 4 |");
+    expect(content).toContain("雷声隆隆");
+    expect(content).toContain("| 6 |");
+    expect(content).toContain("天雷落地");
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("name 写入 body 标题", () => {
+    const c = ctx();
+    invokeBuildTool(c, "add_front", {
+      id: "inv3",
+      name: "灵脉枯竭",
+      clock_attr: "世界.灵脉",
+      clock_min: 0,
+      clock_max: 4,
+      omens: [{ threshold: 2, payload: "灵气稀薄" }],
+    });
+    const files = c.draft.toPackFiles();
+    const front = files.find((f) => f.path === "fronts/inv3.md");
+    expect(front!.content).toContain("灵脉枯竭");
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("stakes 若提供则出现在 body 利害问题里", () => {
+    const c = ctx();
+    invokeBuildTool(c, "add_front", {
+      id: "inv4",
+      name: "妖族侵扰",
+      stakes: "门派能否抵挡妖族入侵？",
+      clock_attr: "世界.妖族",
+      clock_min: 0,
+      clock_max: 5,
+      omens: [{ threshold: 3, payload: "边境告急" }],
+    });
+    const files = c.draft.toPackFiles();
+    const front = files.find((f) => f.path === "fronts/inv4.md");
+    expect(front!.content).toContain("门派能否抵挡妖族入侵？");
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("validate 通过 fronts 的 Rule 6 校验", () => {
+    const c = ctx();
+    // 先添加 sheets 定义 clock attr，避免 Rule 7 警告影响 ok
+    invokeBuildTool(c, "set_state", {
+      cells: [{ entity: "世界", kind: "world", attr: "入侵进度", value: "0" }],
+    });
+    invokeBuildTool(c, "add_front", {
+      id: "invv",
+      name: "入侵",
+      clock_attr: "世界.入侵进度",
+      clock_min: 0,
+      clock_max: 8,
+      clock_mode: "once",
+      omens: [{ threshold: 4, payload: "告急" }],
+    });
+    const vr = invokeBuildTool(c, "validate", {});
+    const vout = JSON.parse(vr.content[0].text) as { ok: boolean; issues: { level: string; file: string; msg: string }[] };
+    // Rule 6 errors (clock missing, min>max, bad mode) should NOT be present
+    const rule6errors = vout.issues.filter((i) => i.level === "error" && i.file.startsWith("fronts/"));
+    expect(rule6errors).toHaveLength(0);
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("缺必填字段 id → isError", () => {
+    const c = ctx();
+    const r = invokeBuildTool(c, "add_front", {
+      name: "魔道入侵",
+      clock_attr: "世界.入侵进度",
+      clock_min: 0,
+      clock_max: 8,
+      omens: [],
+    });
+    expect(r.isError).toBe(true);
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+
+  it("多次调用同 id → 后者覆盖（只有一个文件）", () => {
+    const c = ctx();
+    invokeBuildTool(c, "add_front", {
+      id: "dup",
+      name: "第一版",
+      clock_attr: "世界.钟",
+      clock_min: 0,
+      clock_max: 4,
+      omens: [{ threshold: 2, payload: "第一次" }],
+    });
+    invokeBuildTool(c, "add_front", {
+      id: "dup",
+      name: "第二版",
+      clock_attr: "世界.钟",
+      clock_min: 0,
+      clock_max: 4,
+      omens: [{ threshold: 2, payload: "第二次" }],
+    });
+    const files = c.draft.toPackFiles().filter((f) => f.path === "fronts/dup.md");
+    expect(files).toHaveLength(1);
+    expect(files[0].content).toContain("第二版");
+    c.catalog.close();
+    c.retrievalDb!.close();
+  });
+});

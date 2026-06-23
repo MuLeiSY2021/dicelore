@@ -22,6 +22,47 @@ function toCsv(rows: Record<string, string | number>[], cols?: string[]): string
 
 export interface StateCell { entity: string; kind?: "player" | "npc" | "world"; attr: string; value: string; visible?: number }
 
+export interface FrontOmen { threshold: number; payload: string }
+export interface FrontSpec {
+  id: string;
+  name: string;
+  stakes?: string;
+  clock_attr: string;
+  clock_min: number;
+  clock_max: number;
+  clock_mode?: "once" | "repeat";
+  omens: FrontOmen[];
+}
+
+/** fronts/<id>.md の YAML frontmatter + body を生成する。 */
+function buildFrontMd(spec: FrontSpec): string {
+  const mode = spec.clock_mode ?? "once";
+  const frontmatter = [
+    "---",
+    `clock: ${spec.clock_attr}`,
+    `min: ${spec.clock_min}`,
+    `max: ${spec.clock_max}`,
+    `mode: ${mode}`,
+    "---",
+  ].join("\n");
+
+  const title = `# ${spec.name}`;
+
+  const stakesSection = spec.stakes
+    ? `\n**利害问题**：${spec.stakes}\n`
+    : "";
+
+  const omenRows = spec.omens
+    .map((o) => `| ${o.threshold} | ${o.payload} |`)
+    .join("\n");
+  const omenTable =
+    spec.omens.length > 0
+      ? `\n## 凶兆阶梯\n\n| 钟值 | 凶兆（触发 payload） |\n|------|---------------------|\n${omenRows}\n`
+      : "";
+
+  return `${frontmatter}\n${title}\n${stakesSection}${omenTable}`;
+}
+
 export class Draft {
   private loreDocs = new Map<string, string>();
   private ruleDocs = new Map<string, string>();
@@ -29,6 +70,7 @@ export class Draft {
   private stateRows: StateCell[] = [];
   private manifestName?: string;
   private manifestId?: string;
+  private fronts = new Map<string, FrontSpec>();
 
   setManifest(a: { name?: string; id?: string }): void {
     if (a.name) this.manifestName = a.name;
@@ -42,6 +84,30 @@ export class Draft {
     this.pools.set(pool, e);
   }
   setState(cells: StateCell[]): void { this.stateRows.push(...cells); }
+
+  /** 累积一个 Front(阵线)。相同 id 的后调用覆盖前调用(幂等写)。 */
+  addFront(spec: FrontSpec): void {
+    this.fronts.set(spec.id, spec);
+  }
+
+  /** 回读 Draft 当前内容(供 read 工具)。 */
+  snapshot(): {
+    manifest: { name?: string; id?: string };
+    world: Record<string, string>;
+    rules: Record<string, string>;
+    pools: Record<string, Record<string, string | number>[]>;
+    sheets: { cells: StateCell[] };
+    fronts: Record<string, FrontSpec>;
+  } {
+    return {
+      manifest: { name: this.manifestName, id: this.manifestId },
+      world: Object.fromEntries(this.loreDocs),
+      rules: Object.fromEntries(this.ruleDocs),
+      pools: Object.fromEntries(this.pools),
+      sheets: { cells: [...this.stateRows] },
+      fronts: Object.fromEntries(this.fronts),
+    };
+  }
 
   toPackFiles(): PackFile[] {
     const files: PackFile[] = [];
@@ -59,6 +125,9 @@ export class Draft {
           ["entity", "kind", "attr", "value", "visible"],
         ),
       });
+    }
+    for (const spec of this.fronts.values()) {
+      files.push({ path: `fronts/${spec.id}.md`, content: buildFrontMd(spec) });
     }
     return files;
   }
