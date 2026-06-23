@@ -50,3 +50,4 @@ export { exportGit, importGit } from "./catalog/index.js";
 
 // ===== 团本构建层（P5）=====
 export { Draft, commitDraft, type StateCell } from "./build/draft.js";
+export { createBuildMcpServer, invokeBuildTool, type BuildCtx, BUILD_SCHEMAS } from "./build/buildMcp.js";
