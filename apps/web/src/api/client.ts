@@ -40,3 +40,31 @@ export async function postRoll(sessionId: string, eventId: number): Promise<{ tu
   if (!res.ok) throw new Error(`roll 请求失败：${res.status}`);
   return (await res.json()) as { turnId: string };
 }
+
+// ===== 团本目录录(后端双路径架构 P2/P3/P5)=====
+export interface TuanbenSummary { id: string; name: string; head: string | null; tags: string[] }
+export interface PackFile { path: string; content: string }
+
+// 列团本(主页选团本玩 / 构建台列表)。
+export async function listCatalog(): Promise<TuanbenSummary[]> {
+  const res = await fetch("/catalog");
+  if (!res.ok) throw new Error(`catalog 请求失败：${res.status}`);
+  return ((await res.json()) as { tuanben: TuanbenSummary[] }).tuanben;
+}
+
+// 直接提交一个团本版本(程序化建包)。
+export async function commitPack(name: string, message: string, files: PackFile[]): Promise<{ tuanbenId: string; commitId: string }> {
+  const res = await fetch("/catalog/commit", {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, message, files }),
+  });
+  if (!res.ok) throw new Error(`commit 请求失败：${res.status}`);
+  return (await res.json()) as { tuanbenId: string; commitId: string };
+}
+
+// 开新局:选团本版本 import → 运行库(POST /sessions/:id/open)。
+export async function openPlaySession(sessionId: string, tuanbenId: string, ref: string): Promise<void> {
+  const res = await fetch(`/sessions/${encodeURIComponent(sessionId)}/open`, {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tuanbenId, ref }),
+  });
+  if (!res.ok) throw new Error(`open 请求失败：${res.status}`);
+}

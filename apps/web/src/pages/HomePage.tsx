@@ -8,10 +8,17 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Play, Dices, Hammer, MessagesSquare, Settings, Swords, Clock, Flag } from "lucide-react";
 import type { SessionSummary } from "@dicelore/shared";
-import { listSessions } from "../api/client.js";
+import { listSessions, commitPack, openPlaySession } from "../api/client.js";
+
+// 示例团本(快速验证「建团本→开局玩」闭环;无需 LLM)。
+const SAMPLE_PACK = [
+  { path: "manifest.md", content: "# 示例·黑风寨\n\n- id: sample" },
+  { path: "lore/黑风寨.md", content: "黑风寨盘踞鹰愁涧,当家钟三爷使子母钟锤。" },
+  { path: "state/开局.csv", content: "entity,kind,attr,value,visible\n旅人,player,HP,12,1\n旅人,player,身上银两,30,1\n" },
+];
 
 const STATUS_LABEL: Record<SessionSummary["status"], string> = {
   active: "进行中",
@@ -34,6 +41,23 @@ const QUICK = [
 export default function HomePage() {
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const navigate = useNavigate();
+
+  // 造示例团本 → 开局 import → 跳跑团页(端到端闭环)。
+  async function quickPlay() {
+    setBusy(true);
+    setError(null);
+    try {
+      const { tuanbenId, commitId } = await commitPack("示例·黑风寨", "sample", SAMPLE_PACK);
+      const sid = `s-${commitId.slice(0, 8)}`;
+      await openPlaySession(sid, tuanbenId, commitId);
+      navigate(`/play/${sid}`);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     let alive = true;
@@ -55,6 +79,16 @@ export default function HomePage() {
       </div>
 
       {error && <div className="herror">加载失败：{error}</div>}
+
+      <div className="resume" aria-label="快速开局">
+        <div className="meta">
+          <div className="scen">示例·黑风寨</div>
+          <div className="where">一键造示例团本并开局(验证闭环)</div>
+        </div>
+        <button className="cont" onClick={quickPlay} disabled={busy} data-testid="quick-play">
+          <Play className="lucide" />{busy ? "开局中…" : "造团本并开局"}
+        </button>
+      </div>
 
       {last && (
         <div className="resume" aria-label="继续上次">

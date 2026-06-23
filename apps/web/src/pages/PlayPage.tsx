@@ -8,13 +8,14 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { useState, type KeyboardEvent } from "react";
+import { useParams } from "react-router-dom";
 import {
   BookOpen, Scale, ScrollText, MessagesSquare, LayoutGrid, Search, FileText, File,
   Pin, CornerDownRight, CheckCircle2, Dices, LayoutDashboard, Grid3x3, Plus, User, Minus, X,
 } from "lucide-react";
 import { useSession } from "../live/useSession.js";
 
-// v1：会话选择(主页继续上次)未实现，跑团页先固定 demo 会话。
+// 会话来自路由 /play/:sessionId;无则回退 demo(兼容旧入口)。
 const DEMO_SESSION = "demo";
 
 const RAIL = [
@@ -25,7 +26,8 @@ const RAIL = [
 ];
 
 export default function PlayPage() {
-  const { snapshot, narration, pendingRoll, postMessage, roll } = useSession(DEMO_SESSION);
+  const { sessionId } = useParams();
+  const { snapshot, narration, pendingRoll, postMessage, roll } = useSession(sessionId ?? DEMO_SESSION);
   const [draft, setDraft] = useState("");
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && draft.trim()) { postMessage(draft.trim()).catch(() => {}); setDraft(""); }

@@ -32,6 +32,7 @@ export default function App() {
           <Route element={<Shell />}>
             <Route index element={<HomePage />} />
             <Route path="play" element={<PlayPage />} />
+            <Route path="play/:sessionId" element={<PlayPage />} />
             <Route path="build" element={<BuildPage />} />
             <Route path="config" element={<ConfigPage />} />
           </Route>
