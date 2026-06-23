@@ -48,4 +48,5 @@ export { importPack, validatePack, type ImportResult, type ImportIssue } from ".
 // git 单向投影（P4）
 export { exportGit, importGit } from "./catalog/index.js";
 
-
+// ===== 团本构建层（P5）=====
+export { Draft, commitDraft, type StateCell } from "./build/draft.js";
