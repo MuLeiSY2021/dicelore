@@ -13,14 +13,21 @@ import { poolAdd } from "../store/world.js";
 import { ruleUpsert } from "../store/rule.js";
 import { checkout, type PackFile } from "./catalog.js";
 import type { CatalogDB } from "./db.js";
+import { validatePack as validatePackFull, type ValidateIssue } from "../build/pack/validate.js";
 
 // 团本包 → per-session 运行库的物化映射(对齐 数据层 spec §9,只覆已落域 lore/rule/pool/state)。
-// 包路径约定: lore/<n>.md、rules/<n>.md、pools/<n>.csv、state/<n>.csv、manifest.md。
-const KNOWN_TOP = new Set(["lore", "rules", "pools", "state", "manifest.md"]);
+// 包格式(manifest.yaml / world / sheets / fronts / pools / params / rules / state / lore)。
+// validatePack 实现集中在 build/pack/validate.ts(信任闸门 + 构建期 DX 报告),此处直接复用。
 
-export interface ImportIssue { level: "error" | "warn"; path: string; msg: string }
+/** 包校验 issue（与 ValidateIssue 同构，`file` 为 issue 所属路径段）。 */
+export type ImportIssue = ValidateIssue;
 export interface ImportResult { lore: number; rules: number; pools: number; stateCells: number }
 
+// 信任闸门:永不信任来源,跑起来前重验包结构。坏包 → ok:false。
+// 单源:校验逻辑在 build/pack/validate.ts；此处只是转发，确保 importPack 与 /catalog/validate 共用同一实现。
+export { validatePackFull as validatePack };
+
+// ── 物化辅助函数 ────────────────────────────────────────────────────────────
 function topSeg(path: string): string {
   const i = path.indexOf("/");
   return i === -1 ? path : path.slice(0, i);
@@ -52,32 +59,14 @@ function parseCsv(text: string): Record<string, string>[] {
   });
 }
 
-// 信任闸门:永不信任来源,跑起来前重验包结构。坏包 → ok:false。
-export function validatePack(files: PackFile[]): { ok: boolean; issues: ImportIssue[] } {
-  const issues: ImportIssue[] = [];
-  if (files.length === 0) issues.push({ level: "error", path: "(pack)", msg: "空团本包" });
-  for (const f of files) {
-    if (!KNOWN_TOP.has(topSeg(f.path))) {
-      issues.push({ level: "error", path: f.path, msg: `未知顶层路径段「${topSeg(f.path)}」(允许: ${[...KNOWN_TOP].join("/")})` });
-    }
-    if (f.path.startsWith("state/")) {
-      const rows = parseCsv(f.content);
-      if (rows.length && !("entity" in rows[0] && "attr" in rows[0] && "value" in rows[0])) {
-        issues.push({ level: "error", path: f.path, msg: "state CSV 缺 entity/attr/value 列" });
-      }
-    }
-  }
-  return { ok: !issues.some((i) => i.level === "error"), issues };
-}
-
 const META_COLS = new Set(["weight", "source", "visible"]);
 
 // 物化:checkout 某版本 → 校验(throw on error) → 按域写入运行库。caller 提供已 initSchema 的 runDB。
 export function importPack(catalogDB: CatalogDB, runDB: DB, tuanbenId: string, ref: string): ImportResult {
   const files = checkout(catalogDB, tuanbenId, ref);
-  const v = validatePack(files);
+  const v = validatePackFull(files);
   if (!v.ok) {
-    throw new Error(`团本包校验失败(信任闸门): ${v.issues.filter((i) => i.level === "error").map((i) => `${i.path}: ${i.msg}`).join("; ")}`);
+    throw new Error(`团本包校验失败(信任闸门): ${v.issues.filter((i) => i.level === "error").map((i) => `${i.file}: ${i.msg}`).join("; ")}`);
   }
   const res: ImportResult = { lore: 0, rules: 0, pools: 0, stateCells: 0 };
   const stateStmt = runDB.prepare(
@@ -108,7 +97,7 @@ export function importPack(catalogDB: CatalogDB, runDB: DB, tuanbenId: string, r
           res.stateCells++;
         }
       }
-      // manifest.md: 暂只作元信息载体,P5 接入 session_meta 时消费。
+      // manifest.yaml / manifest.md: 元信息载体,P5 接入 session_meta 时消费。
     }
   });
   tx();
