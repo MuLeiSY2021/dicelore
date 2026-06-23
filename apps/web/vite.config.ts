@@ -18,6 +18,7 @@ export default defineConfig({
       "/sessions": { target: "http://localhost:8787", ws: true, changeOrigin: true },
       "/catalog": { target: "http://localhost:8787", changeOrigin: true },
       "/lore-sessions": { target: "http://localhost:8787", changeOrigin: true },
+      "/diagnostics": { target: "http://localhost:8787", changeOrigin: true },
     },
   },
 });

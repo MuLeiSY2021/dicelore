@@ -4,6 +4,14 @@
 
 [data-lucide], .lucide { width: 16px; height: 16px; stroke-width: 1.6; vertical-align: middle; }
 
+/* ── 品牌标志 Logo ── */
+.logo { display: inline-flex; align-items: center; }
+.logo-lockup { gap: 9px; }
+.logo-wm { font-family: var(--serif); font-weight: 700; line-height: 1; white-space: nowrap; letter-spacing: .01em; }
+.logo-wm .g { color: var(--acc); }
+.logo-wm .w { color: var(--text); }
+.logo-wm .dot { color: var(--vermillion); }
+
 /* ── 顶栏(全宽) ── */
 .bar { display: flex; align-items: center; gap: 16px; padding: 0 14px; height: 48px; background: var(--surface); border-bottom: 1px solid var(--line); flex: none; }
 .brand { display: flex; align-items: center; gap: 9px; font-family: var(--serif); font-weight: 700; font-size: 17px; letter-spacing: .02em; color: var(--text); }

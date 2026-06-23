@@ -23,6 +23,10 @@
   --sans: var(--font-ui);
   --mono: var(--font-mono);
   --dial-empty: #1a392f;
+  /* Logo d20：内棱(蚀刻黑棱) / 外金边，随明暗切换 */
+  --logo-edge: #0c211a;
+  --logo-rim: #f2d98e;
+  --vermillion: #d8553f;
 }
 
 [data-theme="light"] {
@@ -39,6 +43,8 @@
   --acc-soft: #6f561a;
   --acc-on: #fff;
   --dial-empty: #d3e2d4;
+  --logo-edge: #3a2f12;
+  --logo-rim: #9a7b2f;
 }
 
 /* 可选强调色（主题 token；data-accent 覆盖 --acc 组）。亮态 --acc-soft 取 acc 本色保对比 ≥4.5:1。 */

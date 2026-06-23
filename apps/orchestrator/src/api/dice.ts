@@ -11,6 +11,7 @@ import { Hono } from "hono";
 import type { DB, CatalogDB } from "@dicelore/core";
 import type { SessionInfo, SessionSummary } from "@dicelore/shared";
 import { MessageRequestSchema, ChoiceRequestSchema, RollRequestSchema } from "@dicelore/shared";
+import { loreSearch, ruleSearch, logSince } from "@dicelore/core";
 import { buildSnapshot } from "../dice/presentation.js";
 import { getOrCreateHost, getHost } from "../dice/registry.js";
 import type { DiceSession } from "../dice/DiceSession.js";
@@ -72,6 +73,34 @@ export function createLiveApp(deps: LiveDeps): Hono {
     const host = getOrCreateHost(id, hostDeps(id));
     return c.json(buildSnapshot(host.db, id));
   });
+
+  // 跑团页左活动轨自查源浏览(world/rule/log)。q 为空=列全量(读投影)；q 非空=FTS 检索。
+  // 返回 { source, entries:[{name,tag,snippet,canPin}] }。rule 只查不钉(canPin=false)。
+  app.get("/sessions/:id/browse", (c) => {
+    const id = c.req.param("id");
+    const source = c.req.query("source") ?? "world";
+    const q = (c.req.query("q") ?? "").trim();
+    const db = getOrCreateHost(id, hostDeps(id)).db;
+    type Entry = { name: string; tag: string | null; snippet: string; canPin: boolean; ref: string };
+    const snip = (s: string | null) => (s ?? "").replace(/\s+/g, " ").slice(0, 80);
+    let entries: Entry[] = [];
+    if (source === "rule") {
+      const rows = q
+        ? ruleSearch(db, q, 50)
+        : (db.prepare("SELECT rowid, name, content, category, version FROM rule ORDER BY name LIMIT 100").all() as ReturnType<typeof ruleSearch>);
+      entries = rows.map((r) => ({ name: r.name, tag: r.category, snippet: snip(r.content), canPin: false, ref: `rule:${r.name}` }));
+    } else if (source === "log") {
+      const rows = logSince(db, 0).filter((r) => r.visible === 1);
+      entries = rows.slice(-100).reverse().map((r) => ({ name: `#${r.seq} ${r.kind}`, tag: r.kind, snippet: snip(r.content), canPin: false, ref: `log:${r.seq}` }));
+    } else {
+      const rows = q
+        ? loreSearch(db, q, 50)
+        : (db.prepare("SELECT rowid, name, content, category, tags, visible FROM lore ORDER BY name LIMIT 100").all() as ReturnType<typeof loreSearch>);
+      entries = rows.map((r) => ({ name: r.name, tag: r.category ?? r.tags, snippet: snip(r.content), canPin: true, ref: `world:${r.name}` }));
+    }
+    return c.json({ source, entries });
+  });
+
   app.get("/sessions/:id", (c) => {
     const id = c.req.param("id");
     const info: SessionInfo = { sessionId: id, ended: false, title: id };

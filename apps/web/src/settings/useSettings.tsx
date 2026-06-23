@@ -1,0 +1,117 @@
+// Copyright (C) 2026 MuLeiSY2021
+//
+// This file is part of Dicelore.
+//
+// Dicelore is free software: you can redistribute it and/or modify it under
+// the terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version. See <https://www.gnu.org/licenses/>.
+
+// 客户端配置持久化(localStorage)：模型连接 / 自定义 MCP 注册 / 服务覆盖 / 启动行为。
+// 与服务器真值(GET /diagnostics)互补——这里存「用户可改的偏好与覆盖」，服务器真值只读展示。
+
+import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+
+export type StartupBehavior = "home" | "last";
+export type McpTransport = "sse" | "stdio";
+
+export interface ModelSettings {
+  gm: string;        // GM 模型 id，如 claude-opus-4-8
+  agent: string;     // agent 预设，如 dicelore-gm
+  baseUrl: string;   // ANTHROPIC_BASE_URL 覆盖(空=走服务器 env)
+  key: string;       // API key 覆盖(空=走服务器 env)
+}
+export interface McpServerEntry {
+  id: string;
+  name: string;
+  transport: McpTransport;
+  endpoint: string;  // 远程 URL 或本地命令路径
+  enabled: boolean;
+  authorized: boolean;
+}
+export interface Settings {
+  model: ModelSettings;
+  mcpServers: McpServerEntry[];
+  notifyUrl: string; // 服务与网络 notify 覆盖(空=走服务器 env)
+  startup: StartupBehavior;
+}
+
+// 可选的真实模型清单(GM 模型下拉)。id 与 claude-api 对齐。
+export const GM_MODELS: { id: string; label: string }[] = [
+  { id: "claude-opus-4-8", label: "Claude Opus 4.8 (最强)" },
+  { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6 (均衡)" },
+  { id: "claude-haiku-4-5", label: "Claude Haiku 4.5 (快)" },
+  { id: "claude-fable-5", label: "Claude Fable 5" },
+];
+export const AGENTS: { id: string; label: string }[] = [
+  { id: "dicelore-gm", label: "Dicelore GM (默认)" },
+  { id: "raw", label: "Raw (无系统提示)" },
+];
+
+const DEFAULTS: Settings = {
+  model: { gm: "claude-opus-4-8", agent: "dicelore-gm", baseUrl: "", key: "" },
+  mcpServers: [],
+  notifyUrl: "",
+  startup: "home",
+};
+
+const STORAGE_KEY = "dicelore.settings";
+
+function loadSettings(): Settings {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<Settings>;
+      return {
+        model: { ...DEFAULTS.model, ...parsed.model },
+        mcpServers: Array.isArray(parsed.mcpServers) ? parsed.mcpServers : [],
+        notifyUrl: parsed.notifyUrl ?? "",
+        startup: parsed.startup === "last" ? "last" : "home",
+      };
+    }
+  } catch { /* ignore */ }
+  return DEFAULTS;
+}
+
+interface SettingsCtx {
+  settings: Settings;
+  setModel: (patch: Partial<ModelSettings>) => void;
+  setNotifyUrl: (v: string) => void;
+  setStartup: (v: StartupBehavior) => void;
+  addMcp: (e: Omit<McpServerEntry, "id">) => void;
+  updateMcp: (id: string, patch: Partial<McpServerEntry>) => void;
+  removeMcp: (id: string) => void;
+}
+const Ctx = createContext<SettingsCtx | null>(null);
+
+// crypto.randomUUID 不可用时退化(测试 jsdom 有 crypto)。
+function newId(): string {
+  try { return crypto.randomUUID(); } catch { return "mcp-" + Math.abs(Date.now() ^ (performance.now() | 0)).toString(36); }
+}
+
+export function SettingsProvider({ children }: { children: ReactNode }) {
+  const [settings, setSettings] = useState<Settings>(loadSettings);
+  const persist = useCallback((next: Settings) => {
+    setSettings(next);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+  }, []);
+
+  const setModel = useCallback((patch: Partial<ModelSettings>) => persist({ ...settings, model: { ...settings.model, ...patch } }), [settings, persist]);
+  const setNotifyUrl = useCallback((v: string) => persist({ ...settings, notifyUrl: v }), [settings, persist]);
+  const setStartup = useCallback((v: StartupBehavior) => persist({ ...settings, startup: v }), [settings, persist]);
+  const addMcp = useCallback((e: Omit<McpServerEntry, "id">) => persist({ ...settings, mcpServers: [...settings.mcpServers, { ...e, id: newId() }] }), [settings, persist]);
+  const updateMcp = useCallback((id: string, patch: Partial<McpServerEntry>) => persist({ ...settings, mcpServers: settings.mcpServers.map((m) => (m.id === id ? { ...m, ...patch } : m)) }), [settings, persist]);
+  const removeMcp = useCallback((id: string) => persist({ ...settings, mcpServers: settings.mcpServers.filter((m) => m.id !== id) }), [settings, persist]);
+
+  return (
+    <Ctx.Provider value={{ settings, setModel, setNotifyUrl, setStartup, addMcp, updateMcp, removeMcp }}>
+      {children}
+    </Ctx.Provider>
+  );
+}
+
+export function useSettings(): SettingsCtx {
+  const v = useContext(Ctx);
+  if (!v) throw new Error("useSettings 必须在 SettingsProvider 内使用");
+  return v;
+}

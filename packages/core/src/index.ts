@@ -34,6 +34,7 @@ export {
   type CanonWriteEvent,
   type McpServerDeps,
 } from "./mcp/server.js";
+export { TOOLS } from "./mcp/tools.js"; // 工具清单（组件7 配置页展示真实工具数）
 
 // 回合末 hook（choice 物化 + L3 审计）——组件4，供 orchestrator turn-end 复用。
 export { runTurnEnd } from "./adapter/turnEnd.js";
@@ -51,3 +52,10 @@ export { exportGit, importGit } from "./catalog/index.js";
 // ===== 团本构建层（P5）=====
 export { Draft, commitDraft, type StateCell } from "./build/draft.js";
 export { createBuildMcpServer, invokeBuildTool, type BuildCtx, BUILD_SCHEMAS } from "./build/buildMcp.js";
+
+// ===== 运行时只读浏览（组件7 跑团页左活动轨自查源；additive 只读，不改引擎） =====
+export { loreSearch, loreGet, type Lore } from "./store/world.js";
+export { ruleSearch, ruleGet, type Rule } from "./store/rule.js";
+export { logSince, logRecall, type LogRow } from "./store/log.js";
+export { stateList, stateGet, type StateCell as RuntimeStateCell } from "./store/state.js";
+

@@ -12,6 +12,7 @@ import { Hono } from "hono";
 import { openDb, initSchema, openCatalog } from "@dicelore/core";
 import { createLiveApp } from "./api/dice.js";
 import { createLoreApp } from "./api/lore.js";
+import { createDiagnosticsApp } from "./api/diagnostics.js";
 import { attachWsUpgrade } from "./api/ws.js";
 import { listSessionSummaries } from "./dice/sessions.js";
 import type { DiceSession } from "./dice/DiceSession.js";
@@ -37,6 +38,7 @@ export function startServer(port: number): void {
   const app = new Hono();
   app.route("/", createLiveApp({ driverFactory, openSession, listSessions: () => listSessionSummaries(dir), catalog }));
   app.route("/", createLoreApp({ catalog, driverFactory: loreDriver }));
+  app.route("/", createDiagnosticsApp({ port, fakeGm: fake }));
 
   const server = serve({ fetch: app.fetch, port });
   attachWsUpgrade(server, { openSession, driverFactory });

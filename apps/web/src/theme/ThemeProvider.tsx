@@ -9,26 +9,59 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-export type ThemeMode = "dark" | "light";
+export type ThemeMode = "dark" | "light" | "system";
 export type AccentName = "gold" | "copper" | "teal" | "crimson" | "indigo";
+export type FontPreset = "default" | "song"; // song=正文走思源宋体 fallback(留口)
 
 interface ThemeCtx {
-  mode: ThemeMode;
+  mode: ThemeMode;            // 用户选择(可为 system)
+  resolved: "dark" | "light"; // 实际生效(system 解析后)
   accent: AccentName;
+  font: FontPreset;
   setMode: (m: ThemeMode) => void;
   setAccent: (a: AccentName) => void;
+  setFont: (f: FontPreset) => void;
 }
 
 const Ctx = createContext<ThemeCtx | null>(null);
+const K_MODE = "dicelore.theme.mode";
+const K_ACC = "dicelore.theme.accent";
+const K_FONT = "dicelore.theme.font";
+
+function load<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  try { const v = localStorage.getItem(key); if (v && (allowed as readonly string[]).includes(v)) return v as T; } catch { /* ignore */ }
+  return fallback;
+}
+function systemDark(): boolean {
+  return typeof matchMedia !== "undefined" && matchMedia("(prefers-color-scheme: dark)").matches;
+}
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<ThemeMode>("dark");
-  const [accent, setAccent] = useState<AccentName>("gold");
+  const [mode, setModeState] = useState<ThemeMode>(() => load(K_MODE, ["dark", "light", "system"] as const, "dark"));
+  const [accent, setAccentState] = useState<AccentName>(() => load(K_ACC, ["gold", "copper", "teal", "crimson", "indigo"] as const, "gold"));
+  const [font, setFontState] = useState<FontPreset>(() => load(K_FONT, ["default", "song"] as const, "default"));
+  const [sysDark, setSysDark] = useState<boolean>(() => systemDark());
 
-  useEffect(() => { document.documentElement.dataset.theme = mode; }, [mode]);
-  useEffect(() => { document.documentElement.dataset.accent = accent; }, [accent]);
+  // 跟随系统：监听媒体查询变化。
+  useEffect(() => {
+    if (typeof matchMedia === "undefined") return;
+    const mq = matchMedia("(prefers-color-scheme: dark)");
+    const onChange = () => setSysDark(mq.matches);
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
 
-  return <Ctx.Provider value={{ mode, accent, setMode, setAccent }}>{children}</Ctx.Provider>;
+  const resolved: "dark" | "light" = mode === "system" ? (sysDark ? "dark" : "light") : mode;
+
+  useEffect(() => { document.documentElement.dataset.theme = resolved; try { localStorage.setItem(K_MODE, mode); } catch { /* */ } }, [mode, resolved]);
+  useEffect(() => { document.documentElement.dataset.accent = accent; try { localStorage.setItem(K_ACC, accent); } catch { /* */ } }, [accent]);
+  useEffect(() => { document.documentElement.dataset.font = font; try { localStorage.setItem(K_FONT, font); } catch { /* */ } }, [font]);
+
+  return (
+    <Ctx.Provider value={{ mode, resolved, accent, font, setMode: setModeState, setAccent: setAccentState, setFont: setFontState }}>
+      {children}
+    </Ctx.Provider>
+  );
 }
 
 export function useTheme(): ThemeCtx {

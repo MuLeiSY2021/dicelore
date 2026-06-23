@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { Hono } from "hono";
-import { list, commit, tag, type CatalogDB, type PackFile } from "@dicelore/core";
+import { list, commit, tag, checkout, validatePack, type CatalogDB, type PackFile } from "@dicelore/core";
 import { InMemorySessionRegistry } from "../pkg/registry.js";
 import { LoreSession, type LoreSessionDeps } from "../lore/LoreSession.js";
 import type { Agent } from "../pkg/agent.js";
@@ -33,6 +33,19 @@ export function createLoreApp(deps: LoreDeps): Hono {
     const body = (await c.req.json()) as { name: string; message: string; files: PackFile[] };
     const r = commit(deps.catalog, { name: body.name, message: body.message, files: body.files });
     return c.json(r, 201);
+  });
+
+  // 读某团本版本的全部包文件(团本制作页中央编辑器渲染来源)。ref 缺省=head。
+  app.get("/catalog/:tuanbenId/files", (c) => {
+    const ref = c.req.query("ref") ?? "head";
+    const files = checkout(deps.catalog, c.req.param("tuanbenId"), ref);
+    return c.json({ files });
+  });
+
+  // 整包校验(团本制作页右栏校验报告)。body {files}。
+  app.post("/catalog/validate", async (c) => {
+    const body = (await c.req.json()) as { files: PackFile[] };
+    return c.json(validatePack(body.files ?? []));
   });
 
   // 打 tag(真发布)
