@@ -9,6 +9,7 @@
 
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { rmSync } from "node:fs";
 import { openDb, initSchema, openCatalog } from "@dicelore/core";
 import { createLiveApp } from "./api/dice.js";
 import { createLoreApp } from "./api/lore.js";
@@ -36,7 +37,11 @@ export function startServer(port: number): void {
     : (host) => new DiceGm({ mcpServer: host.mcpServer, systemPrompt: process.env.DICELORE_BUILD_PROMPT });
 
   const app = new Hono();
-  app.route("/", createLiveApp({ driverFactory, openSession, listSessions: () => listSessionSummaries(dir), catalog }));
+  app.route("/", createLiveApp({
+    driverFactory, openSession, catalog,
+    listSessions: () => listSessionSummaries(dir),
+    deleteSession: (id) => { try { rmSync(`${dir}/${id}.db`); rmSync(`${dir}/${id}.db-wal`, { force: true }); rmSync(`${dir}/${id}.db-shm`, { force: true }); } catch { /* ignore */ } },
+  }));
   app.route("/", createLoreApp({ catalog, driverFactory: loreDriver }));
   app.route("/", createDiagnosticsApp({ port, fakeGm: fake }));
 
