@@ -17,13 +17,15 @@ import { foreshadowUpsert } from "../store/foreshadow.js";
 import { anchorAdd } from "../store/anchor.js";
 import { checkout, type PackFile } from "./catalog.js";
 import type { CatalogDB } from "./db.js";
+import { validatePack as validatePackFull, parseFrontmatter, type ValidateIssue } from "../build/pack/validate.js";
 
 // 团本包 → per-session 运行库的物化映射(对齐 数据层 spec §9)。
 // 包路径约定: lore/<n>.md、rules/<n>.md、pools/<n>.csv、state/<n>.csv、manifest.md
-//   + 叙事域 fronts/<n>.csv、plotlines/<n>.csv、foreshadows/<n>.csv、anchors/<n>.csv。
-const KNOWN_TOP = new Set(["lore", "rules", "pools", "state", "fronts", "plotlines", "foreshadows", "anchors", "manifest.md", "prologue.md"]);
+//   + 叙事域 fronts/<id>.md(正典 md 格式)、plotlines/<n>.csv、foreshadows/<n>.csv、anchors/<n>.csv、prologue.md。
+// validatePack 实现集中在 build/pack/validate.ts(信任闸门 + 构建期 DX 报告),此处直接复用。
 
-export interface ImportIssue { level: "error" | "warn"; path: string; msg: string }
+/** 包校验 issue（与 ValidateIssue 同构，`file` 为 issue 所属路径段）。 */
+export type ImportIssue = ValidateIssue;
 export interface ImportResult {
   lore: number; rules: number; pools: number; stateCells: number;
   fronts: number; plotlines: number; foreshadows: number; anchors: number;
@@ -31,6 +33,11 @@ export interface ImportResult {
   tuanbenName?: string;  // manifest.md H1(团本名,session_meta 兜底)
 }
 
+// 信任闸门:永不信任来源,跑起来前重验包结构。坏包 → ok:false。
+// 单源:校验逻辑在 build/pack/validate.ts；此处只是转发，确保 importPack 与 /catalog/validate 共用同一实现。
+export { validatePackFull as validatePack };
+
+// ── 物化辅助函数 ────────────────────────────────────────────────────────────
 function topSeg(path: string): string {
   const i = path.indexOf("/");
   return i === -1 ? path : path.slice(0, i);
@@ -62,43 +69,16 @@ function parseCsv(text: string): Record<string, string>[] {
   });
 }
 
-// 信任闸门:永不信任来源,跑起来前重验包结构。坏包 → ok:false。
-export function validatePack(files: PackFile[]): { ok: boolean; issues: ImportIssue[] } {
-  const issues: ImportIssue[] = [];
-  if (files.length === 0) issues.push({ level: "error", path: "(pack)", msg: "空团本包" });
-  for (const f of files) {
-    if (!KNOWN_TOP.has(topSeg(f.path))) {
-      issues.push({ level: "error", path: f.path, msg: `未知顶层路径段「${topSeg(f.path)}」(允许: ${[...KNOWN_TOP].join("/")})` });
-    }
-    if (f.path.startsWith("state/")) {
-      const rows = parseCsv(f.content);
-      if (rows.length && !("entity" in rows[0] && "attr" in rows[0] && "value" in rows[0])) {
-        issues.push({ level: "error", path: f.path, msg: "state CSV 缺 entity/attr/value 列" });
-      }
-    }
-    const REQ: Record<string, string[]> = {
-      fronts: ["id", "name"], plotlines: ["id", "title"], foreshadows: ["id", "content"],
-      anchors: ["owner_table", "owner_id", "target_table", "target_id"],
-    };
-    const req = REQ[topSeg(f.path)];
-    if (req) {
-      const rows = parseCsv(f.content);
-      if (rows.length && !req.every((c) => c in rows[0])) {
-        issues.push({ level: "error", path: f.path, msg: `${topSeg(f.path)} CSV 缺必需列(需 ${req.join("/")})` });
-      }
-    }
-  }
-  return { ok: !issues.some((i) => i.level === "error"), issues };
-}
+
 
 const META_COLS = new Set(["weight", "source", "visible"]);
 
 // 物化:checkout 某版本 → 校验(throw on error) → 按域写入运行库。caller 提供已 initSchema 的 runDB。
 export function importPack(catalogDB: CatalogDB, runDB: DB, tuanbenId: string, ref: string): ImportResult {
   const files = checkout(catalogDB, tuanbenId, ref);
-  const v = validatePack(files);
+  const v = validatePackFull(files);
   if (!v.ok) {
-    throw new Error(`团本包校验失败(信任闸门): ${v.issues.filter((i) => i.level === "error").map((i) => `${i.path}: ${i.msg}`).join("; ")}`);
+    throw new Error(`团本包校验失败(信任闸门): ${v.issues.filter((i) => i.level === "error").map((i) => `${i.file}: ${i.msg}`).join("; ")}`);
   }
   const res: ImportResult = { lore: 0, rules: 0, pools: 0, stateCells: 0, fronts: 0, plotlines: 0, foreshadows: 0, anchors: 0 };
   const stateStmt = runDB.prepare(
@@ -129,10 +109,16 @@ export function importPack(catalogDB: CatalogDB, runDB: DB, tuanbenId: string, r
           res.stateCells++;
         }
       } else if (top === "fronts") {
-        for (const r of parseCsv(f.content)) {
-          frontUpsert(runDB, { id: r.id, name: r.name, stakes: r.stakes || undefined, clock_ref: r.clock_ref || undefined, status: r.status || undefined });
-          res.fronts++;
-        }
+        // front 正典格式：fronts/<id>.md (YAML frontmatter + body)
+        // 解析 frontmatter → clock_ref(clock attr) + H1 → frontUpsert。
+        // 凶兆→watcher 物化待 A2（main 也未做，此处只落 front 表行 + clock_ref）。
+        const id = baseName(f.path);
+        const parsed = parseFrontmatter(f.content);
+        const clockRef = parsed?.meta.clock?.trim() || undefined;
+        const nameMatch = /^#\s+(.+)$/m.exec(parsed?.body ?? f.content);
+        const name = nameMatch?.[1]?.trim() ?? id;
+        frontUpsert(runDB, { id, name, clock_ref: clockRef, stakes: undefined, status: undefined });
+        res.fronts++;
       } else if (top === "plotlines") {
         for (const r of parseCsv(f.content)) {
           plotlineUpsert(runDB, { id: r.id, title: r.title, summary: r.summary || undefined, status: r.status || undefined });
