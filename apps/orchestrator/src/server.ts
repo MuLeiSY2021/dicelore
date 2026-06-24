@@ -26,6 +26,7 @@ export function startServer(port: number): void {
   const openSession = (id: string) => { const db = openDb(`${dir}/${id}.db`); initSchema(db); return db; };
   const catalog = openCatalog(process.env.DICELORE_CATALOG ?? `${dir}/catalog.db`);
   const fake = process.env.DICELORE_FAKE_GM === "1";
+  const baseline = process.env.DICELORE_BASELINE === "1"; // eval baseline:openingPrompt 去 doctrine + skills 空
   // Agent 适配缝:据 AgentInit 产 agent。真=CC SDK 适配器(DiceGm),fake=FakeDiceGm。
   const agentFactory: AgentFactory = fake
     ? () => new FakeDiceGm((input) => [{ type: "narration", text: `（GM）你说：「${input.text}」。门吱呀一声开了。` }, { type: "turn_end" }])
@@ -36,7 +37,7 @@ export function startServer(port: number): void {
 
   const app = new Hono();
   app.route("/", createLiveApp({
-    agentFactory, skills: diceSkills, openSession, catalog,
+    agentFactory, skills: diceSkills, openSession, catalog, baseline,
     listSessions: () => listSessionSummaries(dir),
     deleteSession: (id) => { try { rmSync(`${dir}/${id}.db`); rmSync(`${dir}/${id}.db-wal`, { force: true }); rmSync(`${dir}/${id}.db-shm`, { force: true }); } catch { /* ignore */ } },
   }));
@@ -44,7 +45,7 @@ export function startServer(port: number): void {
   app.route("/", createDiagnosticsApp({ port, fakeGm: fake }));
 
   const server = serve({ fetch: app.fetch, port });
-  attachWsUpgrade(server, { openSession, agentFactory, skills: diceSkills });
+  attachWsUpgrade(server, { openSession, agentFactory, skills: diceSkills, baseline });
   console.log(`[orchestrator] live :${port}`);
 }
 
