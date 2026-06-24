@@ -1,0 +1,54 @@
+---
+name: autonomous-delivery-loop
+description: Dicelore 专属自主交付闭环。当要「自己推进、不提问」地把一批目标做完时用——无论是推进里程碑、修问题、还是重构某层。流程:现状↔目标差距分析→落 06 backlog→规划 DAG→调 superpowers 落 spec/plan(不提问)→从 main 切 worktree 发 subagent 批量实现→另起 subagent 从业务角度设计测试→验收(失败回炉、通过则沉淀 wiki+三处清场+合回 main)。这是 advance-milestone / fix-wiki-issues / refactor-frontend / refactor-backend 四个叶 skill 共用的骨架,也可单独调用。
+---
+
+# 自主交付闭环（autonomous-delivery-loop）
+
+把 CLAUDE.md「执行模型」+「问题生命周期」固化成一条**默认不提问、自己推进到底**的闭环。叶 skill 引用本骨架、只覆盖差异点（问题从哪来 / 扫描范围 / 关注点 / 验收口径）。
+
+## 何时用
+
+- 接到「自己推进、不要提问，做完落 spec」类指令。
+- 要把一批已锚定的目标（路线图某批 / 某层 backlog / 一组 wiki 问题）成体系地交付。
+- 需要设计 + 多步实现 + 并发 subagent。
+
+> **纯机械改动例外**：若只是批量改名等无新行为的活，按 `[机械改名用正则]` 经验，跳过 heavy SDD，直接正则替换 + 测试兜底。
+
+## 流程（a→g）
+
+**默认全程不向用户提问**；遇歧义自行按 wiki + 代码现状决断（叶 skill 可声明覆盖此默认）。
+
+1. **① 现状↔目标差距分析**
+   读相关 wiki（**必读 [06-里程碑与问题](../../../docs/wiki/06-里程碑与问题/)**：路线图 + 三池）+ 对应层代码，列出 gap 清单。
+
+2. **② 落 06 backlog**
+   把 gap 写进对应 `backlog-<层>.md` 池，带字段 `类型(fix|feat)·来源·是否随规模恶化·主题·下一步`；必要时编进 `路线图.md` 当前批。**反复出现 + 随规模恶化 = 最高优先级**。
+
+3. **③ 规划 DAG**
+   分析涉及哪些包（前端 `apps/web` / 后端 `apps/orchestrator` / core `packages/core`+`shared`），把任务拆成依赖图，标出可并发的波次。
+
+4. **④ 调 superpowers 落 spec/plan（不提问）**
+   需设计 → `superpowers:brainstorming`（**自问自答，不向用户提问**）落 spec；→ `superpowers:writing-plans` 落 plan 到 `docs/superpowers/plans/`。
+
+5. **⑤ 切 worktree + 发 subagent**
+   从 main 切 worktree（`superpowers:using-git-worktrees`，**每条并行线各一个 worktree**）；按 DAG 波次派 subagent（`superpowers:subagent-driven-development` / `superpowers:dispatching-parallel-agents`）批量实现。
+
+6. **⑥ 回收 + 从业务角度设计测试**
+   subagent 回收后，**另起 subagent 专门按这批 feat 的业务语义设计测试方案**（不是只跑现有测试，而是补出业务级用例）。
+
+7. **⑦ 验收**
+   `npm test` + `npm run typecheck`；web 改动**必须**走 `/webapp-testing`（example-skills:webapp-testing）。
+   - **有问题 → 回 ②**（gap 重新入账，再来一轮）。
+   - **通过 → 收尾**：
+     1. 沉淀 wiki（决策→`05-决策记录-ADR` / 设计→`04-子系统设计` / 概念·架构→`02`·`03`；达成节点由人工进 `里程碑.md`）。
+     2. 三处清场：关 backlog 条目（标 `→ADR-00xx` 或删）/ 路线图勾掉该批；删对应 `docs/todo/`；**确认知识已沉淀 wiki 后**才删 superpowers spec/plan。
+     3. 合回 main（先 merge worktree 分支）。
+
+## 硬约束
+
+- **并行隔离**：多条并行线各自 worktree，别挤主工作目录；提交用 scoped `git add <精确路径>`，别 `-A`（教训：`[worktree npm lock 坑]`）。
+- **删 superpowers 草稿铁律**：先沉淀 wiki 才删；多份 plan 半途**整套留着**不删，全套落地 + 沉淀后统一清。
+- **git 命令一律 `--no-pager`**（否则 less 卡死 Bash 会话）。
+- **声明完成前自验证**：`superpowers:verification-before-completion`——跑命令、看输出，证据在前、断言在后。
+- **单源 / 单向推导**：沉淀时下游页只引上游页；一件事只在一处权威。
