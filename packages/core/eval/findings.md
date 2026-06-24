@@ -25,7 +25,7 @@
 | B4 | **分级线索披露** | `reveal_once` 只能快照 raw cell(要么泄全、要么泄数字);只好把线索塞进 band consequence | 「按检定档披露分级线索散文」原语(线索≠实体属性≠世界条目) |
 | B5 | **NPC 表演层 vs 真实层双值** | `resolve_contest` 只能填一个常数底线;表达不了「叫价18/真实不在乎钱、差额即线索」 | NPC 属性带「表演层/真实层」双值 |
 | B6 | **GM 待办/悬置钩子看板** | 未触发 watcher / 未回收伏笔 / 状态机 散在三处;`event_recall` 只能搜不能列「未结清单」 | 「当前所有未结张力」一览(GM 侧) |
-| B7 | **无标签思考段泄漏** | `stripReasoning`(P6) 只剥 `<think>/<thinking>/<reasoning>` 标签块;glm-5.2 的英文自言自语("The table's set, let me check the world state...")无标签,剥不掉→泄漏成 narration_commit | 靠 gm-core 教条约束(GM 别把思考/元叙述 narrate 给玩家);strip 留作标签类模型(DeepSeek-R1 等)兜底。本质模型行为,非 strip 能解 |
+| B7 | **narration 来源取错（根因 → [G-后端-narration](../../../docs/wiki/06-里程碑与问题/backlog-后端.md)）** | `DiceGm` 把 assistant text 当 narration yield（违背 ADR-0009：narration 该从 narrate 工具 event 来、assistant text 是流③只回 AI）；glm-5.2 思考段在 assistant text → 泄漏成 narration_commit（"The table's set, let me check the world state..."）。`stripReasoning` 只剥 `<think>` 标签块是**掩盖此 bug 的补丁、非根因** | 修 G-后端-narration（DiceGm 不 yield assistant text + mapCanonWrite 对 narrate event 发 narration_commit）→ 思考段自然不进 narration，stripReasoning 可废 |
 
 > **路由**:B1-B6 攒成「叙事脚手架」设计周期——可能新 ADR + 新工具/抽象(plotline / 伏笔 lifecycle / 事件触发器 / 分级线索 / NPC 双层值)。**不在 gm-core 提示词里硬塞**(用户明示:低效甚至无解)。Front/Clock([ADR-0016]) 与 watcher 是部分地基,需评估扩展 vs 新建。
 
