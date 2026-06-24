@@ -15,9 +15,11 @@ import { frontUpsert } from "../store/front.js";
 import { plotlineUpsert } from "../store/plotline.js";
 import { foreshadowUpsert } from "../store/foreshadow.js";
 import { anchorAdd } from "../store/anchor.js";
+import { stateSetClock } from "../store/state.js";
+import { watcherSet } from "../store/watcher.js";
 import { checkout, type PackFile } from "./catalog.js";
 import type { CatalogDB } from "./db.js";
-import { validatePack as validatePackFull, parseFrontmatter, type ValidateIssue } from "../build/pack/validate.js";
+import { validatePack as validatePackFull, parseFrontmatter, parseFront, type ValidateIssue } from "../build/pack/validate.js";
 
 // 团本包 → per-session 运行库的物化映射(对齐 数据层 spec §9)。
 // 包路径约定: lore/<n>.md、rules/<n>.md、pools/<n>.csv、state/<n>.csv、manifest.md
@@ -110,14 +112,42 @@ export function importPack(catalogDB: CatalogDB, runDB: DB, tuanbenId: string, r
         }
       } else if (top === "fronts") {
         // front 正典格式：fronts/<id>.md (YAML frontmatter + body)
-        // 解析 frontmatter → clock_ref(clock attr) + H1 → frontUpsert。
-        // 凶兆→watcher 物化待 A2（main 也未做，此处只落 front 表行 + clock_ref）。
+        // 解析 → frontUpsert(front 表行 + clock_ref) + Clock 初始化 + 凶兆→watcher 预声明。
         const id = baseName(f.path);
-        const parsed = parseFrontmatter(f.content);
-        const clockRef = parsed?.meta.clock?.trim() || undefined;
-        const nameMatch = /^#\s+(.+)$/m.exec(parsed?.body ?? f.content);
-        const name = nameMatch?.[1]?.trim() ?? id;
-        frontUpsert(runDB, { id, name, clock_ref: clockRef, stakes: undefined, status: undefined });
+        const front = parseFront(f.content);
+        if (front) {
+          // 1. front 表行
+          frontUpsert(runDB, { id, name: front.name, clock_ref: front.clock, stakes: undefined, status: undefined });
+          // 2. Clock 初始化：拆 clock → entity.attr，写 state + clock_min/max/mode
+          const dotIdx = front.clock.indexOf(".");
+          if (dotIdx !== -1) {
+            const entity = front.clock.slice(0, dotIdx);
+            const attr = front.clock.slice(dotIdx + 1);
+            stateSetClock(runDB, entity, attr, {
+              value: String(front.min),
+              visible: front.visible ?? 1,
+              clock_min: front.min,
+              clock_max: front.max,
+              clock_mode: front.mode,
+            });
+          }
+          // 3. 凶兆阶梯 → 预声明 watcher（condition 格式对齐 orc-hunt-seed）
+          for (const omen of front.omens) {
+            watcherSet(runDB, {
+              condition: `{${front.clock}} >= ${omen.threshold}`,
+              payload: omen.payload,
+              mode: front.mode,
+              source: `front:${id}`,
+            });
+          }
+        } else {
+          // fallback: no frontmatter, just upsert id-only
+          const parsed = parseFrontmatter(f.content);
+          const clockRef = parsed?.meta.clock?.trim() || undefined;
+          const nameMatch = /^#\s+(.+)$/m.exec(parsed?.body ?? f.content);
+          const name = nameMatch?.[1]?.trim() ?? id;
+          frontUpsert(runDB, { id, name, clock_ref: clockRef, stakes: undefined, status: undefined });
+        }
         res.fronts++;
       } else if (top === "plotlines") {
         for (const r of parseCsv(f.content)) {

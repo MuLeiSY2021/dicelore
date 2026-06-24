@@ -115,6 +115,42 @@ export function parseFrontmatter(content: string): { meta: Record<string, string
   return { meta, body };
 }
 
+/** 完整解析 fronts/*.md → 结构化 front 数据（clock、阶梯、H1 name）。供 import.ts 物化共用。 */
+export interface ParsedFront {
+  clock: string;
+  min: number;
+  max: number;
+  mode: "once" | "repeat";
+  visible?: number;
+  name: string;
+  omens: { threshold: number; payload: string }[];
+}
+
+export function parseFront(content: string): ParsedFront | null {
+  const parsed = parseFrontmatter(content);
+  if (!parsed) return null;
+  const { meta, body } = parsed;
+  const clock = meta.clock?.trim() ?? "";
+  const min = meta.min !== undefined ? Number(meta.min) : 0;
+  const max = meta.max !== undefined ? Number(meta.max) : 0;
+  const mode: "once" | "repeat" = meta.mode === "repeat" ? "repeat" : "once";
+  const visible = meta.visible !== undefined ? Number(meta.visible) : undefined;
+  const nameMatch = /^#\s+(.+)$/m.exec(body);
+  const name = nameMatch?.[1]?.trim() ?? clock;
+  const tableRows = extractMarkdownTableRows(body) ?? [];
+  const omens: { threshold: number; payload: string }[] = [];
+  for (const row of tableRows) {
+    const cols = row.map((c) => c.trim()).filter((c) => c !== "");
+    if (cols.length >= 2) {
+      const threshold = Number(cols[0]);
+      if (!isNaN(threshold)) {
+        omens.push({ threshold, payload: cols[1] });
+      }
+    }
+  }
+  return { clock, min, max, mode, visible, name, omens };
+}
+
 // ── 辅助：从所有 sheets/ + state/ CSV 提取已知 (entity, attr) 对 ────────
 function collectSheetAttrs(files: PackFile[]): Set<string> {
   const attrs = new Set<string>();

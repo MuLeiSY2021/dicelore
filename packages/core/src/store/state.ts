@@ -65,3 +65,19 @@ export function stateSet(db: DB, entity: string, attr: string, value: string, vi
     ).run(entity, attr, value, visible);
   }
 }
+
+/** Clock 初始化：写入 value(初始进度) + clock_min/clock_max/clock_mode 三元组。供 fronts 物化使用。 */
+export function stateSetClock(
+  db: DB,
+  entity: string,
+  attr: string,
+  opts: { value: string; visible?: number; clock_min: number; clock_max: number; clock_mode: string },
+): void {
+  db.prepare(
+    `INSERT INTO state (entity, attr, value, visible, clock_min, clock_max, clock_mode)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(entity, attr) DO UPDATE SET
+       value=excluded.value, visible=excluded.visible,
+       clock_min=excluded.clock_min, clock_max=excluded.clock_max, clock_mode=excluded.clock_mode`,
+  ).run(entity, attr, opts.value, opts.visible ?? 0, opts.clock_min, opts.clock_max, opts.clock_mode);
+}
