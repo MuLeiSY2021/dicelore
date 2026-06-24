@@ -85,6 +85,16 @@
 
 ---
 
+## 主题 · 可见性 / L3 审计链 🔧
+
+> 承接 [总体架构 §3.1](../03-架构/总体架构.md) 可见性三件套（`visible` 列 / show 持久揭示 / reveal_once 快照）的**审计回路**——show 写 `kind=note` 审计 event 供 L3/回看。本主题挂审计链断点。
+
+| # | 类型 | 问题 | 现状 | 来源 | 恶化 | 下一步 |
+|---|------|------|------|------|:--:|--------|
+| V1 | fix | **`sheet_show`/`world_show` 审计 event_id 不回 AI**：[总体架构 §3.1](../03-架构/总体架构.md) 承诺 show 写 `kind=note` 审计 event 供 L3/回看，但工具出参无 `audit_event_id`，AI 无法串联审计链（审计 event 内部写了但不回 AI） | `mcp/handlers/io.ts` show 出参无 event_id | [接口页 §10.1 C1](../04-子系统设计/玩家客户端-接口.md) 核验 2026-06-24 | ✗ | show/world_show 出参加 `audit_event_id`（回 AI，供 L3 比对串联） |
+
+---
+
 ## 主题 · 维护 🧹
 
 | # | 类型 | 问题 | 来源 | 下一步 |
