@@ -10,6 +10,9 @@
 // @dicelore/core 公共面（additive；引擎纯逻辑反向零 import 本文件）。
 export { openDb, initSchema, type DB } from "./store/db.js";
 export { initViews } from "./store/views.js";
+// 声明式工具生成层接线（叙事层 dogfooding，spec §8 + DT-9 step③）
+export { toolgenToToolDef } from "./toolgen/toToolDef.js";
+export { narrationStdlibTools, narrationToolDecls } from "./mcp/stdlib/narration.js";
 export {
   buildPresentationModel,
   type PresentationModel,
