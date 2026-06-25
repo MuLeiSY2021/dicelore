@@ -27,10 +27,23 @@ export function useSession(sessionId: string) {
   const [gameEnd, setGameEnd] = useState<GameEnd | null>(null);
   const [reveals, setReveals] = useState<RevealCard[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
+  // 当前会话 id 的 ref：迟到的旧会话异步回调（refetch / WS 消息）据此守卫，不污染新会话状态。
+  const sidRef = useRef(sessionId);
 
-  const refetch = useCallback(() => { getPresentation(sessionId).then(setSnapshot).catch(() => {}); }, [sessionId]);
+  const refetch = useCallback(() => {
+    getPresentation(sessionId).then((s) => { if (sidRef.current === sessionId) setSnapshot(s); }).catch(() => {});
+  }, [sessionId]);
 
   useEffect(() => {
+    // 切会话：先把 sidRef 指向新会话 + 重置所有残留状态（旧会话叙事/待掷/错误/终局/揭示不闪现到新会话）。
+    sidRef.current = sessionId;
+    setSnapshot(null);
+    setNarration([]);
+    setPendingRoll(null);
+    setGenerating(false);
+    setError(null);
+    setGameEnd(null);
+    setReveals([]);
     refetch();
     let closed = false;
     let retry = 0;
