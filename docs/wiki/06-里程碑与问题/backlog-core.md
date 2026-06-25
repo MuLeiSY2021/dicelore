@@ -119,18 +119,19 @@
 
 > **一句话病根**：v1 把 L3 审计 / 被动 rule 召回押在 Claude Code hook 上（[技术选型 §6](../03-架构/技术选型.md) / [跨agent §3](../03-架构/跨agent与适配层.md) 定为"承重"）。core 虽称标准可搬，但"承重"即承认**实际不可搬**——CC 改 hook 语义 / SDK v2 breaking（已 pre-alpha）/ 付费策略 / 国内可用性任一变动都能让框架命门失重。这是用低开发成本换来的单点依赖，**对发版 / 商业化语境是供应商锁定风险**，当前未定价。
 >
-> **路由**：开 ADR 定**解绑触发条件** + 保留 hook 抽象边界（哪怕 v1 只一份 CC 实现），别让 `adapter/` 之外代码直接调 CC 专属 API。**不阻塞头号债链路，但发版前必决。**
+> **路由**：开 ADR 定**解绑触发条件** + 把承重层抽成 **port（adapter 接口契约，v1 单 Claude Code 实现、多 agent sdk 列未来）**——核心是回答 **L3 承重怎么跨 agent 表达**（被动 rule 召回 + 回合末审计，正是 [ADR-0008](../05-决策记录-ADR/) 否①「hook 类塑形难跨 agent 承重」的理由），并禁 `adapter/` 之外代码直接调 CC 专属 API。**不阻塞头号债链路，但发版前必决。**
 
 | # | 类型 | 问题 | 来源 | 恶化 | 下一步/依赖 |
 |---|------|------|------|:--:|--------|
 | S1 | feat | **承重绑定无解绑预案 + 无抽象边界**：hook 承重但未写"何时该解绑"触发条件（CC 改 X / 商业化 Y / SLA Z）；`adapter/hooks/*` 已隔离但无契约保证业务代码不穿透。core"理论上可搬" ≠ 实际可搬 | 首席架构师评估 2026-06-25 | — | 💡 开 ADR：① 定解绑触发条件；② 立 hook 抽象接口位（v1 单实现、禁业务穿透）；③ 把"承重绑定"显式列为最高级架构风险。与 [跨agent §5](../03-架构/跨agent与适配层.md) 取舍对齐 |
+| S2 | feat | **承重层 port 契约 + L3 跨 agent 承重未定**：用户提议把 hook/skill/subagent 承重层抽成 port，当前单 Claude Code adapter、多 agent sdk 列未来（harness 思想 L1/L2/L3 + 团本/SQLite store 不变，只把"绑哪个 agent"从硬绑松弛成 port + 默认 adapter）。病根＝**L3 承重（被动 rule 召回 + 回合末审计）跨 agent 无统一表达**——这正是 [ADR-0008](../05-决策记录-ADR/) 否①「hook 类塑形难跨 agent 承重」的理由，port 契约须正面解，否则 port 是空壳。是 [ADR-0017](../05-决策记录-ADR/) 快照对冲思路从快照一项延到整个承重层；**不翻 ADR-0008**（v1 单实现、多实现明确推迟）、不违 [跨agent §5](../03-架构/跨agent与适配层.md) 取舍（可移植兑现在模型层、port 是"未来想搬就能搬"的保险非 v1 目标） | 用户提议 2026-06-25（"从单点 Claude agent 改成适配多 agent；harness 思想确定，用适配器适配不同 agent sdk"） | ✗ | 💡 与 S1 同 ADR：定 port 契约边界 + **L3 跨 agent 表达**（被动 rule 召回 + 回合末审计的 adapter 接口形状，与 [ADR-0017](../05-决策记录-ADR/) 快照 adapter 对齐）；**当前不实现**，只立方向 |
 
 ---
 
 ## 🔮 未来池（core 层 · 明确推迟，别现在做）
 
 - **状态回滚/分支**：反刷骰 config 旋钮（稳定键播种）；「进行中存档遇 rule 版本热更」的 `schema_version`/团本版本迁移语义（深 diff/merge）。来源：03 TODO G。
-- **自研 agent runtime**：[ADR-0008](../05-决策记录-ADR/) 被否项，对冲＝快照/core agent 无关；迟早面临，记未来。
+- **自研 agent runtime**：[ADR-0008](../05-决策记录-ADR/) 被否项，对冲＝快照/core agent 无关；迟早面临，记未来。承重层 port 防腐方向见 [主题S · S2](#主题s--战略风险--claude-code-承重绑定-)。
 - **团本构建台未来**：语义向量检索（FTS 起步够）、深版本化迁移。来源：04 TODO 组件5/6。
 - **eval-loop 工装**：headless `claude -p` 多回合驱动确切 flag（实现期核实）——但**主线改走子代理 GM harness（主题F），此项大概率作废**。
 - **`shop_pool` 视图 + `shop_buy` 工具**（数据层不阻塞）：当下走 choice 式文本菜单即可（团本富前端组件本体在 [backlog-前端](backlog-前端.md) 未来池）。来源：用户 + [声明式工具生成层 spec](../../superpowers/specs/2026-06-22-声明式工具生成层-design.md)（2026-06-22）。
