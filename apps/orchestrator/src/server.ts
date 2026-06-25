@@ -57,7 +57,7 @@ export function startServer(port: number): void {
   app.route("/", createDiagnosticsApp({ port, fakeGm: fake }));
 
   const server = serve({ fetch: app.fetch, port });
-  attachWsUpgrade(server, { openSession, agentFactory, skills: diceSkills, baseline, debug });
+  attachWsUpgrade(server, { openSession, agentFactory, skills: diceSkills, baseline, debug, sessionsDir: dir });
   console.log(`[orchestrator] live :${port}`);
   getLogger().info({ port, fakeGm: fake, debug, sessionsDir: dir, catalog: catalogPath }, `orchestrator live :${port}`);
 }

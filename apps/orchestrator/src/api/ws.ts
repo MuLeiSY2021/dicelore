@@ -22,6 +22,7 @@ export interface WsUpgradeDeps {
   model?: string;
   baseline?: boolean; // eval baseline 对照:透传 DiceSession
   debug?: boolean; // eval/裸 CC 明骰降级:透传 DiceSession(不注入 rollGate)
+  sessionsDir?: string; // GM raw 日志根目录:透传 DiceSession→DiceGm(否则 WS 路径 sessionLogger 退化全局,GM 日志刷屏全局 debug.log)
 }
 
 // dice 会话 WS 升级(/sessions/:id/ws)挂到 http server——从原 startServer 内联块抽出,行为不变。
@@ -34,7 +35,7 @@ export function attachWsUpgrade(server: unknown, deps: WsUpgradeDeps): void {
       if (!m) { socket.destroy(); return; }
       wss.handleUpgrade(req, socket, head, (ws) => {
         const id = decodeURIComponent(m[1]);
-        const host = getOrCreateHost(id, { db: deps.openSession(id), agentFactory: deps.agentFactory, skills: deps.skills, model: deps.model, baseline: deps.baseline, debug: deps.debug });
+        const host = getOrCreateHost(id, { db: deps.openSession(id), agentFactory: deps.agentFactory, skills: deps.skills, model: deps.model, baseline: deps.baseline, debug: deps.debug, sessionsDir: deps.sessionsDir });
         const wsLike = ws as unknown as { send(d: string): void; readyState: number };
         host.attachWs(wsLike);
         restagePendingRolls(host); // 重连/重启 → 重弹未决掷骰卡
