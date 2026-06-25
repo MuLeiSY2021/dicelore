@@ -9,6 +9,7 @@
 
 import { createRequire } from "node:module";
 import { existsSync } from "node:fs";
+import { getLogger } from "@dicelore/core";
 import type { SkillRef } from "../pkg/agent.js";
 
 // dicelore-build-pack skill 源目录解析(供 staged skill 整目录拷入构建 agent 的临时 cwd)。
@@ -19,7 +20,7 @@ function buildPackDir(): string | null {
   try {
     const req = createRequire(import.meta.url);
     candidates.push(req.resolve("@dicelore/core").replace(/src[/\\]index\.ts$/, "build-skills/dicelore-build-pack"));
-  } catch { /* resolve 失败走 cwd 兜底 */ }
+  } catch (e) { getLogger().warn({ err: e }, "resolve @dicelore/core 失败,走 cwd 兜底"); }
   candidates.push(`${process.cwd()}/packages/core/build-skills/dicelore-build-pack`);
   for (const d of candidates) if (existsSync(`${d}/SKILL.md`)) return d;
   return null;

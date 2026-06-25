@@ -9,7 +9,7 @@
 
 import { Hono } from "hono";
 import { existsSync } from "node:fs";
-import { TOOLS } from "@dicelore/core";
+import { TOOLS, getLogger } from "@dicelore/core";
 
 // 缝 B 自检面（组件7 配置页/顶栏运行态指示的真值来源）：
 // - GET  /diagnostics/health    服务器真实运行态(端口/模型/MCP工具数/notify/存储)
@@ -62,7 +62,7 @@ export function createDiagnosticsApp(deps: DiagDeps): Hono {
 
   // 模型连接测试：FAKE 模式返回模拟成功；否则对 baseUrl 做一次最小 GET(/models) 探测。
   app.post("/diagnostics/model-test", async (c) => {
-    const body = (await c.req.json().catch(() => ({}))) as { baseUrl?: string; key?: string; gm?: string };
+    const body = (await c.req.json().catch((e: unknown) => { getLogger().warn({ err: e }, "model-test body 解析失败,用空对象兜底"); return {}; })) as { baseUrl?: string; key?: string; gm?: string };
     const start = Date.now();
     if (deps.fakeGm) {
       return c.json({ ok: true, fake: true, latencyMs: Date.now() - start, message: "FAKE_GM 模拟模式：未发起真实请求" });
@@ -87,6 +87,7 @@ export function createDiagnosticsApp(deps: DiagDeps): Hono {
       });
     } catch (e: unknown) {
       cancel();
+      getLogger().error({ err: e, baseUrl: base }, "model-test 请求失败");
       return c.json({ ok: false, latencyMs: Date.now() - start, message: e instanceof Error ? e.message : "网络错误" });
     }
   });
@@ -109,6 +110,7 @@ export function createDiagnosticsApp(deps: DiagDeps): Hono {
       return c.json({ ok: res.status > 0 && res.status < 500, status: res.status, latencyMs: Date.now() - start, message: "端点可达" });
     } catch (e: unknown) {
       cancel();
+      getLogger().error({ err: e, endpoint: ep }, "mcp-test 请求失败");
       return c.json({ ok: false, latencyMs: Date.now() - start, message: e instanceof Error ? e.message : "不可达" });
     }
   });

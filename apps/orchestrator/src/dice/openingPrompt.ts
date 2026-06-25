@@ -9,7 +9,7 @@
 
 import { createRequire } from "node:module";
 import { readFileSync, existsSync } from "node:fs";
-import { buildSessionContext, metaGet, type DB } from "@dicelore/core";
+import { buildSessionContext, getLogger, metaGet, type DB } from "@dicelore/core";
 import type { SkillRef } from "../pkg/agent.js";
 
 // gm-core skill 源目录解析(供内联兜底读 SKILL.md + staged skill 取整目录)。
@@ -18,7 +18,7 @@ function gmCoreDir(): string | null {
   try {
     const req = createRequire(import.meta.url);
     candidates.push(req.resolve("@dicelore/core").replace(/src[/\\]index\.ts$/, "skills/dicelore-gm-core"));
-  } catch { /* resolve 失败走 cwd 兜底 */ }
+  } catch (e) { getLogger().warn({ err: e }, "resolve @dicelore/core 失败,走 cwd 兜底"); }
   candidates.push(`${process.cwd()}/packages/core/skills/dicelore-gm-core`);
   for (const d of candidates) if (existsSync(`${d}/SKILL.md`)) return d;
   return null;
@@ -40,7 +40,7 @@ function gmCoreDoctrine(): string {
   try {
     const raw = readFileSync(`${dir}/SKILL.md`, "utf8");
     return raw.replace(/^---[\s\S]*?---\s*/, "").replace(/<!--[\s\S]*?-->/g, "").trim();
-  } catch { return ""; }
+  } catch (e) { getLogger().warn({ err: e }, "读 SKILL.md 失败,返回空字符串兜底"); return ""; }
 }
 
 let _doctrine: string | null = null;

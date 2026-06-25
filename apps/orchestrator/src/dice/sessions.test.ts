@@ -19,7 +19,9 @@ function makeTmpDir() {
 }
 
 function makeSessionDb(dir: string, name: string, meta: Record<string, string>) {
-  const path = join(dir, `${name}.db`);
+  const sessionDir = join(dir, name);
+  mkdirSync(sessionDir, { recursive: true });
+  const path = join(sessionDir, "session.db");
   const db = openDb(path);
   initSchema(db);
   for (const [k, v] of Object.entries(meta)) metaSet(db, k, v);
@@ -73,8 +75,8 @@ describe("listSessionSummaries", () => {
     expect(byId["sess-c"].packName).toBeUndefined();
   });
 
-  it("catalog.db 被排除", () => {
-    makeSessionDb(dir, "catalog", { tuanben_name: "不应出现" });
+  it("非目录条目(散落文件)被忽略——只枚举 session 子目录", () => {
+    writeFileSync(join(dir, "stray.db"), ""); // 散落文件,非 session 子目录
     makeSessionDb(dir, "sess-real", {});
     const result = listSessionSummaries(dir);
     expect(result).toHaveLength(1);

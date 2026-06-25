@@ -9,9 +9,9 @@
 
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-import { rmSync } from "node:fs";
-import { join } from "node:path";
-import { openCatalog, sessionDbPath, openSession as openCoreSession } from "@dicelore/core";
+import { rmSync, mkdirSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { openCatalog, sessionDir, openSession as openCoreSession, initGlobalLogger, getLogger } from "@dicelore/core";
 import { createLiveApp } from "./api/dice.js";
 import { createLoreApp } from "./api/lore.js";
 import { createDiagnosticsApp } from "./api/diagnostics.js";
@@ -25,10 +25,14 @@ import { FakeDiceGm } from "./dice/FakeDiceGm.js";
 
 export function startServer(port: number): void {
   const dir = process.env.DICELORE_SESSIONS_DIR ?? ".";
-  // 以 core 路径规则为准(sessionDbPath=${dir}/dicelore/sessions/${id}.db):eval prepareSessionDb 灌种子到同路径,
+  initGlobalLogger(dir); // 全局系统级日志 → $ROOT/{error,info,warn,debug}.log(须在一切 IO 前)
+  // 以 core 路径规则为准(sessionDbPath=$ROOT/dice/sessions/${id}/session.db):eval prepareSessionDb 灌种子到同路径,
   // 后端开同库读种子;core openSession 含 mkdir+initSchema+meta,避免种子灌 core 路径而后端开平铺空库。
-  const openSession = (id: string) => openCoreSession(id).db;
-  const catalog = openCatalog(process.env.DICELORE_CATALOG ?? `${dir}/catalog.db`);
+  const openSession = (id: string) => openCoreSession(id, "dice").db;
+  // catalog.db 在 $ROOT/(dice/lore 共用:lore 构建→dice import);openCatalog 不 mkdir,先确保父目录存在。
+  const catalogPath = process.env.DICELORE_CATALOG ?? join(dir, "catalog.db");
+  mkdirSync(dirname(catalogPath), { recursive: true });
+  const catalog = openCatalog(catalogPath);
   const fake = process.env.DICELORE_FAKE_GM === "1";
   const baseline = process.env.DICELORE_BASELINE === "1"; // eval baseline:openingPrompt 去 doctrine + skills 空
   // Agent 适配缝:据 AgentInit 产 agent。真=CC SDK 适配器(DiceGm),fake=FakeDiceGm。
@@ -45,8 +49,8 @@ export function startServer(port: number): void {
   const app = new Hono();
   app.route("/", createLiveApp({
     agentFactory, skills: diceSkills, openSession, catalog, baseline, sessionsDir: dir,
-    listSessions: () => listSessionSummaries(join(dir, "dicelore", "sessions")),
-    deleteSession: (id) => { const p = sessionDbPath(id); try { rmSync(p); rmSync(`${p}-wal`, { force: true }); rmSync(`${p}-shm`, { force: true }); } catch { /* ignore */ } },
+    listSessions: () => listSessionSummaries(join(dir, "dice", "sessions")),
+    deleteSession: (id) => { try { rmSync(sessionDir(id, "dice"), { recursive: true, force: true }); } catch (e) { getLogger().error({ err: e, id }, "删 session 文件夹失败"); } },
   }));
   app.route("/", createLoreApp({ catalog, agentFactory, buildPrompt: process.env.DICELORE_BUILD_PROMPT, skills: loreSkills }));
   app.route("/", createDiagnosticsApp({ port, fakeGm: fake }));

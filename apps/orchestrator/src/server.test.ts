@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, it, expect } from "vitest";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDb, initSchema, type DB } from "@dicelore/core";
@@ -54,12 +54,14 @@ describe("orchestrator 只读 REST", () => {
 });
 
 describe("listSessionSummaries", () => {
-  it("枚举 *.db 文件并按文件名排序映射成 summaries", () => {
+  it("枚举 session 子目录并按名排序映射成 summaries", () => {
     const dir = mkdtempSync(join(tmpdir(), "dicelore-sessions-"));
     try {
-      writeFileSync(join(dir, "beta.db"), "");
-      writeFileSync(join(dir, "alpha.db"), "");
-      writeFileSync(join(dir, "notes.txt"), "");
+      mkdirSync(join(dir, "beta"));
+      mkdirSync(join(dir, "alpha"));
+      writeFileSync(join(dir, "beta", "session.db"), "");
+      writeFileSync(join(dir, "alpha", "session.db"), "");
+      writeFileSync(join(dir, "notes.txt"), ""); // 散落文件,非 session 子目录,忽略
       const got = listSessionSummaries(dir);
       expect(got).toEqual([
         { sessionId: "alpha", title: "alpha", status: "active", updatedAt: expect.any(Number) },

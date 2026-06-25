@@ -11,7 +11,7 @@ import { Hono } from "hono";
 import type { DB, CatalogDB } from "@dicelore/core";
 import type { SessionInfo, SessionSummary } from "@dicelore/shared";
 import { MessageRequestSchema, ChoiceRequestSchema, RollRequestSchema } from "@dicelore/shared";
-import { loreSearch, ruleSearch, logSince } from "@dicelore/core";
+import { loreSearch, ruleSearch, logSince, getLogger } from "@dicelore/core";
 import { buildSnapshot } from "../dice/presentation.js";
 import { getOrCreateHost, getHost, removeHost } from "../dice/registry.js";
 import type { AgentFactory, SkillRef } from "../pkg/agent.js";
@@ -159,7 +159,8 @@ export function createLiveApp(deps: LiveDeps): Hono {
     try {
       const { turnId } = await host.handleChoice(body.eventId, body.optionIndex);
       return c.json({ turnId }, 202);
-    } catch {
+    } catch (e) {
+      getLogger().warn({ err: e, sessionId: id, eventId: body.eventId, optionIndex: body.optionIndex }, "无 pending choice,客户端误请求,返回 409");
       return c.json({ code: "no_pending_choice" }, 409);
     }
   });

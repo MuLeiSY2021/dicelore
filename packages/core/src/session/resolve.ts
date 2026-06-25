@@ -24,8 +24,16 @@ function appDataRoot(): string {
   }
 }
 
-export function sessionDbPath(name: string): string {
-  return join(appDataRoot(), "dicelore", "sessions", `${name}.db`);
+// session 自包含文件夹布局(dice/lore 顶层隔离):
+//   <root>/dice/sessions/<name>/{session.db, <name>_session.jsonl, error.log, info.log, ...}
+//   <root>/lore/sessions/<name>/{...}(lore 无 db,用内存 Draft;路径预留)
+// 每 session 一个自包含文件夹,打包/迁移/删除以文件夹为单位;sessionDir 即该文件夹,openSession 据此 mkdir。
+export type SessionKind = "dice" | "lore";
+export function sessionDir(name: string, kind: SessionKind = "dice"): string {
+  return join(appDataRoot(), kind, "sessions", name);
+}
+export function sessionDbPath(name: string, kind: SessionKind = "dice"): string {
+  return join(sessionDir(name, kind), "session.db");
 }
 
 export function metaGet(db: DB, key: string): string | undefined {
@@ -39,9 +47,9 @@ export function metaSet(db: DB, key: string, value: string): void {
   ).run(key, value);
 }
 
-export function openSession(name?: string): { db: DB; name: string; path: string } {
+export function openSession(name?: string, kind: SessionKind = "dice"): { db: DB; name: string; path: string } {
   const sessionName = name ?? process.env.DICELORE_SESSION ?? "default";
-  const path = sessionDbPath(sessionName);
+  const path = sessionDbPath(sessionName, kind);
   mkdirSync(dirname(path), { recursive: true });
   const db = openDb(path);
   initSchema(db);

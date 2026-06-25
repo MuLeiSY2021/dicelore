@@ -9,25 +9,26 @@
 
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { openDb, metaGet } from "@dicelore/core";
+import { openDb, metaGet, getLogger } from "@dicelore/core";
 import type { SessionSummary } from "@dicelore/shared";
 
-// 枚举 dir 下的 *.db(排除 catalog.db),开每库读 session_meta → 摘要。
-// title = sessionId(会话标识符);packName = 团本名(分组前缀,无则省略);started = 是否已 kickoff;updatedAt = 文件 mtime。目录不可读 → []。
-// 前端渲染格式: packName + " · " + title。
+// 枚举 dir 下的 session 子目录(每子目录 = 一个自包含 session 文件夹),开其 session.db 读 session_meta → 摘要。
+// title = sessionId(=子目录名);packName = 团本名(分组前缀,无则省略);started = 是否已 kickoff;updatedAt = session.db mtime。目录不可读 → []。
+// catalog.db 在 dicelore/ 下而非 sessions/,无需排除。前端渲染格式: packName + " · " + title。
 export function listSessionSummaries(dir: string): SessionSummary[] {
-  let files: string[];
+  let entries: string[];
   try {
-    files = readdirSync(dir);
-  } catch {
+    entries = readdirSync(dir);
+  } catch (e) {
+    getLogger().warn({ err: e, dir }, "sessions 目录不可读,返回空列表");
     return [];
   }
-  return files
-    .filter((f) => f.endsWith(".db") && f !== "catalog.db")
+  return entries
+    .filter((f) => { try { return statSync(join(dir, f)).isDirectory(); } catch (e) { getLogger().warn({ err: e, entry: f }, "stat 子条目失败,跳过"); return false; } })
     .sort()
-    .map((f) => {
-      const sessionId = f.slice(0, -".db".length);
-      const path = join(dir, f);
+    .map((sub) => {
+      const sessionId = sub;
+      const path = join(dir, sub, "session.db");
       const title = sessionId;
       let packName: string | undefined;
       let started: boolean | undefined;
@@ -38,8 +39,12 @@ export function listSessionSummaries(dir: string): SessionSummary[] {
         if (name) packName = name;
         started = metaGet(db, "started") === "1";
         db.close();
-      } catch { /* 读不动(非法库/无 meta)→ 裸 id,无 packName */ }
-      try { updatedAt = statSync(path).mtimeMs; } catch { /* ignore */ }
+      } catch (e) {
+        getLogger().warn({ err: e, path }, "读 session_meta 失败,裸 id 兜底");
+      }
+      try { updatedAt = statSync(path).mtimeMs; } catch (e) {
+        getLogger().warn({ err: e, path }, "stat session.db mtime 失败");
+      }
       return { sessionId, title, status: "active" as const, packName, started, updatedAt };
     });
 }

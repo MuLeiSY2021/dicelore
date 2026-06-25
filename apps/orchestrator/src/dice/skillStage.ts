@@ -10,6 +10,7 @@
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { getLogger } from "@dicelore/core";
 import type { SkillRef } from "../pkg/agent.js";
 
 // 会话本地 skill 副本(spec AD-3):把源 skill 目录整拷进一个临时 cwd 的 `.claude/skills/<name>`,
@@ -25,5 +26,5 @@ export function stageSkills(key: string, skills: SkillRef[]): string {
 }
 
 export function cleanupSkills(dir: string): void {
-  try { rmSync(dir, { recursive: true, force: true }); } catch { /* 已删/不存在,忽略 */ }
+  try { rmSync(dir, { recursive: true, force: true }); } catch (e) { getLogger().warn({ err: e, dir }, "cleanup skill 副本失败(已删/不存在),预期降级"); }
 }

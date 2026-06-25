@@ -11,6 +11,7 @@
 // 薄入口:读 stdin.prompt(字段以实现期官方文档为准)→ rule 召回 + 记 seq → 注 additionalContext。
 import { openSession } from "../../session/resolve.js";
 import { recallRules, recordTurnStart } from "../ruleRecall.js";
+import { getLogger } from "../../log.js";
 
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = [];
@@ -20,7 +21,7 @@ async function readStdin(): Promise<string> {
 
 const raw = await readStdin();
 let prompt = "";
-try { prompt = (JSON.parse(raw || "{}") as { prompt?: string }).prompt ?? ""; } catch { /* 容错 */ }
+try { prompt = (JSON.parse(raw || "{}") as { prompt?: string }).prompt ?? ""; } catch (e) { getLogger().warn({ err: e }, "JSON.parse stdin 失败,容错降级为空 prompt"); }
 
 const { db } = openSession();
 recordTurnStart(db);

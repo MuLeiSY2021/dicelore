@@ -12,6 +12,7 @@ import type { DB } from "../store/db.js";
 import { TOOLS } from "./tools.js";
 import { runTool } from "./runTool.js";
 import { setRollGate, type RollGate } from "./rollGate.js";
+import { getLogger } from "../log.js";
 
 export interface CanonWriteEvent {
   kind: "mutation" | "event" | "visibility" | "reveal" | "choice_staged" | "game_end";
@@ -56,7 +57,7 @@ export function wrapToolForTest(db: DB, deps: McpServerDeps) {
     const kind = CANON_KIND[name];
     if (kind && deps.onCanonWrite && !result.isError) {
       let output: unknown = undefined;
-      try { output = JSON.parse(result.content[0]?.text ?? "null"); } catch { /* 信封非 JSON,忽略 */ }
+      try { output = JSON.parse(result.content[0]?.text ?? "null"); } catch (e) { getLogger().warn({ err: e, toolName: name }, "信封 content 非 JSON,降级为 null output"); }
       deps.onCanonWrite({ kind, seq: maxSeq(db), toolName: name, output });
     }
     return result;

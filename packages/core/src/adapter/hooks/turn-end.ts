@@ -12,6 +12,7 @@
 import { readFileSync } from "node:fs";
 import { openSession } from "../../session/resolve.js";
 import { runTurnEnd } from "../turnEnd.js";
+import { getLogger } from "../../log.js";
 
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = [];
@@ -20,12 +21,12 @@ async function readStdin(): Promise<string> {
 }
 
 const raw = await readStdin();
-const input = (() => { try { return JSON.parse(raw || "{}"); } catch { return {}; } })() as
+const input = (() => { try { return JSON.parse(raw || "{}"); } catch (e) { getLogger().warn({ err: e }, "JSON.parse stdin 失败,容错降级为空对象"); return {}; } })() as
   { transcript_path?: string; stop_hook_active?: boolean };
 
 // 本轮 transcript 是否有实质 assistant 文本(简化:文件非空即有;精确解析留实现期)。
 let transcriptHasText = true;
-try { if (input.transcript_path) transcriptHasText = readFileSync(input.transcript_path, "utf8").trim().length > 0; } catch { /* 容错 */ }
+try { if (input.transcript_path) transcriptHasText = readFileSync(input.transcript_path, "utf8").trim().length > 0; } catch (e) { getLogger().warn({ err: e, transcriptPath: input.transcript_path }, "读 transcript 失败,容错降级为有文本"); }
 
 const { db } = openSession();
 const r = runTurnEnd(db, { transcriptHasText, stopHookActive: Boolean(input.stop_hook_active) });

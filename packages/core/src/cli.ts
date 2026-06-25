@@ -11,6 +11,7 @@ import { readdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { metaGet, openSession, sessionDbPath } from "./session/resolve.js";
 import { runInit } from "./adapter/init.js";
+import { getLogger } from "./log.js";
 
 const [cmd, arg] = process.argv.slice(2);
 
@@ -24,7 +25,7 @@ switch (cmd) {
   case "list": {
     const dir = dirname(sessionDbPath("_"));
     let files: string[] = [];
-    try { files = readdirSync(dir).filter((f) => f.endsWith(".db")); } catch { /* 目录不存在 */ }
+    try { files = readdirSync(dir).filter((f) => f.endsWith(".db")); } catch (e) { getLogger().warn({ err: e, dir }, "readdir 会话目录失败(目录不存在),预期降级"); }
     console.log(files.length ? files.map((f) => "  " + f.replace(/\.db$/, "")).join("\n") : "(无会话)");
     break;
   }

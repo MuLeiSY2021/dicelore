@@ -63,5 +63,6 @@ export { logSince, logRecall, type LogRow } from "./store/log.js";
 export { stateList, stateGet, type StateCell as RuntimeStateCell } from "./store/state.js";
 // session_meta KV(团本名/prologue/started 等,P2 Play 生命周期) + 路径规则(sessionDbPath/openSession)。
 // 后端 server.ts 与 eval prepareSessionDb 共用 openSession 路径规则,避免种子灌到 core 路径而后端开平铺空库。
-export { metaGet, metaSet, sessionDbPath, openSession } from "./session/resolve.js";
+export { metaGet, metaSet, sessionDbPath, sessionDir, openSession, type SessionKind } from "./session/resolve.js";
 export { buildSessionContext } from "./adapter/sessionContext.js";
+export { createFileLogger, initGlobalLogger, getLogger } from "./log.js";
