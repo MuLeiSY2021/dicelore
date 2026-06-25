@@ -84,7 +84,20 @@ export function applyMutations(
       }
 
       // 值表达式分支:标量算术 / 赋数
-      const led = evalExpr(m.expr, ctx);
+      let led;
+      try {
+        led = evalExpr(m.expr, ctx);
+      } catch (e) {
+        // op= 赋值宽容:非法算术 expr(如武器名"锈钉+2 (破甲)")降级为字面量字符串,
+        // 避免开局建卡时 expr 解析器对实体名报 EXPR_EVAL 阻断整批事务。+/- 算术仍报错(要求数值)。
+        if (m.op === "=") {
+          const old = stateGet(db, entity, m.attr)?.value ?? null;
+          stateSet(db, entity, m.attr, m.expr);
+          applied.push({ attr: m.attr, op: m.op, expr: m.expr, kind: "set", old, new: m.expr });
+          continue;
+        }
+        throw e;
+      }
       const hasDice = led.terms.some((t) => t.kind === "dice");
       const old = stateGet(db, entity, m.attr)?.value ?? null;
       let nextNum: number;

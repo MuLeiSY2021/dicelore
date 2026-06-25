@@ -7,8 +7,8 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import { describe, it, expect } from "vitest";
-import { openDb, initSchema, metaSet, type DB } from "@dicelore/core";
+import { describe, it, expect, beforeEach } from "vitest";
+import { openDb, initSchema, metaSet, setRollGate, getRollGate, type DB } from "@dicelore/core";
 import { DiceSession } from "./DiceSession.js";
 import { FakeDiceGm } from "./FakeDiceGm.js";
 import type { AgentInit, Agent } from "../pkg/agent.js";
@@ -111,6 +111,29 @@ describe("DiceSession", () => {
     const db = memDb();
     const host = new DiceSession("s-choice-bad", { db, agentFactory: () => new FakeDiceGm([{ type: "turn_end" }]) });
     await expect(host.handleChoice(999, 0)).rejects.toThrow();
+  });
+});
+
+describe("DiceSession debug(明骰降级)", () => {
+  // L3:DiceSession 无条件注入 rollGate 让 core 的「无 gate 降级立即掷」成死代码,
+  // eval/裸 CC 调明骰必卡死(等永不来的 POST /roll)。debug 模式不注入 gate → core 降级立即掷。
+  beforeEach(() => setRollGate(undefined));
+
+  it("debug:true → 不注入 rollGate(core 降级路径激活)", () => {
+    const s = new DiceSession("s-debug", { agentFactory: () => new FakeDiceGm([]), db: memDb(), debug: true });
+    expect(s.gate).toBeUndefined();
+    expect(getRollGate()).toBeUndefined();
+  });
+
+  it("默认(非 debug) → 注入 rollGate(等玩家掷)", () => {
+    const s = new DiceSession("s-nodebug", { agentFactory: () => new FakeDiceGm([]), db: memDb() });
+    expect(s.gate).toBeDefined();
+    expect(getRollGate()).toBeDefined();
+  });
+
+  it("debug:true → handleRoll 无 gate 直接 false(明骰已立即掷,无 pending)", () => {
+    const s = new DiceSession("s-debug-roll", { agentFactory: () => new FakeDiceGm([]), db: memDb(), debug: true });
+    expect(s.handleRoll(999)).toBe(false);
   });
 });
 

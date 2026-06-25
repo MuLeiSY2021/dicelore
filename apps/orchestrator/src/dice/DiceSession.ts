@@ -27,6 +27,7 @@ export interface DiceSessionDeps {
   model?: string; // GM 模型覆盖
   importFrom?: { catalog: CatalogDB; tuanbenId: string; ref: string }; // 开局从 Catalog import 团本(信任闸门重验)→运行库
   baseline?: boolean; // eval baseline 对照:去 doctrine(buildBaselinePrompt) + 强制 skills 空,分离「教条有无」
+  debug?: boolean; // eval/裸 CC 明骰降级:不注入 rollGate,core outcomeOpenHandler 走「无 gate 立即掷」分支(否则 await 永不来的 POST /roll 卡死)
   sessionsDir?: string; // GM raw 日志根目录(日志落 <dir>/dicelore/sessions/<sessionId>.gm.log);省略=不记日志
 }
 
@@ -35,7 +36,7 @@ export class DiceSession implements Session {
   readonly kind = "dice" as const;
   readonly db: DB;
   readonly hub = new WsHub();
-  readonly gate: PlayerRollGate;
+  readonly gate?: PlayerRollGate;
   readonly mcpServer: McpServer;
   constructor(public sessionId: string, private deps: DiceSessionDeps) {
     this.db = deps.db ?? (() => { const d = openDb(":memory:"); initSchema(d); return d; })();
@@ -53,10 +54,14 @@ export class DiceSession implements Session {
         if (metaGet(this.db, "started") === undefined) metaSet(this.db, "started", "0");
       }
     }
-    this.gate = new PlayerRollGate(this.db, this.hub, sessionId);
+    // debug 模式不建 gate:core outcomeOpenHandler 的 `if(gate) await gate` 走 false 分支立即掷(降级),
+    // 避免裸 CC/eval 下 await 一个永不来的 POST /roll 卡死整回合。生产(有前端)默认建 gate 等玩家掷。
+    if (!deps.debug) {
+      this.gate = new PlayerRollGate(this.db, this.hub, sessionId);
+    }
     this.mcpServer = createMcpServer(this.db, {
       onCanonWrite: (e) => this.onCanonWrite(e),
-      rollGate: this.gate.gate,
+      ...(this.gate ? { rollGate: this.gate.gate } : {}),
     });
   }
 
@@ -140,7 +145,7 @@ export class DiceSession implements Session {
     return { started: true };
   }
 
-  handleRoll(eventId: number): boolean { return this.gate.resolveRoll(eventId); }
+  handleRoll(eventId: number): boolean { return this.gate?.resolveRoll(eventId) ?? false; }
 
   private turnEnd(db: DB): TurnEndResult {
     runTurnEnd(db, { transcriptHasText: true, stopHookActive: false }); // 物化 choice + L3 审计

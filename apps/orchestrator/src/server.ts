@@ -35,6 +35,7 @@ export function startServer(port: number): void {
   const catalog = openCatalog(catalogPath);
   const fake = process.env.DICELORE_FAKE_GM === "1";
   const baseline = process.env.DICELORE_BASELINE === "1"; // eval baseline:openingPrompt 去 doctrine + skills 空
+  const debug = process.env.DICELORE_DEBUG === "1"; // eval/裸 CC 明骰降级:DICELORE_DEBUG=1 时 DiceSession 不注入 rollGate,core 立即掷(否则 await 永不来的 POST /roll 卡死)
   // Agent 适配缝:据 AgentInit 产 agent。真=CC SDK 适配器(DiceGm),fake=FakeDiceGm。
   const agentFactory: AgentFactory = fake
     ? () => new FakeDiceGm((input) => [{ type: "narration", text: `（GM）你说：「${input.text}」。门吱呀一声开了。` }, { type: "turn_end" }])
@@ -48,7 +49,7 @@ export function startServer(port: number): void {
 
   const app = new Hono();
   app.route("/", createLiveApp({
-    agentFactory, skills: diceSkills, openSession, catalog, baseline, sessionsDir: dir,
+    agentFactory, skills: diceSkills, openSession, catalog, baseline, debug, sessionsDir: dir,
     listSessions: () => listSessionSummaries(join(dir, "dice", "sessions")),
     deleteSession: (id) => { try { rmSync(sessionDir(id, "dice"), { recursive: true, force: true }); } catch (e) { getLogger().error({ err: e, id }, "删 session 文件夹失败"); } },
   }));
@@ -56,9 +57,9 @@ export function startServer(port: number): void {
   app.route("/", createDiagnosticsApp({ port, fakeGm: fake }));
 
   const server = serve({ fetch: app.fetch, port });
-  attachWsUpgrade(server, { openSession, agentFactory, skills: diceSkills, baseline });
+  attachWsUpgrade(server, { openSession, agentFactory, skills: diceSkills, baseline, debug });
   console.log(`[orchestrator] live :${port}`);
-  getLogger().info({ port, fakeGm: fake, sessionsDir: dir, catalog: catalogPath }, `orchestrator live :${port}`);
+  getLogger().info({ port, fakeGm: fake, debug, sessionsDir: dir, catalog: catalogPath }, `orchestrator live :${port}`);
 }
 
 // tsx src/server.ts 直接起

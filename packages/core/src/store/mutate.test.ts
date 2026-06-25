@@ -47,6 +47,13 @@ describe("applyMutations", () => {
     const r = applyMutations(db, "张三", [{ attr: "状态", op: "=", expr: "中毒" }]);
     expect(r.applied[0].new).toBe("中毒");
   });
+  // L2:op= 赋值含 +/-/() 的字面量(如武器名"锈钉+2 (破甲)")降级存字符串,
+  // 不报 EXPR_EVAL 阻断开局建卡整批事务(GM 实跑踩到的卡点)。
+  test("op= 赋值非法算术 expr 降级存字面量(武器名含括号/加号)", () => {
+    const r = applyMutations(db, "兽人", [{ attr: "武器", op: "=", expr: "锈钉+2 (破甲)" }]);
+    expect(r.applied[0]).toMatchObject({ kind: "set", new: "锈钉+2 (破甲)" });
+    expect(stateGet(db, "兽人", "武器")!.value).toBe("锈钉+2 (破甲)");
+  });
   test("非数值算术 → 整批回滚", () => {
     stateSet(db, "张三", "状态", "活着");
     expect(() => applyMutations(db, "张三", [
