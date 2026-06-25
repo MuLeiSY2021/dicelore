@@ -9,6 +9,7 @@
 
 import Database from "better-sqlite3";
 import { FTS_TABLES, ftsTableDDL } from "./fts.js";
+import { initViews } from "./views.js";
 
 export type DB = Database.Database;
 
@@ -99,4 +100,8 @@ export function initSchema(db: DB): void {
   // ===== FTS5 全文检索虚表(Plan 2)=====
   // 与并行「回合快照线」的 snapshot 表互不重叠;改动只在此集中,便于对方 rebase。
   for (const t of FTS_TABLES) db.exec(ftsTableDDL(t));
+
+  // ===== 命名视图投影(叙事层 spec §4)=====
+  // 表全建好后投影;视图层是下游 toolgen 读工具的稳定逻辑列契约。
+  initViews(db);
 }

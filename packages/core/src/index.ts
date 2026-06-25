@@ -9,6 +9,7 @@
 
 // @dicelore/core 公共面（additive；引擎纯逻辑反向零 import 本文件）。
 export { openDb, initSchema, type DB } from "./store/db.js";
+export { initViews } from "./store/views.js";
 export {
   buildPresentationModel,
   type PresentationModel,
