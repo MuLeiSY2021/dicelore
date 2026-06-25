@@ -157,6 +157,8 @@
   - **rule 带外与回滚交互**：rule 不注册 participant → restore 永不碰 rule、热更自动留存、restore 出的态跑当前 rule。
   - 落 [内层 §4.5](../04-子系统设计/内层能力库.md)（快照 core）＋ [adapter §8 / §3.1 / §3.3](../04-子系统设计/adapter与L3审计.md)（hook 接线）＋ [MCP §7](../04-子系统设计/MCP工具面.md)（不进工具面）＋ [03 §3.2](../03-架构/总体架构.md)（指针更新）。
 
+- **v1 降预期补注（2026-06-25 全量体检裁决，追加式不回改正文）**：本 ADR 原定 branch 进 v1、swipe 默认重掷等手动回滚交互**降级为 v2**。**v1 只做自动持久化（存档/读档）**——① snapshot 表建表 + core `checkpoint()`/`restore()` 原语 + `SnapshotParticipant` 注册表；② orchestrator `DiceSession.turnEnd` 调 `checkpoint()` 自动写快照；③ REST `POST /sessions/:id/rewind` 自动恢复最近快照；④ 前端 PlayPage 加存档/读档入口（自动恢复）。**v2 留**：手动回滚按钮 + branch/swipe + 终局续命（[ADR-0026](#) 草案 game_end 后回溯续命）+ 死错反悔 + 超时 restore 接线（[backlog-后端 RT-1](../06-里程碑与问题/backlog-后端.md) 长期方案）。**裁决理由**：v1 开放手动回滚需补 snapshot 表 + core 原语 + Stop/UserPromptSubmit hook 接线 + REST 端点 + UI 五层，scope 过大且与终局机制（[ADR-0026](#) 草案）耦合；v1 先把自动持久化做掉守"随时能玩"卖点，回滚/branch 等交互留 v2。落 [backlog-core SNAP-1](../06-里程碑与问题/backlog-core.md)。
+
 ## ADR-0018 玩家客户端立项：GUI 呈现层提前 + Agent SDK headless host + Tauri/Web 双分发 + 自定义 MCP 周边接入
 
 - **背景**：要给项目做一个"比较好看、开箱即用"的玩家前端。回到架构发现这触及一条被冻结的前提——[跨agent §6](../03-架构/跨agent与适配层.md) 轴二把"用 GUI 隐藏终端 / Claude Code"列为**未来层**，机制只泛设想为"Tauri 那类轻量壳"；[adapter（组件4）](../04-子系统设计/adapter与L3审计.md) 也只做 Claude Code TUI 接线 + 终端输出层渲染器，且明示"运行时 GUI 属未来"。重估两点：① 目标用户（[用户与场景](../01-业务分析/用户与场景.md)：只会丢一整本小说进去、不惯命令行 / web）真正要的是**开箱即用**，GUI 不该再拖到未来；② "把 Claude Code 藏在壳后"有比"Tauri 包交互式终端"更干净的解——**Agent SDK（程序化 Claude Code）headless 嵌进自建服务**。这要把呈现层从"未来层"提前，并立一个新子系统。
@@ -246,12 +248,40 @@
 
 ---
 
+## ADR-0026 终局机制：GM 自调 game_end + 软判据 + 玩家主动结束 + 终局后三去向（草案·待 PO 复核）
+
+> **状态：草案·待 PO 复核**（2026-06-25 全量体检未决问题 2 主流程裁决落账，非定稿）。对应 [backlog-core E1/E2](../06-里程碑与问题/backlog-core.md) + [backlog-前端 FE-end-lock](../06-里程碑与问题/backlog-前端.md)。
+
+- **背景**：[ADR-0009](#adr-0009-narrate-升格散文-stream--一轮范式-agent-回合--输出层三流) 定了 `game_end` / `you_death` 唯二终局出口，但"何时敲、由谁敲"未定。2026-06-25 全量体检（CROSS-END P0）反指：core `gameEndHandler`（`io.ts` L74-82）只落 note event + `metaSet(db,"ended")`——无任何触发条件校验（GM 调即终局）；eval harness 跑多少轮都无法回答"做成了"；成功标准定总判据为"F1/F2/F3 被治住"但未定"一局何时算终局"。违"AI 有讨好本能、不可信"立项前提。候选方案有"框架据 sheet 钟/watcher 自动敲防讨好 vs GM 自调"两路，是架构决策须 ADR 定。
+- **决策**（四连）：
+  - **① 终局触发 = GM 自调 `game_end`（gm-core 教条教何时收场），框架不硬拦**。理由：框架据 HP<=0 等硬条件自动敲会误判"复活"等可逆状态触发终局（E2 候选 watcher 谓词的核心矛盾）；gm-core 教条本就是塑形 GM 行为的机制（[ADR-0016](#) PbtA 对齐），教"何时收场正当"属其本职。框架保留 `gameEndHandler` 落 note + `metaSet(ended)` 不加触发校验（GM 调即终局），但加"玩家主动结束权"兜底（见 ③）。
+  - **② 软判据（不用硬条件触发器）**：gm-core 教条用"Front 钟满 / 主线收束 / 玩家死亡"等**叙事判据引 GM 自收**，非框架死规则触发。团本作者可在 rule 里写"终局判据"作 GM 教条输入（非自动触发 watcher）。复活的交互靠 GM 教条自己判（"玩家死亡但还有复活道具→不算终局、继续叙事"），不靠框架死规则。与 [ADR-0016](#) Front/Clock 凶兆阶梯同源——Front 是"会自己上发条的长程压力"，终局判据是"压力到顶该收了"的教条输入。
+  - **③ 玩家主动结束权**：玩家可随时主动结束游戏防 GM 永不收局。GM 讨好本能下"永不收局只死亡收"是真实风险（F2 harness 预判），玩家主动结束权是兜底——玩家点"结束本局"即触发 `game_end`（框架不拦、GM 不参与决策）。
+  - **④ game_end 后玩家三去向**：①**结束游戏**（退出/回主页）②**要 AI 行动建议**（GM 给"如果继续你可以..."的建议，非续局）③**回溯续命**（状态回退到死亡前叙事继续，**非对话撤回**，依赖 [ADR-0017](#) 快照，**未来/v2**——v1 只给"结束/重开新局/要 AI 建议"三按钮，回溯续命 v2 做见 [FE-end-lock](../06-里程碑与问题/backlog-前端.md)）。
+- **后果**：落 [backlog-core E1/E2](../06-里程碑与问题/backlog-core.md)（去待裁决、写裁决结论）、[backlog-前端 FE-end-lock](../06-里程碑与问题/backlog-前端.md)（v1 去掉回滚按钮只留三按钮）、[路线图第四批](../06-里程碑与问题/路线图.md)。E1 教条措辞待 F2 harness 多轮跑测校准（"GM 自收判据"是行为类、需 mock 玩家↔真 Claude-GM 验证）。**与 [ADR-0017](#) 快照的关系**：回溯续命 v2 依赖快照接线（v1 快照降预期只做自动持久化、手动回滚 v2，故回溯续命也 v2）。**被否**：① 框架据 sheet 钟/watcher 自动敲 game_end（HP<=0 等硬条件误判复活等可逆状态，E2 候选 watcher 谓词的核心矛盾未解）；② 纯 GM 自调无玩家主动结束权（GM 讨好本能下永不收局无兜底）；③ game_end 后只能结束游戏无重开/AI 建议（玩家死一次卡死，违场景 A "随时能玩"卖点）。
+
+---
+
+## ADR-0027 多端整合包发版架构：server docker-compose 自托管 + 客户端整合包 + 安卓/Win 优先（草案·待 PO 复核）
+
+> **状态：草案·待 PO 复核**（2026-06-25 全量体检未决问题 4 主流程裁决落账，非定稿）。对应 [backlog-前端 FE-CLI-doc](../06-里程碑与问题/backlog-前端.md)。
+
+- **背景**：2026-06-25 全量体检（USER-001 P0）反指：README.md L60 承诺"CLI 一键脚手架即开玩"但 `packages/core/src/cli.ts` switch(cmd) 只有 new/list/inspect/init 四命令无 play/roll/choose；真玩必须起 orchestrator 后端 + web dev server + 浏览器，这条路径 README 没写给玩家。新玩家按 README 装完 CLI 直接卡死——"随时在线、低安装、本机直接玩到"卖点在当前实现下不成立。属 v1 玩家入口形态产品决策：改文档对齐实现 vs 补 CLI play 子命令对齐文档。另触 [ADR-0022](#) 愿景§4"适配移动端是长期愿景"——本 ADR 把移动端从长期愿景提前到发版优先。
+- **决策**（四连）：
+  - **① 不补 CLI play，CLI 退回开发/会话管理用途**。理由：CLI play 子命令要么连后端（玩家还得装后端，没解决"低安装"）要么内嵌后端（CLI 变重、违 CLI 轻量定位）；真玩走整合包/自托管后端更贴"开箱即用"诉求。CLI 保留 new/list/inspect/init + 会话管理，README 明确标注"v1 通过整合包/自托管后端玩，CLI 仅会话管理/开发"。
+  - **② server 纯后端可独立部署（docker-compose 给例子）**。发版只给 docker-compose 文件 url，部署见 wiki/README。自托管用户（场景 B 远程部署/多租户）拉 docker-compose 起后端，前端走 web 浏览器访问。与 [ADR-0018](#) Web 壳（企业·多人向）对齐——orchestrator 托管、服务器集中持密钥（[SEC2](../06-里程碑与问题/backlog-后端.md) 统一后端托管）。
+  - **③ 客户端前后端整合包（安卓/Mac/Win/Linux，填 API key+base URL 即玩）**。整合包内含：①客户端 UI（Tauri 壳桌面端 / 移动端原生壳）②本地后端 sidecar（Node SEA/bun --compile 单二进制，可启停）。玩家填 API key+base URL 即玩（连本地后端 sidecar 或远程自托管后端均可）；配置文件可选本地后端启停。与 [ADR-0018](#) Tauri 壳对齐——壳内包 orchestrator Node sidecar 非"包交互式终端"。
+  - **④ 安卓+Win 优先（严重建议）**。理由：目标用户（[用户与场景](../01-业务分析/用户与场景.md) §1 四类切面）主力设备是手机（安卓）+ 电脑（Win），Mac/Linux 桌面端 + iOS 随后。移动端从 [ADR-0022](#) 愿景§4"长期愿景"提前到"v1 发版优先"。
+- **后果**：落 [backlog-前端 FE-CLI-doc](../06-里程碑与问题/backlog-前端.md)（去待裁决、写多端发版口径）、[backlog-前端 Tauri 壳/移动端未来池](../06-里程碑与问题/backlog-前端.md)（加注关联本 ADR）、[backlog-core M1-d](../06-里程碑与问题/backlog-core.md)（加注移动端提前、需 organize-wiki 改用户与场景§4）、[路线图第三批](../06-里程碑与问题/路线图.md)。**与 [SEC2](../06-里程碑与问题/backlog-后端.md) API key 托管配套**：整合包内含本地后端 sidecar 托管 key（前端 localStorage 不存 key 只存引用）。**与 [ADR-0018](#) 的关系**：本 ADR 是 ADR-0018"双分发壳（Tauri 个人向 + Web 企业向）"的发版形态细化——整合包 = Tauri 壳 + 本地后端 sidecar 打包；自托管 = Web 壳 + 远程后端 docker-compose。**被否**：① 补 CLI play 子命令（要么连后端没解决低安装、要么内嵌后端 CLI 变重）；② 只给 web 客户端不给整合包（目标用户不惯命令行/起后端、违"开箱即用"）；③ 移动端留长期愿景（目标用户主力设备是手机，v1 不做移动端=放弃主力场景）。
+
+---
+
 ## 待决策（记录但未定，勿当结论引用）
 
 - ~~**注入机制**：guideline 规则是"安装时焊进 skill 本体" vs "运行时 MCP 读取"~~ → **已由 [ADR-0012](#adr-0012-guideline-载体焊进-skill-本体静态-markdown非运行时-mcp-读取) 决议**：焊进 skill 本体（静态 markdown，走 Claude Code skill 装载）。
 - ~~**resolve_choice 是否两阶段**~~ → **已由 [ADR-0009](#adr-0009-narrate-升格散文-stream--一轮范式-agent-回合--输出层三流) 决议**：暂存（轮内可改写）+ 回合末 Stop hook 物化，落地"声明后果在先"。
 - **骰面语义**：是否给骰子引擎加"零基(0–9)"模式，还是约定映射。
-- ~~**回合分支（branch / swipe）是否 v1**~~ → **已细化（[ADR-0017](#) "细化落地 2026-06-18"）**：branch **进 v1**（快照锚 transcript UUID 树、branch 是自然产物）；**swipe 默认重掷**（从上一快照重生成、不钉骰、不外部播种；反刷骰=稳定键播种记未来 config）。
+- ~~**回合分支（branch / swipe）是否 v1**~~ → **已细化（[ADR-0017](#) "细化落地 2026-06-18"）**：branch **进 v1**（快照锚 transcript UUID 树、branch 是自然产物）；**swipe 默认重掷**（从上一快照重生成、不钉骰、不外部播种；反刷骰=稳定键播种记未来 config）。**2026-06-25 裁决降预期（[ADR-0017](#) v1 降预期补注）**：branch/swipe 等手动回滚交互**降级为 v2**，v1 只做自动持久化（存档/读档）。
 - ~~**快照存储形态**~~ → **已细化（[ADR-0017](#) "细化落地 2026-06-18"）**：全量快照行 / 回合（解耦子系统）+ **IoC 参与者注册表**（watcher 整表 dump，"运行时态序列化"开放项消解）；接线 = Stop 写 / UserPromptSubmit 检测 restore（[adapter §8](../04-子系统设计/adapter与L3审计.md)）。
 - ~~**rule 带外变更与回滚的交互**~~ → **回滚交互已细化**（[ADR-0017](#)：rule 不注册为快照 participant → restore 永不碰 rule、热更自动留存）；**仅"进行中存档遇 rule 版本热更的迁移语义"（`schema_version` / 团本版本迁移）仍待**未来。
 - **自研 agent**（呼应 [ADR-0008](#) 被否项）：记为未来待议；对冲已细化（[ADR-0017](#)）= **快照 core agent 无关、仅"对话回退↔快照"关联检测吃基底专属、住 adapter**，换基底只重写关联 hook。
