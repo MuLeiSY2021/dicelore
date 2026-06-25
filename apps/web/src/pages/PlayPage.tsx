@@ -106,7 +106,19 @@ export default function PlayPage() {
 
   useEffect(() => { setChosen(null); }, [snapshot?.choices?.eventId]);
   const reloadSessions = () => listSessions().then((s) => { setSessions(s); setSessionsLoaded(true); }).catch(() => setSessionsLoaded(true));
-  useEffect(() => { setKicked(false); reloadSessions(); }, [sid]);
+  // 切会话：重置呈现台 UI 内存态（hidden/mini/pins/检索框/chosen），防旧会话残留漂到新会话。
+  // order 走 localStorage 按 sid key 自行 reload（见 orderKey effect），不在此重置。与 FE-ws-race 同源。
+  useEffect(() => {
+    setKicked(false);
+    setHidden(new Set());
+    setMini(new Set());
+    setPins([]);
+    setEntries([]);
+    setLogEntries([]);
+    setQ("");
+    setChosen(null);
+    reloadSessions();
+  }, [sid]);
 
   // 设定源：q 防抖检索可见 lore。
   useEffect(() => {
@@ -141,6 +153,7 @@ export default function PlayPage() {
   }
   async function removeSession(id: string) {
     await deleteSession(id);
+    try { localStorage.removeItem(`dicelore.stage.order.${id}`); } catch { /* 隐私模式忽略 */ } // 删会话清其拖拽布局，防 localStorage 泄漏
     const rest = sessions.filter((s) => s.sessionId !== id);
     setSessions(rest);
     if (id === sid) navigate(rest[0] ? `/play/${encodeURIComponent(rest[0].sessionId)}` : "/packs");
