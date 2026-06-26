@@ -79,8 +79,8 @@ export function createLiveApp(deps: LiveDeps): Hono {
     const id = c.req.param("id");
     const host = getOrCreateHost(id, hostDeps(id));
     try {
-      const { started } = await host.start();
-      return c.json({ sessionId: id, started }, 202);
+      const { turnId } = await host.start();
+      return c.json({ turnId }, 202);
     } catch (e) {
       if (e instanceof TurnInProgressError) {
         getLogger().warn({ sessionId: id }, "start 时已有回合在跑,返回 409 turn_in_progress");

@@ -43,11 +43,11 @@ describe("Play 生命周期: open→session_meta→kickoff(幂等)→delete", ()
     expect(metaGet(db, "prologue")).toBe("夜色如墨,你立于鹰愁涧口。");
     expect(metaGet(db, "started")).toBe("0");
 
-    const r1 = (await (await live.request("/sessions/plife1/start", { method: "POST" })).json()) as { started: boolean };
-    expect(r1.started).toBe(true);
+    const r1 = (await (await live.request("/sessions/plife1/start", { method: "POST" })).json()) as { turnId: string };
+    expect(r1.turnId).toBeTruthy(); // 缝B 契约统一:start 返回 {turnId}——拿到 turnId 即已开局
     expect(metaGet(db, "started")).toBe("1");
-    const r2 = (await (await live.request("/sessions/plife1/start", { method: "POST" })).json()) as { started: boolean };
-    expect(r2.started).toBe(false); // 幂等:不重跑开场
+    const r2 = (await (await live.request("/sessions/plife1/start", { method: "POST" })).json()) as { turnId: string };
+    expect(r2.turnId).toBe(r1.turnId); // 幂等:不重跑开场,回同一开场 turnId
 
     const del = await live.request("/sessions/plife1", { method: "DELETE" });
     expect(del.status).toBe(200);

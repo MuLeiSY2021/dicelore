@@ -159,9 +159,12 @@ export class DiceSession implements Session {
   }
 
   // kickoff:「开始游戏」。未开场则以 prologue 为首轮 impetus 跑开场回合(无玩家输入)→ 流式开场叙事。幂等。
-  async start(): Promise<{ started: boolean }> {
+  // 缝B 契约统一(FE-start-contract):返回 { turnId }——开局即首回合,turnId 是开局回合标识。
+  // 幂等再调:已开场则不重跑,回上次落库的开场 turnId(拿到 turnId 即已开局,无需 started 字段)。
+  async start(): Promise<{ turnId: string }> {
     return this.runExclusive(async () => {
-      if (metaGet(this.db, "started") === "1") return { started: false };
+      const prior = metaGet(this.db, "kickoff_turn");
+      if (metaGet(this.db, "started") === "1") return { turnId: prior ?? this.sessionId };
       const prologue = metaGet(this.db, "prologue") ?? "";
       const turnId = nextTurnId(this.sessionId);
       const driver = this.deps.agentFactory(this.buildInit());
@@ -170,7 +173,8 @@ export class DiceSession implements Session {
         { text: prologue || "[开始游戏]" },
       );
       metaSet(this.db, "started", "1");
-      return { started: true };
+      metaSet(this.db, "kickoff_turn", turnId);
+      return { turnId };
     });
   }
 
