@@ -59,12 +59,22 @@
 
 | # | 类型 | 缺口 | 现状（2026-06-24 核对） | 来源 | 恶化 |
 |---|------|------|----------|------|:--:|
-| A1 | feat | **NPC 无运行时一等概念**：团本层有（`world/npc/*.md` + sheets），运行时无「NPC」对象去读/操作 | `state` 表有 `player`/`npc`/`world` kind 区分但**无 npc 一等表/工具**，仍散格 | 另一 session | ✓ |
+| A1 | feat | **NPC 无运行时一等概念**：团本层有（`world/npc/*.md` + sheets），运行时无「NPC」对象去读/操作 | ✅ **达成（2026-06-26）**：`mcp/stdlib/npc.ts` 声明 4 个 npc 写工具（`npc_register`/`npc_update_affinity`/`npc_update_hp`/`npc_set_identity`），全走声明式范式（ToolDecl→toolgenToToolDef→extraTools 注入），**零硬编码 handler 守 DT-9**；读侧＝已投影的 npc 视图。为让声明式 mutate 写出 `kind='npc'` 行，一次性补齐引擎/store 原语表达力：`store/state.ts`/`store/mutate.ts`/`toolgen/writeTool.ts` 加可选 `kind` 参（向后兼容、ON CONFLICT 不覆写 kind）——属「框架能力生长」非破 DT-9（DT-9 约束团本作者加工具不需改框架；A1 是框架能力建设，扩完后声明 npc 工具零 handler）。+17 测试，core 467 绿。spec/plan 见 `docs/superpowers/`。 | 另一 session | ✓ |
 | A2 | feat | **Front/Clock 运行时不可见、不可管**：运行时 AI 无「Front」聚合对象去读/管（Front＝钟+凶兆阶梯+散文） | `front` 表 + `frontOmenList` 聚合**已建**，但**未暴露 MCP 工具**；`watcher_list` 可列底层 armed watcher＝D2✅ | 用户「需要 front」+ eval B6 | ✓✓ |
 | A3 | feat | **多情节线/故事线追踪**：情节线不是任何实体属性 | `plotline` 表**已建**，**无工具暴露** | findings B1 + eval | ✓✓ |
 | A4 | feat | **伏笔「埋—回收」闭环**：无 planted/recalled 状态、无到点提醒；`event_recall` 是全 log FTS，埋的 note 排不过叙事噪音 | `foreshadow` 表**已建**，**无 planted/recalled 状态机 + 无工具** | findings B2 + eval（13 条 note 硬当伏笔库） | ✓✓ |
 | A5 | feat | **未结张力看板**：列「所有未结张力」无聚合视图；game_end 也不和解开放线程 | `tensionBoard` 聚合**已实现**（present 层），但**未接进 `buildMcp`**，GM 调不到 | findings B6 + eval（T30 实测散落） | ✓✓✓ |
 | A6 | feat | **NPC 双层值（裁决侧）**：双层值**存储**没问题（表演层 cell 公开 + 真实层 cell 暗）；缺口在**裁决**——`resolve_contest` 每边只一个常数，编不了「表演叫价 vs 真实底线、差额即线索」（裁决侧正交，留 resolver spec） | margin 手解 | findings B5（已缩窄定义） | ✗ |
+
+#### A1 旁 · 待裁产品决策（wave2 浮现，标「不可逆·待 PO，不阻塞 A1 v1，已用可逆默认」）
+
+- **D-NPC-2 NPC 属性默认披露策略**（不可逆·待 PO）：哪些 npc attr 默认对玩家可见。当前沿用 `stateSet` 默认 `visible=0`（暗），未来若改默认可见则牵动裁决/披露侧。不阻塞 A1 v1（已用「默认暗」这一可逆默认）。
+- **D-NPC-3 NPC 关系是否进 anchor 边表**（不可逆·待 PO）：当前 npc 关系走 relation 视图行形态、**不**引入 anchor 边；若要让 npc 关系图谱成为独立承重节点（可查询的边表），则需升级数据形态。不阻塞 A1 v1（已用「relation 视图行」这一可逆默认）。
+
+#### A1 / toolgen 旁 · 张力记录（留观察，非待办）
+
+- **npc mutate 工具 attr 声明期固定**：toolgen `writeMatch :param` 须 ASCII、无法吃任意 attr——泛写若要支持任意 attr 需结构化 `mutations[]` 入参，而那等于硬编码 handler 破 DT-9。即兴任意 attr 仍可用裸 `sheet_update` 兜底，但裸 `sheet_update` 写 `kind=world` **不进 npc 视图**。这是「删除裸 sheet_update」与「npc 一等」之间的张力，留观察、暂不动。
+
 
 ### 主题A′ · 团本构建 ↔ 跑团 术语 / store 不对齐（地基级，需大改）💡⚠️🚧
 

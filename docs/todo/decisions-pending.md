@@ -32,5 +32,9 @@
 ## Wave 进度
 
 - **Wave 1（2026-06-26）✅ 全合**：n1 eval 地板 / n2 前端 fix+清理 / n3 RT-4+logger。三线 ff 合入 main，四包测试全绿（core 450 / orch 83 / web 49 / shared 11）+ typecheck 0。worktree 已清。
-- **Wave 2（就绪派发）**：n4 NPC一等抽象(A1) / n5 玩家主线 e2e / n6 RT-3+缝B契约。下游随 wave1 合并释放，三线文件基本不重叠（n4=core store/mcp、n5=web测试+FakeGm、n6=orch dice+web client）。
-  - ⚠️ n5 与 n6 都触 `apps/web/src/api/client.ts`？否——n5 只动 client.test.ts，n6 动 client.ts，错开。n6 与 n5 都可能触 orchestrator dice：n5=FakeDiceGm.ts、n6=rollGate/recovery/api/dice.ts，文件不重叠。
+- **Wave 2（2026-06-26）✅ 全合**：n4 NPC一等抽象(A1) / n5 玩家主线 e2e(单测层) / n6 RT-3 rollGate 重启死锁。三线 ff 合入 main，四包全绿（core 467 / orch 92 / web 64 / shared 11）+ typecheck 0。worktree 已清。缝B契约从 n6 剥出（避免与 n5 web 测试耦合）→ 留 wave3 n7。
+  - **裁断 D-NPC-1（已接受）**：A1 为携带 kind 扩了引擎/store 原语（state.ts/mutate.ts/writeTool.ts 加可选 kind，向后兼容）。判定属「框架能力生长」非破 DT-9——DT-9 约束团本作者加工具不需改框架；A1 本身是框架能力建设。
+  - **新增待裁（不阻塞，已入 backlog-core）**：D-NPC-2（npc 属性默认披露策略）/ D-NPC-3（npc 关系是否进 anchor 边表）——产品/承重决策，已用可逆默认，攒着到第四/五批一起问。
+- **Wave 3（就绪派发）**：n7 缝B startGame 契约统一 / n9 TB-1 边界测试。n8（server.ts FAKE_GM 教练档接线）依赖 chromium 安装才有完整价值 → 暂缓（已入 backlog FE-e2e-browser）。
+
+> **逼近用户决策 checkpoint 的预警**：wave 3 后，剩余 ready 独立线变少且多落在第四/五批（受 ADR-0026/0027 PO 复核 gate，或冻结中增强）。下一轮编排前宜攒一批 AskUserQuestion（ADR-0026/0027 复核 + D-NPC-2/3 + SEC2 key 形态）一次问清，再解冻第四/五批。
