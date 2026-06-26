@@ -11,6 +11,12 @@ import { Fragment, type ReactNode } from "react";
 
 // 极简 markdown → React,零依赖。覆盖 GM 叙事常用:段落 / 标题(#) / 无序列表(-,*) /
 // 行内 **粗** *斜* `码`。不支持嵌套/表格/链接——GM 散文用不到,刻意从简(YAGNI)。
+//
+// ⚠️ 安全铁律(防 XSS 回归):本组件**只**通过 React 子节点输出文本——React 默认转义,
+// 任何 GM/玩家文本里的 <script>、<img onerror=...> 等都被当纯文本转义,不会变成真实 DOM。
+// 严禁在此文件引入 `dangerouslySetInnerHTML` 或任何把原始字符串当 HTML 注入的写法
+// (innerHTML / DOMParser→appendChild / 第三方 HTML→DOM)。GM 文本是不可信输入,必须保持
+// 「文本进、文本出」。见 Markdown.test.tsx 的 XSS 防回归用例。
 
 function inline(text: string, kb: string): ReactNode[] {
   const out: ReactNode[] = [];

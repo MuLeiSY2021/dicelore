@@ -35,4 +35,28 @@ describe("Markdown", () => {
     const { container } = render(<Markdown text="# 黑风寨" />);
     expect(container.querySelector("h3")?.textContent).toBe("黑风寨");
   });
+
+  // ===== XSS 防回归:GM/玩家文本不可信,原始 HTML 必须被转义、不得变成真实 DOM =====
+  it("<script> 不渲染为真实 script 元素(被当纯文本转义)", () => {
+    const { container } = render(<Markdown text="正常剧情<script>alert(1)</script>结束" />);
+    // 不能出现真实 <script> 节点
+    expect(container.querySelector("script")).toBeNull();
+    // 原文应作为文本保留(转义后仍是可见文本)
+    expect(container.textContent).toContain("<script>alert(1)</script>");
+  });
+
+  it("<img onerror> 不产生真实 img 节点/事件处理器", () => {
+    const { container } = render(<Markdown text={'看这里<img src=x onerror="alert(1)">'} />);
+    expect(container.querySelector("img")).toBeNull();
+    // onerror 不应作为属性挂到任何元素上;整段以文本形式存在
+    expect(container.textContent).toContain('<img src=x onerror="alert(1)">');
+  });
+
+  it("混入 HTML 的列表项也只输出文本,不注入元素", () => {
+    const { container } = render(<Markdown text={"- 安全<b>项</b>"} />);
+    // 列表结构来自 markdown,但 <b> 来自用户文本,必须被转义而非渲染
+    expect(container.querySelector("ul li")).not.toBeNull();
+    expect(container.querySelector("ul li b")).toBeNull();
+    expect(container.querySelector("ul li")?.textContent).toBe("安全<b>项</b>");
+  });
 });

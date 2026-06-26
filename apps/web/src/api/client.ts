@@ -175,11 +175,15 @@ export async function testModel(input: { baseUrl: string; key: string; gm: strin
   const res = await fetch("/diagnostics/model-test", {
     method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input),
   });
+  // HTTP 4xx/5xx 时响应体不是 TestResult,不能当成功解析(否则把错误体伪装成结果)。
+  if (!res.ok) throw new Error(`model-test 请求失败：${res.status}`);
   return (await res.json()) as TestResult;
 }
 export async function testMcp(input: { transport: string; endpoint: string }): Promise<TestResult> {
   const res = await fetch("/diagnostics/mcp-test", {
     method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input),
   });
+  // 同上：非 2xx 抛带状态码的错误,不解析错误体。
+  if (!res.ok) throw new Error(`mcp-test 请求失败：${res.status}`);
   return (await res.json()) as TestResult;
 }
