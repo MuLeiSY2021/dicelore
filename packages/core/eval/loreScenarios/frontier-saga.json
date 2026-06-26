@@ -1,0 +1,124 @@
+{
+  "id": "frontier-saga",
+  "title": "边境危局团本：作者声明 front/plotline/foreshadow/anchor/pool/state → commit → import 全域物化",
+  "focus": [
+    "构建工具可用性（front/plotline/foreshadow/anchor/pool/state/lore/rule 全调通）",
+    "draft→commit→import 物化映射（叙事域 CSV + front md → 运行库各表）",
+    "front 凶兆阶梯 → watcher 预声明 + Clock 初始化"
+  ],
+  "tuanben": "边境危局",
+  "buildCalls": [
+    {
+      "tool": "set_manifest",
+      "intent": "作者：这个团本叫《边境危局》，标识 frontier-saga。",
+      "args": { "name": "边境危局", "id": "frontier-saga" }
+    },
+    {
+      "tool": "set_prologue",
+      "intent": "作者：开场——你是镇守边境的年轻军官，斥候来报北境异动。让 GM 据此开局。",
+      "args": { "text": "你是镇守边境哨所的年轻军官。一名浑身是血的斥候踉跄闯入，带来北境的坏消息。请 GM 据此开局，先让玩家自报身份与当下处境。" }
+    },
+    {
+      "tool": "write_lore",
+      "intent": "作者：写一篇世界观——北境蛮族与边境长城的恩怨。",
+      "args": { "name": "北境长城", "content": "百年前帝国筑长城以拒北境蛮族。如今城墙年久失修，蛮族各部蠢蠢欲动。" }
+    },
+    {
+      "tool": "write_rule",
+      "intent": "作者：写一条判定规则——守城检定怎么算。",
+      "args": { "name": "守城判定", "content": "守城检定 = r + 统御加值 vs 蛮族攻势 DC；大失败则一段城墙告破。" }
+    },
+    {
+      "tool": "set_state",
+      "intent": "作者：开局状态——玩家是统御 2 的军官，城防士气一个公开钟。",
+      "args": {
+        "cells": [
+          { "entity": "玩家", "kind": "player", "attr": "统御", "value": "2", "visible": 1 },
+          { "entity": "世界", "kind": "world", "attr": "城防士气", "value": "5", "visible": 1 }
+        ]
+      }
+    },
+    {
+      "tool": "add_pool",
+      "intent": "作者：北境异动随机表，玩家侦查时抽。",
+      "args": {
+        "pool": "北境异动",
+        "rows": [
+          { "事件": "斥候发现蛮族集结", "weight": 2 },
+          { "事件": "边民举家南逃", "weight": 1 },
+          { "事件": "粮道遭袭", "weight": 1 }
+        ]
+      }
+    },
+    {
+      "tool": "add_front",
+      "intent": "作者：声明一条阵线——蛮族入侵进度钟，三档凶兆，到 8 城陷（终局）。",
+      "args": {
+        "id": "invasion",
+        "name": "蛮族入侵",
+        "stakes": "边境长城能否守住？",
+        "clock_attr": "世界.入侵进度",
+        "clock_min": 0,
+        "clock_max": 8,
+        "clock_mode": "once",
+        "omens": [
+          { "threshold": 3, "payload": "凶兆①：斥候回报蛮族斥候出现在长城脚下。" },
+          { "threshold": 6, "payload": "凶兆②：蛮族大军压境，烽火连营。" },
+          { "threshold": 8, "payload": "凶兆③（终局）：长城告破，蛮族涌入边境。" }
+        ]
+      }
+    },
+    {
+      "tool": "add_plotline",
+      "intent": "作者：两条故事线——主线御敌、支线内奸。",
+      "args": {
+        "rows": [
+          { "id": "defend", "title": "御敌于长城之外", "summary": "组织城防、争取援军、守住长城。", "status": "active" },
+          { "id": "traitor", "title": "城中内奸", "summary": "有人暗通蛮族，需在城破前揪出。", "status": "active" }
+        ]
+      }
+    },
+    {
+      "tool": "add_foreshadow",
+      "intent": "作者：埋一个伏笔——粮仓守将形迹可疑，呼应内奸线。",
+      "args": {
+        "rows": [
+          { "id": "grain-warden", "content": "粮仓守将近日频繁夜出，且对北境地形异常熟悉。", "status": "planted" }
+        ]
+      }
+    },
+    {
+      "tool": "add_anchor",
+      "intent": "作者：把伏笔锚到内奸故事线上——它是这条线的线索。",
+      "args": {
+        "rows": [
+          { "owner_table": "plotline", "owner_id": "traitor", "target_table": "foreshadow", "target_id": "grain-warden", "role": "clue" }
+        ]
+      }
+    },
+    {
+      "tool": "validate",
+      "intent": "构建 GM：commit 前校验团本包是否合法。",
+      "args": {}
+    },
+    {
+      "tool": "commit",
+      "intent": "构建 GM：校验通过，提交版本。",
+      "args": { "message": "init: 边境危局 v0 — front/plotline/foreshadow/anchor 齐备" }
+    }
+  ],
+  "expects": {
+    "validatePasses": true,
+    "lore": 1,
+    "rules": 1,
+    "pools": 3,
+    "stateCells": 3,
+    "fronts": 1,
+    "plotlines": 2,
+    "foreshadows": 1,
+    "anchors": 1,
+    "watchers": 3,
+    "hasFront": ["invasion"],
+    "hasPlotline": ["defend", "traitor"]
+  }
+}
