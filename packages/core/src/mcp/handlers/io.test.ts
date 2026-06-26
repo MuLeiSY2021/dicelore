@@ -12,7 +12,7 @@ import { describe, it, expect } from "vitest";
 import { openDb, initSchema } from "../../store/db.js";
 import { stateGet, stateSet } from "../../store/state.js";
 import { loreUpsert } from "../../store/world.js";
-import { logSince } from "../../store/log.js";
+import { logSince } from "../../store/record.js";
 import { metaGet } from "../../session/resolve.js";
 import { ioTools } from "./io.js";
 import { DiceloreError } from "../../errors.js";

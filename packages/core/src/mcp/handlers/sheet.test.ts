@@ -11,7 +11,7 @@
 import { describe, it, expect } from "vitest";
 import { openDb, initSchema } from "../../store/db.js";
 import { stateGet, stateSet } from "../../store/state.js";
-import { logSince } from "../../store/log.js";
+import { logSince } from "../../store/record.js";
 import { sheetTools } from "./sheet.js";
 
 function freshDb() { const db = openDb(":memory:"); initSchema(db); return db; }

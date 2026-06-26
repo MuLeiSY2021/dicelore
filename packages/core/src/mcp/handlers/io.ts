@@ -11,7 +11,7 @@
 import type { DB } from "../../store/db.js";
 import { sheetShow, worldShow, revealOnce } from "../../store/visibility.js";
 import { loreGet } from "../../store/world.js";
-import { logAppend } from "../../store/log.js";
+import { logAppend } from "../../store/record.js";
 import { metaSet } from "../../session/resolve.js";
 import { DiceloreError } from "../../errors.js";
 import type { ToolDef } from "../tooldef.js";

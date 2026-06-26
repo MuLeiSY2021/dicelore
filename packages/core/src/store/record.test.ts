@@ -9,7 +9,7 @@
 
 import { beforeEach, describe, expect, test } from "vitest";
 import { initSchema, openDb, type DB } from "./db.js";
-import { logAppend, logRecall, logSince } from "./log.js";
+import { logAppend, logRecall, logSince } from "./record.js";
 
 let db: DB;
 beforeEach(() => { db = openDb(":memory:"); initSchema(db); });

@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import type { DB } from "./db.js";
-import { logAppend } from "./log.js";
+import { logAppend } from "./record.js";
 
 export interface ChoiceOption {
   label: string;

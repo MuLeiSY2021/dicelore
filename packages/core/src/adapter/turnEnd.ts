@@ -9,7 +9,7 @@
 
 // packages/core/src/adapter/turnEnd.ts
 import type { DB } from "../store/db.js";
-import { logSince, logAppend } from "../store/log.js";
+import { logSince, logAppend } from "../store/record.js";
 import { getPendingChoice, materializePendingChoice } from "../store/choice.js";
 import { metaGet } from "../session/resolve.js";
 import { auditTurn } from "./l3.js";

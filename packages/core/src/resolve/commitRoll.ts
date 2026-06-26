@@ -9,7 +9,7 @@
 
 import type { DB } from "../store/db.js";
 import type { Rng } from "../dice/index.js";
-import { logAppend, logSince } from "../store/log.js";
+import { logAppend, logSince } from "../store/record.js";
 import { getPendingRoll, markRollCommitted } from "../store/pendingRoll.js";
 import { resolveOutcome } from "./outcome.js";
 import { resolveContest } from "./contest.js";

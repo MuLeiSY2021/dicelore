@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 // packages/core/src/adapter/l3.ts
-import type { LogRow } from "../store/log.js";
+import type { LogRow } from "../store/record.js";
 
 export interface L3Input {
   events: LogRow[];

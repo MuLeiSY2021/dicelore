@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from "vitest";
 import { openDb, initSchema } from "../store/db.js";
-import { logSince } from "../store/log.js";
+import { logSince } from "../store/record.js";
 import { stateSet } from "../store/state.js";
 import { stagePendingRoll, getPendingRoll } from "../store/pendingRoll.js";
 import { commitPendingRoll } from "./commitRoll.js";

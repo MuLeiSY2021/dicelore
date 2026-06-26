@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from "vitest";
 import { openDb, initSchema } from "../store/db.js";
-import { logAppend } from "../store/log.js";
+import { logAppend } from "../store/record.js";
 import { stateSet } from "../store/state.js";
 import { sheetShow, revealOnce } from "../store/visibility.js";
 import { buildPlayerView } from "./playerView.js";

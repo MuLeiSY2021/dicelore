@@ -11,7 +11,7 @@ import type { Rng } from "../dice/index.js";
 import { evalExpr } from "../expr/evaluate.js";
 import type { DB } from "./db.js";
 import { stateGet, stateSet, type StateKind } from "./state.js";
-import { logAppend } from "./log.js";
+import { logAppend } from "./record.js";
 import { recomputeWatchers } from "./watcher.js";
 import { makeEvalCtx } from "./evalCtx.js";
 import { DiceloreError } from "../errors.js";

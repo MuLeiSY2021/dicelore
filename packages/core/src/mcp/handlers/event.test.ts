@@ -10,7 +10,7 @@
 // src/mcp/handlers/event.test.ts
 import { describe, it, expect } from "vitest";
 import { openDb, initSchema } from "../../store/db.js";
-import { logSince } from "../../store/log.js";
+import { logSince } from "../../store/record.js";
 import { watcherList, watcherSet } from "../../store/watcher.js";
 import { eventTools } from "./event.js";
 import { eventAppendOut } from "../schemas/event.js";

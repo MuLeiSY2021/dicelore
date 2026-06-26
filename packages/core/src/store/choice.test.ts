@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from "vitest";
 import { openDb, initSchema } from "./db.js";
-import { logSince } from "./log.js";
+import { logSince } from "./record.js";
 import { stagePendingChoice, getPendingChoice, materializePendingChoice } from "./choice.js";
 
 function freshDb() {

@@ -10,7 +10,7 @@
 // packages/core/src/adapter/turnEnd.test.ts
 import { describe, it, expect } from "vitest";
 import { openDb, initSchema } from "../store/db.js";
-import { logAppend, logSince } from "../store/log.js";
+import { logAppend, logSince } from "../store/record.js";
 import { stagePendingChoice, getPendingChoice } from "../store/choice.js";
 import { metaSet } from "../session/resolve.js";
 import { runTurnEnd } from "./turnEnd.js";

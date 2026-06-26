@@ -12,7 +12,7 @@ import { initSchema, openDb, type DB } from "./db.js";
 import { stateGet, stateSet } from "./state.js";
 import { applyMutations } from "./mutate.js";
 import { watcherSet } from "./watcher.js";
-import { logSince } from "./log.js";
+import { logSince } from "./record.js";
 import { DiceloreError } from "../errors.js";
 
 let db: DB;

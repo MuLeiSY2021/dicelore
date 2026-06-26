@@ -9,7 +9,7 @@
 
 import { describe, expect, test, beforeEach } from "vitest";
 import { openDb, initSchema, type DB } from "../../store/db.js";
-import { logSince } from "../../store/log.js";
+import { logSince } from "../../store/record.js";
 import { wrapToolForTest } from "../server.js";
 import { npcToolDecls, npcStdlibTools } from "./npc.js";
 

@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import type { DB } from "../../store/db.js";
-import { logAppend, logRecall, type LogRow } from "../../store/log.js";
+import { logAppend, logRecall, type LogRow } from "../../store/record.js";
 import { watcherSet, watcherList, recomputeWatchers, type WatcherRow } from "../../store/watcher.js";
 import { makeEvalCtx } from "../../store/evalCtx.js";
 import { truncateText } from "../../store/truncate.js";

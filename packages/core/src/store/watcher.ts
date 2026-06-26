@@ -9,7 +9,7 @@
 
 import { evalPredicate } from "../expr/predicate.js";
 import type { EvalCtx } from "../expr/evaluate.js";
-import { logAppend } from "./log.js";
+import { logAppend } from "./record.js";
 import { makeExistsMatch } from "./existsMatch.js";
 import type { DB } from "./db.js";
 

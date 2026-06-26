@@ -63,7 +63,7 @@ export { createBuildMcpServer, invokeBuildTool, type BuildCtx, BUILD_SCHEMAS } f
 // ===== 运行时只读浏览（组件7 跑团页左活动轨自查源；additive 只读，不改引擎） =====
 export { loreSearch, loreGet, type Lore } from "./store/world.js";
 export { ruleSearch, ruleGet, type Rule } from "./store/rule.js";
-export { logSince, logRecall, type LogRow } from "./store/log.js";
+export { logSince, logRecall, type LogRow } from "./store/record.js";
 export { stateList, stateGet, type StateCell as RuntimeStateCell } from "./store/state.js";
 // session_meta KV(团本名/prologue/started 等,P2 Play 生命周期) + 路径规则(sessionDbPath/openSession)。
 // 后端 server.ts 与 eval prepareSessionDb 共用 openSession 路径规则,避免种子灌到 core 路径而后端开平铺空库。

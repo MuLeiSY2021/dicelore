@@ -11,7 +11,7 @@
 import { describe, it, expect } from "vitest";
 import { openDb, initSchema } from "../store/db.js";
 import { ruleUpsert } from "../store/rule.js";
-import { logAppend } from "../store/log.js";
+import { logAppend } from "../store/record.js";
 import { metaGet } from "../session/resolve.js";
 import { recallRules, recordTurnStart } from "./ruleRecall.js";
 

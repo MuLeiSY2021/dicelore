@@ -11,7 +11,7 @@
 import { describe, it, expect } from "vitest";
 import { openDb, initSchema } from "../../store/db.js";
 import { stateSet } from "../../store/state.js";
-import { logSince } from "../../store/log.js";
+import { logSince } from "../../store/record.js";
 import { getPendingChoice } from "../../store/choice.js";
 import { setRollGate } from "../rollGate.js";
 import { resolverTools } from "./resolver.js";

@@ -10,7 +10,7 @@
 import { beforeEach, describe, expect, it, test } from "vitest";
 import { initSchema, openDb, type DB } from "./db.js";
 import { stateGet, stateSet } from "./state.js";
-import { logSince } from "./log.js";
+import { logSince } from "./record.js";
 import { loreUpsert, poolAdd } from "./world.js";
 import { revealOnce, sheetShow, worldShow } from "./visibility.js";
 import { DiceloreError } from "../errors.js";

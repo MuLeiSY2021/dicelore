@@ -17,8 +17,8 @@ import { fileURLToPath } from "node:url";
 import { openDb, initSchema, type DB } from "../store/db.js";
 import { TOOLS } from "../mcp/tools.js";
 import { runTool } from "../mcp/runTool.js";
-import { logSince } from "../store/log.js";
-import { logRecall } from "../store/log.js";
+import { logSince } from "../store/record.js";
+import { logRecall } from "../store/record.js";
 import { loadScenario } from "./scenario.js";
 import { rollFloor, closureFloor } from "./assertions.js";
 
