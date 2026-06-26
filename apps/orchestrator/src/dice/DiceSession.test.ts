@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { openDb, initSchema, metaSet, setRollGate, getRollGate, type DB } from "@dicelore/core";
+import { openDb, initSchema, metaSet, setRollGate, getRollGate, listSnapshots, type DB } from "@dicelore/core";
 import { DiceSession, TurnInProgressError } from "./DiceSession.js";
 import { FakeDiceGm } from "./FakeDiceGm.js";
 import type { AgentInit, Agent } from "../pkg/agent.js";
@@ -204,6 +204,46 @@ describe("DiceSession debug(明骰降级)", () => {
   it("debug:true → handleRoll 无 gate 直接 false(明骰已立即掷,无 pending)", () => {
     const s = new DiceSession("s-debug-roll", { agentFactory: () => new FakeDiceGm([]), db: memDb(), debug: true });
     expect(s.handleRoll(999)).toBe(false);
+  });
+});
+
+describe("DiceSession 快照（SNAP-1：turnEnd 自动 checkpoint + rewind 读档）", () => {
+  it("跑完一回合 → 自动落一份快照（存档语义）", async () => {
+    const db = memDb();
+    const host = new DiceSession("s-snap-1", {
+      agentFactory: () => new FakeDiceGm([{ type: "narration", text: "门开了。" }, { type: "turn_end" }]),
+      db,
+    });
+    expect(listSnapshots(db)).toHaveLength(0);
+    await host.handleMessage("我推门");
+    expect(listSnapshots(db)).toHaveLength(1); // 回合边界自动写一份
+    await host.handleMessage("我再推");
+    expect(listSnapshots(db)).toHaveLength(2); // 每回合一份
+  });
+
+  it("rewind 读档 → 整表覆写 sheet 域回到最近快照态", async () => {
+    const db = memDb();
+    const host = new DiceSession("s-snap-2", {
+      agentFactory: () => new FakeDiceGm([{ type: "turn_end" }]),
+      db,
+    });
+    db.prepare("INSERT OR REPLACE INTO state (entity, attr, value) VALUES ('你','HP','10')").run();
+    await host.handleMessage("回合一"); // 此时快照存了 HP=10
+
+    // 回合后玩家/GM 改了状态
+    db.prepare("UPDATE state SET value='3' WHERE entity='你' AND attr='HP'").run();
+    db.prepare("INSERT INTO state (entity, attr, value) VALUES ('你','金币','99')").run();
+
+    const res = await host.rewind();
+    expect(res?.snapshotId).toBeTruthy();
+    const hp = (db.prepare("SELECT value v FROM state WHERE entity='你' AND attr='HP'").get() as { v: string }).v;
+    expect(hp).toBe("10"); // 回到快照值
+    expect(db.prepare("SELECT value FROM state WHERE entity='你' AND attr='金币'").get()).toBeUndefined(); // 新增行被抹
+  });
+
+  it("无快照（未跑过回合）→ rewind 返回 null（API 层映射 409）", async () => {
+    const host = new DiceSession("s-snap-3", { agentFactory: () => new FakeDiceGm([{ type: "turn_end" }]), db: memDb() });
+    expect(await host.rewind()).toBeNull();
   });
 });
 

@@ -113,6 +113,8 @@ const ZH: Dict = {
   "play.start.busy": "开场中…",
   "play.session.delete": "删除会话", "play.session.empty.title": "还没有任何会话",
   "play.session.empty.sub": "去团本目录选一个团本开始游戏。", "play.session.empty.cta": "去团本目录",
+  "play.rewind": "读档", "play.rewind.hint": "恢复到最近一次自动存档（每回合末自动存）",
+  "play.rewind.confirm": "读档将把本局恢复到最近一个回合末的自动存档，此回合后的状态变更会被覆盖。确定？",
 };
 
 const EN: Dict = {
@@ -200,6 +202,8 @@ const EN: Dict = {
   "play.start.busy": "Opening…",
   "play.session.delete": "Delete session", "play.session.empty.title": "No sessions yet",
   "play.session.empty.sub": "Pick a campaign in Campaigns to start.", "play.session.empty.cta": "Go to Campaigns",
+  "play.rewind": "Load save", "play.rewind.hint": "Restore to the latest autosave (saved at each turn end)",
+  "play.rewind.confirm": "Loading will restore this session to the latest end-of-turn autosave; state changes after that turn will be overwritten. Continue?",
 };
 
 const DICTS: Record<Lang, Dict> = { zh: ZH, en: EN };

@@ -95,6 +95,19 @@ export function initSchema(db: DB): void {
       target_table TEXT NOT NULL, target_id TEXT NOT NULL,
       role TEXT
     );
+    -- ===== 回合快照(SNAP-1 / ADR-0017 v1 降预期：只自动持久化，存档/读档) =====
+    -- 每回合边界 checkpoint() 落一行：blob_json 为「participant 名 → 整表 dump」的全量快照。
+    -- turn_start_seq / turn_end_seq 记快照覆盖的 log seq 区间(start 暂未用、留 v2 branch 锚点)。
+    -- parent_id 链前一快照(快照线性链；v2 branch/swipe 在此之上长出树，v1 不分叉)。
+    -- 全量行/回合(非增量 diff)——解耦子系统、restore = 整表覆写不逆级联(ADR-0017「细化落地」)。
+    CREATE TABLE IF NOT EXISTS snapshot (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      parent_id INTEGER,
+      turn_start_seq INTEGER,
+      turn_end_seq INTEGER,
+      blob_json TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   // ===== FTS5 全文检索虚表(Plan 2)=====

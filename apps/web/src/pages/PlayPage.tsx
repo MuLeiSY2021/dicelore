@@ -13,7 +13,7 @@ import {
   BookOpen, Wrench, LayoutGrid, Search, File, Pin, CheckCircle2, Dices, LayoutDashboard,
   Grid3x3, User, Minus, X, Timer, Package, Eye, Sparkles, Loader2, AlertTriangle, Flag,
   BookMarked, ChevronDown, ChevronUp, ScrollText, Play, Trash2,
-  Scale, ArrowRightLeft, BellRing, GripVertical, RotateCcw,
+  Scale, ArrowRightLeft, BellRing, GripVertical, RotateCcw, History,
 } from "lucide-react";
 import { useSession } from "../live/useSession.js";
 import { Markdown } from "../play/Markdown.js";
@@ -59,7 +59,7 @@ export default function PlayPage() {
   const navigate = useNavigate();
   const { sessionId } = useParams();
   const sid = sessionId ?? DEMO_SESSION;
-  const { snapshot, narration, pendingRoll, generating, error, gameEnd, reveals, postMessage, roll, choose, dismissReveal } = useSession(sid);
+  const { snapshot, narration, pendingRoll, generating, error, gameEnd, reveals, postMessage, roll, choose, rewind, dismissReveal } = useSession(sid);
   const [draft, setDraft] = useState("");
   const [chosen, setChosen] = useState<number | null>(null);
 
@@ -247,6 +247,11 @@ export default function PlayPage() {
             </select>
           </label>
           <span className="sp" />
+          {/* 读档（SNAP-1 v1）：自动恢复最近存档。已开场（已有快照）才显示——v1 是存档/读档，非手动回滚按钮。 */}
+          {started && (
+            <button className="collapse" data-testid="rewind" aria-label={t("play.rewind")} title={t("play.rewind.hint")}
+              onClick={() => { if (confirm(t("play.rewind.confirm"))) rewind().catch(() => {}); }}><History className="lucide" /></button>
+          )}
           {curRow && (
             <button className="collapse" aria-label={t("play.session.delete")} title={t("play.session.delete")}
               onClick={() => { if (confirm(`${t("play.session.delete")}：${curTitle}?`)) removeSession(sid); }}><Trash2 className="lucide" /></button>

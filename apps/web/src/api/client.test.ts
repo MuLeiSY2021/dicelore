@@ -9,7 +9,7 @@
 
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
-  getPresentation, listSessions, postMessage, postRoll, postChoice, startGame, testModel, testMcp,
+  getPresentation, listSessions, postMessage, postRoll, postChoice, postRewind, startGame, testModel, testMcp,
 } from "./client.js";
 
 afterEach(() => { vi.restoreAllMocks(); });
@@ -165,5 +165,20 @@ describe("testModel / testMcp", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500, json }));
     await expect(testMcp({ transport: "stdio", endpoint: "x" })).rejects.toThrow("500");
     expect(json).not.toHaveBeenCalled();
+  });
+});
+
+describe("postRewind（SNAP-1 读档）", () => {
+  it("命中 /sessions/:id/rewind(POST) 并返回 {snapshotId}", async () => {
+    const f = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ snapshotId: 7 }) });
+    vi.stubGlobal("fetch", f);
+    const got = await postRewind("demo");
+    expect(f).toHaveBeenCalledWith("/sessions/demo/rewind", expect.objectContaining({ method: "POST" }));
+    expect(got).toEqual({ snapshotId: 7 });
+  });
+
+  it("409 no_snapshot → 可读中文错误（本局还没有存档）", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 409, json: async () => ({ code: "no_snapshot" }) }));
+    await expect(postRewind("demo")).rejects.toThrow("本局还没有存档");
   });
 });

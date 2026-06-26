@@ -30,7 +30,7 @@ function mockSession(over: Partial<ReturnType<typeof useSession>> = {}) {
   (useSession as Mock).mockReturnValue({
     snapshot: snap, narration: [], pendingRoll: null, generating: false, error: null, gameEnd: null, reveals: [],
     postMessage: vi.fn().mockResolvedValue({ turnId: "t" }), roll: vi.fn().mockResolvedValue({ turnId: "t" }),
-    choose: vi.fn().mockResolvedValue({ turnId: "t" }), dismissReveal: vi.fn(),
+    choose: vi.fn().mockResolvedValue({ turnId: "t" }), rewind: vi.fn().mockResolvedValue({ snapshotId: 1 }), dismissReveal: vi.fn(),
     ...over,
   });
 }
@@ -62,4 +62,21 @@ it("有 choice 时渲染可点选项(闭环已接通)", () => {
   mockSession({ snapshot: { ...snap, choices: { eventId: 9, options: [{ index: 0, label: "推门", consequence: "惊动守卫" }] } } });
   renderPlay();
   expect(screen.getByRole("button", { name: /推门/ })).toBeEnabled();
+});
+
+it("已开场时显示读档入口；点击确认后调 rewind(SNAP-1 读档)", async () => {
+  const rewind = vi.fn().mockResolvedValue({ snapshotId: 3 });
+  mockSession({ narration: ["门开了。"], rewind });
+  vi.spyOn(window, "confirm").mockReturnValue(true);
+  renderPlay();
+  const btn = screen.getByTestId("rewind");
+  expect(btn).toBeInTheDocument();
+  btn.click();
+  expect(rewind).toHaveBeenCalled();
+});
+
+it("未开场时不显示读档入口(v1 是存档/读档,跑过回合才有存档)", () => {
+  mockSession({ narration: [], snapshot: { ...snap, narrativeCursor: 0 } });
+  renderPlay();
+  expect(screen.queryByTestId("rewind")).toBeNull();
 });

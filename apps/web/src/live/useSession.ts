@@ -11,6 +11,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import type { PresentationSnapshot, PendingRoll, StreamMessage } from "@dicelore/shared";
 import {
   getPresentation, postMessage as apiPostMessage, postRoll as apiPostRoll, postChoice as apiPostChoice,
+  postRewind as apiPostRewind,
 } from "../api/client.js";
 
 export interface RevealCard { seq: number; target: string; text: string }
@@ -94,7 +95,14 @@ export function useSession(sessionId: string) {
   const postMessage = useCallback((text: string) => { setGenerating(true); setError(null); return apiPostMessage(sessionId, text).catch((e: Error) => { setGenerating(false); setError(e.message); throw e; }); }, [sessionId]);
   const roll = useCallback((eventId: number) => { setError(null); return apiPostRoll(sessionId, eventId).catch((e: Error) => { setError(e.message); throw e; }); }, [sessionId]);
   const choose = useCallback((eventId: number, optionIndex: number) => { setGenerating(true); setError(null); return apiPostChoice(sessionId, eventId, optionIndex).catch((e: Error) => { setGenerating(false); setError(e.message); throw e; }); }, [sessionId]);
+  // 读档（SNAP-1 v1）：后端自动恢复最近快照（整表覆写 sheet/world/watcher），成功后 refetch 全量呈现对账。
+  // 同时清掉残留的待掷/选项/终局/揭示——读回的是快照那一刻的「干净」回合边界态。
+  const rewind = useCallback(() =>
+    apiPostRewind(sessionId).then((r) => {
+      setError(null); setPendingRoll(null); setGameEnd(null); setReveals([]); refetch();
+      return r;
+    }).catch((e: Error) => { setError(e.message); throw e; }), [sessionId, refetch]);
   const dismissReveal = useCallback((seq: number) => setReveals((prev) => prev.filter((r) => r.seq !== seq)), []);
 
-  return { snapshot, narration, pendingRoll, generating, error, gameEnd, reveals, postMessage, roll, choose, dismissReveal };
+  return { snapshot, narration, pendingRoll, generating, error, gameEnd, reveals, postMessage, roll, choose, rewind, dismissReveal };
 }

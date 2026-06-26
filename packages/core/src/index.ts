@@ -70,3 +70,18 @@ export { stateList, stateGet, type StateCell as RuntimeStateCell } from "./store
 export { metaGet, metaSet, sessionDbPath, sessionDir, openSession, type SessionKind } from "./session/resolve.js";
 export { buildSessionContext } from "./adapter/sessionContext.js";
 export { createFileLogger, initGlobalLogger, getLogger } from "./log.js";
+
+// ===== 回合快照（SNAP-1 / ADR-0017 v1：自动持久化、存档/读档）=====
+// orchestrator turnEnd 调 checkpoint、/rewind 端点调 restore+latestSnapshot；participant 注册表供客制域接入。
+export {
+  checkpoint,
+  restore,
+  latestSnapshot,
+  listSnapshots,
+  registerSnapshotParticipant,
+  defaultParticipants,
+  tableParticipant,
+  type SnapshotParticipant,
+  type SnapshotRow,
+  type CheckpointOpts,
+} from "./store/snapshot.js";

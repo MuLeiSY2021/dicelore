@@ -20,6 +20,7 @@ async function actionError(res: Response, what: string): Promise<Error> {
       case "turn_in_progress": return new Error("上一回合还在进行中，请等当前回合结束再操作。");
       case "no_pending_roll": return new Error("当前没有待掷的骰子（可能已掷过或回合已推进）。");
       case "no_pending_choice": return new Error("当前没有待选择的选项（可能已选过或回合已推进）。");
+      case "no_snapshot": return new Error("本局还没有存档（跑完第一个回合后才会自动存档）。");
       default: return new Error(`${what}冲突：${code || res.status}`);
     }
   }
@@ -56,6 +57,17 @@ export async function postRoll(sessionId: string, eventId: number): Promise<{ tu
   });
   if (!res.ok) throw await actionError(res, "掷骰");
   return (await res.json()) as { turnId: string };
+}
+
+// 读档（SNAP-1 / ADR-0017 v1）：自动恢复最近一份快照（POST /sessions/:id/rewind）。
+// v1 是「存档/读档」语义——回合末后端自动存档，此处一键读回最近存档；非手动回滚按钮/branch（v2）。
+// 409 no_snapshot = 本局还没存档（未跑过一个完整回合），给玩家可读提示。
+export async function postRewind(sessionId: string): Promise<{ snapshotId: number }> {
+  const res = await fetch(`/sessions/${encodeURIComponent(sessionId)}/rewind`, {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}),
+  });
+  if (!res.ok) throw await actionError(res, "读档");
+  return (await res.json()) as { snapshotId: number };
 }
 
 // ===== 团本目录录(后端双路径架构 P2/P3/P5)=====

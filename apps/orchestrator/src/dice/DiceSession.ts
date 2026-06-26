@@ -7,7 +7,7 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import { openDb, initSchema, createMcpServer, buildPresentationModel, runTurnEnd, importPack, metaSet, metaGet, type DB, type CanonWriteEvent, type CatalogDB } from "@dicelore/core";
+import { openDb, initSchema, createMcpServer, buildPresentationModel, runTurnEnd, importPack, metaSet, metaGet, checkpoint, restore, latestSnapshot, type DB, type CanonWriteEvent, type CatalogDB } from "@dicelore/core";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WsHub, type WsLike } from "../pkg/wsHub.js";
 import { PlayerRollGate } from "./rollGate.js";
@@ -180,8 +180,24 @@ export class DiceSession implements Session {
 
   handleRoll(eventId: number): boolean { return this.gate?.resolveRoll(eventId) ?? false; }
 
+  // SNAP-1 读档（ADR-0017 v1：自动恢复最近一份快照，非手动回滚/branch）。
+  // 无快照（开局未跑过一回合）→ 返回 false，API 层映射 409；有则整体覆写 sheet/world/watcher 域并返回快照 id。
+  // 串行进 runExclusive：restore 整表覆写与回合写 DB 不能并发（同 handleMessage 的并发互斥）。
+  async rewind(): Promise<{ snapshotId: number } | null> {
+    return this.runExclusive(async () => {
+      const snap = latestSnapshot(this.db);
+      if (!snap) return null;
+      restore(this.db, snap.id);
+      return { snapshotId: snap.id };
+    });
+  }
+
   private turnEnd(db: DB): TurnEndResult {
     runTurnEnd(db, { transcriptHasText: true, stopHookActive: false }); // 物化 choice + L3 审计
+    // SNAP-1：回合边界自动落一份全量快照（存档语义）。turnSeq = 当前最大 log seq（对齐 narrativeCursor 口径）。
+    // 在 runTurnEnd 后取——choice 物化等回合末写已落库，快照覆盖完整回合态。
+    const maxSeq = (db.prepare("SELECT MAX(seq) s FROM log").get() as { s: number | null }).s ?? 0;
+    checkpoint(db, { turnSeq: maxSeq });
     const pc = buildPresentationModel(db, { turnStartSeq: 0 }).pendingChoice;
     if (!pc) return {};
     return {

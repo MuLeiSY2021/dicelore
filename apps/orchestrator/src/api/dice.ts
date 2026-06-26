@@ -203,5 +203,23 @@ export function createLiveApp(deps: LiveDeps): Hono {
     return c.json({ turnId: id }, 202);
   });
 
+  // SNAP-1 读档（ADR-0017 v1：自动恢复最近快照，非手动回滚按钮/branch/续命——那些 v2）。
+  // 成功 → 202 {snapshotId}；库内无快照(未跑过回合) → 409 no_snapshot；有回合在跑 → 409 turn_in_progress。
+  app.post("/sessions/:id/rewind", async (c) => {
+    const id = c.req.param("id");
+    const host = getOrCreateHost(id, hostDeps(id));
+    try {
+      const res = await host.rewind();
+      if (!res) return c.json({ code: "no_snapshot" }, 409);
+      return c.json({ snapshotId: res.snapshotId }, 202);
+    } catch (e) {
+      if (e instanceof TurnInProgressError) {
+        getLogger().warn({ sessionId: id }, "rewind 时已有回合在跑,返回 409 turn_in_progress");
+        return c.json({ code: "turn_in_progress" }, 409);
+      }
+      throw e;
+    }
+  });
+
   return app;
 }
