@@ -69,8 +69,12 @@ export function createLiveApp(deps: LiveDeps): Hono {
   app.post("/sessions/:id/open", async (c) => {
     const id = c.req.param("id");
     const body = (await c.req.json()) as { tuanbenId: string; ref: string };
-    if (!deps.catalog) return c.json({ code: "no_catalog" }, 400);
+    if (!deps.catalog) {
+      getLogger().warn({ sessionId: id }, "open:无 catalog 注入,返回 400 no_catalog");
+      return c.json({ code: "no_catalog" }, 400);
+    }
     getOrCreateHost(id, { ...hostDeps(id), importFrom: { catalog: deps.catalog, tuanbenId: body.tuanbenId, ref: body.ref } });
+    getLogger().info({ sessionId: id, tuanbenId: body.tuanbenId, ref: body.ref }, "open:开新局,import 团本");
     return c.json({ sessionId: id, imported: true }, 201);
   });
 
@@ -86,6 +90,7 @@ export function createLiveApp(deps: LiveDeps): Hono {
         getLogger().warn({ sessionId: id }, "start 时已有回合在跑,返回 409 turn_in_progress");
         return c.json({ code: "turn_in_progress" }, 409);
       }
+      getLogger().error({ sessionId: id, err: e }, "start 未预期异常,抛给 Hono(500)");
       throw e;
     }
   });
@@ -97,6 +102,7 @@ export function createLiveApp(deps: LiveDeps): Hono {
     const id = c.req.param("id");
     removeHost(id);
     deps.deleteSession?.(id);
+    getLogger().info({ sessionId: id }, "删会话:注销内存 host + 删 .db 文件");
     return c.json({ ok: true });
   });
 
@@ -170,6 +176,7 @@ export function createLiveApp(deps: LiveDeps): Hono {
         getLogger().warn({ sessionId: id }, "messages 时已有回合在跑(双击/重发/并发),返回 409 turn_in_progress");
         return c.json({ code: "turn_in_progress" }, 409);
       }
+      getLogger().error({ sessionId: id, err: e }, "messages 未预期异常,抛给 Hono(500)");
       throw e;
     }
   });
@@ -199,7 +206,10 @@ export function createLiveApp(deps: LiveDeps): Hono {
     const host = getOrCreateHost(id, hostDeps(id));
     // no_pending_roll 仅在库里确无此 eventId 的 pending_roll 时回(真正的无待掷)；
     // 重启后有 awaiting pending_roll 的正常掷骰会被 resolveRoll 立即掷掉、返回 true，不再误当并发冲突拒掉。
-    if (!host.handleRoll(body.eventId)) return c.json({ code: "no_pending_roll" }, 409);
+    if (!host.handleRoll(body.eventId)) {
+      getLogger().warn({ sessionId: id, eventId: body.eventId }, "roll:库内无此 pending_roll,返回 409 no_pending_roll");
+      return c.json({ code: "no_pending_roll" }, 409);
+    }
     return c.json({ turnId: id }, 202);
   });
 
@@ -217,6 +227,7 @@ export function createLiveApp(deps: LiveDeps): Hono {
         getLogger().warn({ sessionId: id }, "rewind 时已有回合在跑,返回 409 turn_in_progress");
         return c.json({ code: "turn_in_progress" }, 409);
       }
+      getLogger().error({ sessionId: id, err: e }, "rewind 未预期异常,抛给 Hono(500)");
       throw e;
     }
   });

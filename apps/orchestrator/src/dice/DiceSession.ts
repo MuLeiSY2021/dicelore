@@ -7,7 +7,7 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import { openDb, initSchema, createMcpServer, buildPresentationModel, runTurnEnd, importPack, metaSet, metaGet, checkpoint, restore, latestSnapshot, type DB, type CanonWriteEvent, type CatalogDB } from "@dicelore/core";
+import { openDb, initSchema, createMcpServer, buildPresentationModel, runTurnEnd, importPack, metaSet, metaGet, checkpoint, restore, latestSnapshot, getLogger, type DB, type CanonWriteEvent, type CatalogDB } from "@dicelore/core";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WsHub, type WsLike } from "../pkg/wsHub.js";
 import { PlayerRollGate } from "./rollGate.js";
@@ -69,6 +69,7 @@ export class DiceSession implements Session {
         if (res.tuanbenName) metaSet(this.db, "tuanben_name", res.tuanbenName);
         if (res.prologue) metaSet(this.db, "prologue", res.prologue);
         if (metaGet(this.db, "started") === undefined) metaSet(this.db, "started", "0");
+        getLogger().info({ sessionId, tuanbenId, ref, tuanbenName: res.tuanbenName, extraTools: extraTools.length }, "会话开局:import 团本→运行库");
       }
     }
     // debug 模式不建 gate:core outcomeOpenHandler 的 `if(gate) await gate` 走 false 分支立即掷(降级),
@@ -131,10 +132,17 @@ export class DiceSession implements Session {
     return this.runExclusive(async () => {
       const turnId = nextTurnId(this.sessionId);
       const driver = this.deps.agentFactory(this.buildInit());
-      await runTurn(
-        { db: this.db, driver, hub: this.hub, sessionId: this.sessionId, turnId, runTurnEnd: (db) => this.turnEnd(db) },
-        { text },
-      );
+      getLogger().info({ sessionId: this.sessionId, turnId, kind: "message" }, "回合开始(玩家发言)");
+      try {
+        await runTurn(
+          { db: this.db, driver, hub: this.hub, sessionId: this.sessionId, turnId, runTurnEnd: (db) => this.turnEnd(db) },
+          { text },
+        );
+      } catch (e) {
+        getLogger().error({ sessionId: this.sessionId, turnId, kind: "message", err: e }, "回合异常(玩家发言)");
+        throw e;
+      }
+      getLogger().info({ sessionId: this.sessionId, turnId, kind: "message" }, "回合结束(玩家发言)");
       return { turnId };
     });
   }
@@ -146,20 +154,34 @@ export class DiceSession implements Session {
   async handleChoice(eventId: number, optionIndex: number): Promise<{ turnId: string }> {
     return this.runExclusive(async () => {
       const row = this.db.prepare("SELECT data_json FROM log WHERE seq=? AND kind='choice'").get(eventId) as { data_json: string | null } | undefined;
-      if (!row?.data_json) throw new Error(`handleChoice: 无此 choice event #${eventId}`);
+      if (!row?.data_json) {
+        // 客户端误请求(无此 choice event)——上层 API 映射 409 no_pending_choice 并 warn;此处 debug 记明确失败模式,避免双 warn。
+        getLogger().debug({ sessionId: this.sessionId, eventId }, "handleChoice: 无此 choice event");
+        throw new Error(`handleChoice: 无此 choice event #${eventId}`);
+      }
       const parsed = JSON.parse(row.data_json) as { prompt?: string; options?: { label: string; consequence: string }[] };
       const opt = parsed.options?.[optionIndex];
-      if (!opt) throw new Error(`handleChoice: choice #${eventId} 无 optionIndex=${optionIndex}`);
+      if (!opt) {
+        getLogger().debug({ sessionId: this.sessionId, eventId, optionIndex }, "handleChoice: choice 无此 optionIndex");
+        throw new Error(`handleChoice: choice #${eventId} 无 optionIndex=${optionIndex}`);
+      }
       // ② 落玩家所选记录(隐事件,不进玩家可见叙事；供重连/审计复原"玩家选了哪个")。
       this.db.prepare("INSERT INTO log (content, kind, data_json, visible) VALUES (?, 'note', ?, 0)")
         .run(opt.label, JSON.stringify({ player_choice: { eventId, optionIndex, label: opt.label, consequence: opt.consequence } }));
       // ③ 所选 option 作下一回合输入(玩家视角决定文本)。
       const turnId = nextTurnId(this.sessionId);
       const driver = this.deps.agentFactory(this.buildInit());
-      await runTurn(
-        { db: this.db, driver, hub: this.hub, sessionId: this.sessionId, turnId, runTurnEnd: (db) => this.turnEnd(db) },
-        { text: opt.label },
-      );
+      getLogger().info({ sessionId: this.sessionId, turnId, kind: "choice", eventId, optionIndex }, "回合开始(玩家选择)");
+      try {
+        await runTurn(
+          { db: this.db, driver, hub: this.hub, sessionId: this.sessionId, turnId, runTurnEnd: (db) => this.turnEnd(db) },
+          { text: opt.label },
+        );
+      } catch (e) {
+        getLogger().error({ sessionId: this.sessionId, turnId, kind: "choice", err: e }, "回合异常(玩家选择)");
+        throw e;
+      }
+      getLogger().info({ sessionId: this.sessionId, turnId, kind: "choice" }, "回合结束(玩家选择)");
       return { turnId };
     });
   }
@@ -170,16 +192,26 @@ export class DiceSession implements Session {
   async start(): Promise<{ turnId: string }> {
     return this.runExclusive(async () => {
       const prior = metaGet(this.db, "kickoff_turn");
-      if (metaGet(this.db, "started") === "1") return { turnId: prior ?? this.sessionId };
+      if (metaGet(this.db, "started") === "1") {
+        getLogger().info({ sessionId: this.sessionId, turnId: prior ?? this.sessionId }, "kickoff 幂等:已开场,返回既有开场 turnId");
+        return { turnId: prior ?? this.sessionId };
+      }
       const prologue = metaGet(this.db, "prologue") ?? "";
       const turnId = nextTurnId(this.sessionId);
       const driver = this.deps.agentFactory(this.buildInit());
-      await runTurn(
-        { db: this.db, driver, hub: this.hub, sessionId: this.sessionId, turnId, runTurnEnd: (db) => this.turnEnd(db) },
-        { text: prologue || "[开始游戏]" },
-      );
+      getLogger().info({ sessionId: this.sessionId, turnId, kind: "kickoff" }, "回合开始(开场)");
+      try {
+        await runTurn(
+          { db: this.db, driver, hub: this.hub, sessionId: this.sessionId, turnId, runTurnEnd: (db) => this.turnEnd(db) },
+          { text: prologue || "[开始游戏]" },
+        );
+      } catch (e) {
+        getLogger().error({ sessionId: this.sessionId, turnId, kind: "kickoff", err: e }, "回合异常(开场)");
+        throw e;
+      }
       metaSet(this.db, "started", "1");
       metaSet(this.db, "kickoff_turn", turnId);
+      getLogger().info({ sessionId: this.sessionId, turnId, kind: "kickoff" }, "回合结束(开场)");
       return { turnId };
     });
   }
@@ -192,8 +224,12 @@ export class DiceSession implements Session {
   async rewind(): Promise<{ snapshotId: number } | null> {
     return this.runExclusive(async () => {
       const snap = latestSnapshot(this.db);
-      if (!snap) return null;
+      if (!snap) {
+        getLogger().warn({ sessionId: this.sessionId }, "rewind:库内无快照(未跑过回合),返回 null");
+        return null;
+      }
       restore(this.db, snap.id);
+      getLogger().info({ sessionId: this.sessionId, snapshotId: snap.id }, "rewind:已恢复最近快照");
       return { snapshotId: snap.id };
     });
   }
