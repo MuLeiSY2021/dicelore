@@ -49,7 +49,7 @@ Dicelore's answer is an **agentic architecture** — locking the AI inside a wor
 
 ## Our Vision
 
-Dicelore is dedicated to serving players who want to play text-adventure games and authors who want to craft them — providing both with a beautiful, elegant, and modern interface while maximizing compatibility with customization and community ecosystems. Adapting to mobile is our long-term vision.
+Dicelore is dedicated to serving players who want to play text-adventure games and authors who want to craft them — providing both with a beautiful, elegant, and modern interface while maximizing compatibility with customization and community ecosystems. Multi-platform bundles are a v1 release priority, with **Android and Windows first** (macOS, Linux, and iOS to follow).
 
 ---
 
@@ -57,9 +57,14 @@ Dicelore is dedicated to serving players who want to play text-adventure games a
 
 > Currently playable: **solo text-adventure game** (anka form: forum-style, dice- and vote-driven collaborative play).
 
-Install Claude Code (compatible with a wide range of models, including domestic Chinese ones) and the `dicelore` CLI, then scaffold a session locally with a single command: the framework enforces dice rolls and option-giving, maintains character sheets and story state, and the AI narrates from the result — no soft landings.
+There are two player entry points planned for v1 — pick whichever fits you:
 
-A **full-stack player client** — programmatically driven via the Claude Agent SDK, without any dependency on Claude Code — is under development. Track progress in the [Milestones](docs/wiki/06-里程碑与问题/里程碑.md).
+- **Multi-platform bundle** (Android / Windows first; macOS, Linux, and iOS to follow): a single download containing the client UI plus a local backend sidecar. Just fill in your **API key + base URL** and play — no command line, no separate server to run. *(In development — see [Milestones](docs/wiki/06-里程碑与问题/里程碑.md) for progress.)*
+- **Self-hosted backend + browser**: run the `server` backend yourself via docker-compose (good for remote / multi-tenant hosting), then play through the web client in your browser. Fill in your **API key + base URL** the same way. *(Deployment guide in the [wiki](docs/wiki/).)*
+
+The framework enforces dice rolls and option-giving, maintains character sheets and story state, and the AI narrates from the result — no soft landings.
+
+> **Note on the CLI:** the `dicelore` CLI is a **developer / session-management tool** (`new` / `list` / `inspect` / `init`), **not** a player entry point — it has no `play` command. If you want to try Dicelore today without waiting for the bundle, see [Installation](#installation-in-progress) below for the developer path (run the backend + web locally).
 
 ---
 
@@ -97,14 +102,16 @@ Questions, suggestions, or want to contribute? Open an [issue](../../issues), or
 
 ## Installation (In Progress)
 
-> The one-command full-stack client is still in development; you can run it today through the CLI.
+> The multi-platform player bundle is still in development. The steps below are the **developer path**: clone the repo, install dependencies, and run the stack locally. (This is for development, not the player entry point — players use the bundle or self-hosted backend described in [How to Play](#how-to-play).)
 
 ```bash
 npm install              # install dependencies
 npm test                 # run tests (vitest)
 npm run typecheck        # type check
-npm run dicelore -- new <session-name>   # CLI: create / open a session
+npm run dicelore -- new <session-name>   # CLI: create / open a session (dev / session management)
 ```
+
+To actually play during development you also need to start the `orchestrator` backend and the `web` dev server, then open the web client in a browser — the CLI alone does not run a game.
 
 Sessions are saved under the platform's app-data directory at `dicelore/sessions/<name>.db`. The environment variable `DICELORE_SESSIONS_DIR` overrides the root directory; `DICELORE_SESSION` sets the default session name.
 
