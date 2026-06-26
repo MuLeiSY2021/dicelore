@@ -46,4 +46,25 @@ describe("state store", () => {
   test("get 缺失返回 undefined", () => {
     expect(stateGet(db, "无", "无")).toBeUndefined();
   });
+
+  test("kind 参数：新建行携带 kind=npc（A1 npc 升一等地基）", () => {
+    stateSet(db, "村长", "好感", "5", undefined, "npc");
+    expect(stateGet(db, "村长", "好感")).toMatchObject({ kind: "npc", visible: 0 });
+  });
+
+  test("kind 参数：带 visible 与 kind 同时携带", () => {
+    stateSet(db, "村长", "身份", "线人", 1, "npc");
+    expect(stateGet(db, "村长", "身份")).toMatchObject({ kind: "npc", visible: 1, value: "线人" });
+  });
+
+  test("kind 省略：仍默认 world（回归）", () => {
+    stateSet(db, "世界", "天气", "雨");
+    expect(stateGet(db, "世界", "天气")).toMatchObject({ kind: "world" });
+  });
+
+  test("kind 在 UPSERT 时不覆盖旧 kind", () => {
+    stateSet(db, "村长", "好感", "5", undefined, "npc");
+    stateSet(db, "村长", "好感", "8"); // 不带 kind，改值
+    expect(stateGet(db, "村长", "好感")).toMatchObject({ kind: "npc", value: "8" });
+  });
 });

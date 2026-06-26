@@ -52,17 +52,31 @@ function likePrefix(p: string): string {
   return escaped + "%";
 }
 
-export function stateSet(db: DB, entity: string, attr: string, value: string, visible?: number): void {
+/**
+ * 写一格 state。
+ * @param visible 省略则新建按 0(暗)、冲突时不动旧 visible；给值则覆盖 visible。
+ * @param kind 省略则新建按表默认 'world'、冲突时不动旧 kind；给值则新建时落该 kind。
+ *   kind 在 ON CONFLICT 时**不覆盖**(一个 entity.attr 的 kind 归属不应被改写)——npc_update
+ *   改已有 npc 行时 kind 仍为 npc(首次 register 已落);仅新建行时由调用方携带 kind。
+ */
+export function stateSet(
+  db: DB,
+  entity: string,
+  attr: string,
+  value: string,
+  visible?: number,
+  kind?: StateKind,
+): void {
   if (visible === undefined) {
     db.prepare(
-      `INSERT INTO state (entity, attr, value, visible) VALUES (?, ?, ?, 0)
+      `INSERT INTO state (entity, attr, value, visible, kind) VALUES (?, ?, ?, 0, ?)
        ON CONFLICT(entity, attr) DO UPDATE SET value=excluded.value`,
-    ).run(entity, attr, value);
+    ).run(entity, attr, value, kind ?? "world");
   } else {
     db.prepare(
-      `INSERT INTO state (entity, attr, value, visible) VALUES (?, ?, ?, ?)
+      `INSERT INTO state (entity, attr, value, visible, kind) VALUES (?, ?, ?, ?, ?)
        ON CONFLICT(entity, attr) DO UPDATE SET value=excluded.value, visible=excluded.visible`,
-    ).run(entity, attr, value, visible);
+    ).run(entity, attr, value, visible, kind ?? "world");
   }
 }
 

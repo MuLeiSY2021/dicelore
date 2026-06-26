@@ -10,6 +10,7 @@
 import type { DB } from "../store/db.js";
 import { DiceloreError } from "../errors.js";
 import { applyMutations } from "../store/mutate.js";
+import type { StateKind } from "../store/state.js";
 import { frontSetStatus, frontUpsert } from "../store/front.js";
 import { plotlineSetStatus, plotlineUpsert } from "../store/plotline.js";
 import { foreshadowSetStatus, foreshadowUpsert } from "../store/foreshadow.js";
@@ -21,6 +22,12 @@ export interface WriteToolDecl {
   /** 参数声明: { paramName: "string" | "int" | "number" } */
   params?: Record<string, string>;
   sql: string;
+  /**
+   * 可选 state kind 标注（A1）。仅对 mutate 模式生效——编译时透传给 applyMutations，
+   * 使 `npc_update` 等类型化写工具落 kind=npc 行（kind 由工具名携带，spec §4.1 方案 B）。
+   * 非 mutate 模式（setStatus/insert）忽略此字段。
+   */
+  kind?: StateKind;
 }
 
 export interface WriteTool {
@@ -39,7 +46,7 @@ export function compileWriteTool(decl: WriteToolDecl): WriteTool {
   const plan = matchWrite(decl.sql);
 
   const handler = (db: DB, args: Record<string, unknown>): unknown => {
-    return executePlan(db, plan, args, decl.name);
+    return executePlan(db, plan, args, decl.name, decl.kind);
   };
 
   return {
@@ -56,10 +63,11 @@ function executePlan(
   plan: WritePlan,
   args: Record<string, unknown>,
   toolName: string,
+  kind: StateKind | undefined,
 ): unknown {
   switch (plan.kind) {
     case "mutate":
-      return executeMutate(db, plan, args, toolName);
+      return executeMutate(db, plan, args, toolName, kind);
     case "setStatus":
       return executeSetStatus(db, plan, args, toolName);
     case "insert":
@@ -79,6 +87,7 @@ function executeMutate(
   plan: import("./writeMatch.js").MutatePlan,
   args: Record<string, unknown>,
   toolName: string,
+  kind: StateKind | undefined,
 ): unknown {
   const entity = String(getArg(args, plan.entityParam, toolName));
   const mutations = plan.muts.map((m) => ({
@@ -86,7 +95,7 @@ function executeMutate(
     op: m.op,
     expr: resolveExpr(m.expr, args, toolName),
   }));
-  return applyMutations(db, entity, mutations);
+  return applyMutations(db, entity, mutations, kind ? { kind } : undefined);
 }
 
 function executeSetStatus(

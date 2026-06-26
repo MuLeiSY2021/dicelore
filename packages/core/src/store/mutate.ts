@@ -10,7 +10,7 @@
 import type { Rng } from "../dice/index.js";
 import { evalExpr } from "../expr/evaluate.js";
 import type { DB } from "./db.js";
-import { stateGet, stateSet } from "./state.js";
+import { stateGet, stateSet, type StateKind } from "./state.js";
 import { logAppend } from "./log.js";
 import { recomputeWatchers } from "./watcher.js";
 import { makeEvalCtx } from "./evalCtx.js";
@@ -56,9 +56,10 @@ export function applyMutations(
   db: DB,
   entity: string,
   mutations: Mutation[],
-  opts?: { rng?: Rng },
+  opts?: { rng?: Rng; kind?: StateKind },
 ): MutationResult {
   const ctx = makeEvalCtx(db, { rng: opts?.rng });
+  const kind = opts?.kind;
 
   const txn = db.transaction(() => {
     const applied: MutationApplied[] = [];
@@ -72,13 +73,13 @@ export function applyMutations(
         const oldN = old === null ? 0 : toNum(old, cellAttr);
         const next = oldN + (m.op === "+" ? member.qty : -member.qty);
         if (next <= 0) db.prepare("DELETE FROM state WHERE entity=? AND attr=?").run(entity, cellAttr);
-        else stateSet(db, entity, cellAttr, String(next));
+        else stateSet(db, entity, cellAttr, String(next), undefined, kind);
         applied.push({ attr: cellAttr, op: m.op, expr: m.expr, kind: "set", old, delta: m.op === "+" ? member.qty : -member.qty, new: String(Math.max(next, 0)) });
         continue;
       }
       if (member && m.op === "=") {
         const old = stateGet(db, entity, m.attr)?.value ?? null;
-        stateSet(db, entity, m.attr, member.name);
+        stateSet(db, entity, m.attr, member.name, undefined, kind);
         applied.push({ attr: m.attr, op: m.op, expr: m.expr, kind: "set", old, new: member.name });
         continue;
       }
@@ -92,7 +93,7 @@ export function applyMutations(
         // 避免开局建卡时 expr 解析器对实体名报 EXPR_EVAL 阻断整批事务。+/- 算术仍报错(要求数值)。
         if (m.op === "=") {
           const old = stateGet(db, entity, m.attr)?.value ?? null;
-          stateSet(db, entity, m.attr, m.expr);
+          stateSet(db, entity, m.attr, m.expr, undefined, kind);
           applied.push({ attr: m.attr, op: m.op, expr: m.expr, kind: "set", old, new: m.expr });
           continue;
         }
@@ -107,7 +108,7 @@ export function applyMutations(
         const oldN = old === null ? 0 : toNum(old, m.attr);
         nextNum = oldN + (m.op === "+" ? led.total : -led.total);
       }
-      stateSet(db, entity, m.attr, String(nextNum));
+      stateSet(db, entity, m.attr, String(nextNum), undefined, kind);
       applied.push({
         attr: m.attr, op: m.op, expr: m.expr,
         kind: hasDice ? "rolled" : "set",

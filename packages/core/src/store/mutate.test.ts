@@ -73,6 +73,20 @@ describe("applyMutations", () => {
     expect(r.fired_watchers).toEqual([{ id: 1, payload: "濒死" }]);
     expect(logSince(db, 0).some((e) => e.kind === "mutation")).toBe(true);
   });
+
+  test("opts.kind=npc：所有写出的 cell 落 kind=npc（A1）", () => {
+    applyMutations(db, "村长", [
+      { attr: "好感", op: "=", expr: "5" },
+      { attr: "库存", op: "+", expr: "金币*10" },
+    ], { kind: "npc" });
+    expect(stateGet(db, "村长", "好感")).toMatchObject({ kind: "npc", value: "5" });
+    expect(stateGet(db, "村长", "库存:金币")).toMatchObject({ kind: "npc", value: "10" });
+  });
+
+  test("opts.kind 省略：仍默认 world（回归）", () => {
+    applyMutations(db, "张三", [{ attr: "HP", op: "=", expr: "30" }]);
+    expect(stateGet(db, "张三", "HP")).toMatchObject({ kind: "world" });
+  });
 });
 
 it("toNum 非数值算术抛 NOT_NUMERIC", () => {

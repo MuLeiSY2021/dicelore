@@ -41,6 +41,31 @@ describe("compileWriteTool", () => {
     expect(stateGet(db, "李四", "HP")!.value).toBe("100");
   });
 
+  test("写工具:decl.kind=npc → mutate 落 kind=npc 行（A1 引擎表达力补齐）", () => {
+    const db = openDb(":memory:");
+    initSchema(db);
+    const t = compileWriteTool({
+      name: "npc_update",
+      params: { npc: "string", delta: "int" },
+      sql: "UPDATE state SET 好感 = 好感 + :delta WHERE entity = :npc",
+      kind: "npc",
+    });
+    t.handler(db, { npc: "村长", delta: 5 });
+    expect(stateGet(db, "村长", "好感")).toMatchObject({ kind: "npc", value: "5" });
+  });
+
+  test("写工具:无 decl.kind → mutate 仍默认 world（回归）", () => {
+    const db = openDb(":memory:");
+    initSchema(db);
+    const t = compileWriteTool({
+      name: "bump",
+      params: { who: "string", n: "int" },
+      sql: "UPDATE state SET 计数 = 计数 + :n WHERE entity = :who",
+    });
+    t.handler(db, { who: "张三", n: 1 });
+    expect(stateGet(db, "张三", "计数")).toMatchObject({ kind: "world" });
+  });
+
   test("写工具:setStatus via plotline", () => {
     const db = openDb(":memory:");
     initSchema(db);
