@@ -14,7 +14,8 @@ import { readFileSync } from "node:fs";
 import { openDb } from "../src/store/db.js";
 import { logSince } from "../src/store/log.js";
 import { buildPlayerView } from "../src/present/playerView.js";
-import { narrateLeak, missingNarrate, toolStats } from "../src/eval/assertions.js";
+import { narrateLeak, missingNarrate, toolStats, rollFloor, closureFloor } from "../src/eval/assertions.js";
+import { loadScenario } from "../src/eval/scenario.js";
 
 const dbPath = process.argv[2];
 if (!dbPath) {
@@ -61,6 +62,11 @@ if (transcriptPath) {
 const verdictSeqs = events.filter((e) => e.kind === "verdict").map((e) => e.seq);
 const narrateSeqs = events.filter((e) => e.kind === "narrate").map((e) => e.seq);
 
+// F1/F2 机械地板：读 scenario.expects（缺省=该地板不适用）。零 LLM、offline 可判。
+const expects = scenarioId ? (loadScenario(scenarioId).expects ?? {}) : {};
+const f1 = rollFloor(events, { minVerdicts: expects.minVerdicts ?? 0 });
+const f2 = closureFloor(events, { closure: expects.closure ?? false });
+
 const report = {
   scenario: scenarioId ?? "(未指定)",
   db: dbPath,
@@ -73,6 +79,8 @@ const report = {
     verdictCount: verdictSeqs.length,
     narrateCount: narrateSeqs.length,
     gatedVsAuto: `明骰 ${stats.verdictGated} / 暗骰 ${stats.verdictAuto}`,
+    f1RollFloor: f1, // F1 掷骰绕过地板（pass/fail + verdictCount + 时序绕过签名）
+    f2ClosureFloor: f2, // F2 弱地板（终局收束信号存在性，advisory）
   },
 };
 

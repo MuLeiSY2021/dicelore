@@ -22,6 +22,10 @@ export interface Scenario {
   reference: { file: string; beat: string; note: string };
   seed: ScenarioSeed;
   playerTurns: string[];
+  // 机械地板期望（assertions 读它做确定性判定，零 LLM）。可选——缺省=不施加该地板。
+  //   minVerdicts: F1 掷骰地板——本场景玩家序列里需检定的主动行动数，verdict 须 ≥ 此值且无散文绕过时序。
+  //   closure:     F2 弱地板——本场景是否期望出现终局/收束信号（仅 advisory，不硬判）。
+  expects?: { minVerdicts?: number; closure?: boolean };
 }
 export interface PreparedSession {
   db: DB;
