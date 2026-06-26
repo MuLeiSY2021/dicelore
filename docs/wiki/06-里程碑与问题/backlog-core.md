@@ -160,6 +160,7 @@
 | M1-b | docs | **wiki 8 处死链**（CROSS-DEADLINK）：引用已不存在的 `问题总账.md`（已被 backlog 三池取代） | 2026-06-25 全量体检 | organize-wiki 专项：批量改 8 处死链 `问题总账.md` → 对应 `backlog-{core,前端,后端}.md` 或 `路线图.md`（按引用语境定） |
 | M1-c | docs | **定位漂移**（PROD-010）：ADR-0022 品类词统一为"文字冒险游戏"、安科/安价升维为"载体"，但下游（安科安价是什么页、术语表）仍以安科/安价为"玩法/品类"定义 | 2026-06-25 全量体检 | organize-wiki 专项：安科安价是什么页顶部加定位注记"本页定安科/安价这一载体的背景；品类词统一为文字冒险游戏、安科/安价是其首发载体，见 ADR-0022"；术语表"安科/安价"词条加"载体"定性；不改玩法定义本身只升维定位层级 |
 | M1-d | docs | **愿景 §4 无承接**（PROD-011）：用户与场景 §4 愿景（美观/移动端/社区生态）无 backlog 承接、无验收口径 | 2026-06-25 全量体检 | organize-wiki 专项：在用户与场景 §4 为每条愿景加"v1 边界"（美观现代 UI v1 做到墨金 token 全量已落地、社区生态 v1 不做里程碑四、移动端 v1 不做长期愿景 backlog 显式推迟）；**移动端从长期愿景提前到发版优先（安卓+Win）**（[ADR-0027](../05-决策记录-ADR/README.md) 定稿裁决），需 organize-wiki 改用户与场景 §4 把"移动端适配长期愿景"改为"移动端 v1 发版优先（安卓+Win）、见 ADR-0027"；客制化/社区生态进里程碑四占位拆块（人工维护） |
+| M2 | refactor | **「团本」实体标识符未对齐英文定名 `Adventure`**：[术语表](../02-领域模型/术语表.md) 已定名团本英文 = `Adventure`，但代码标识符仍为拼音 `tuanben`（实体：`tuanbenId`/`TuanbenSummary`/`doGetPackFiles` 参数等，散见 `packages/core/src/catalog`·`build`、`apps/orchestrator/src/api/{lore,dice}.ts`、`apps/web/src/api/client.ts` 及多处 e2e/测试）。**纯命名漂移、零行为变化** | 用户定名 2026-06-26 | 跨 core/orchestrator/web 正则批量改名 + 测试兜底（[机械改名用正则]，别上 SDD）：实体 `tuanben*`→`adventure*`；**文件层 `Pack`/`PackFile`、库 `Catalog` 语义不冲突、保留**；**禁复用 `Scenario`**（已被 eval 种子占用）。低优先、不阻塞功能 |
 
 ---
 
