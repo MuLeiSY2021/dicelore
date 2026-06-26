@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@dicelore/errors": "*",
+    "@dicelore/logs": "*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@node-rs/jieba": "^2.0.1",
     "better-sqlite3": "^12.11.1",

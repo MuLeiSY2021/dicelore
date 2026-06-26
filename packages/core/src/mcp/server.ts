@@ -13,7 +13,7 @@ import { TOOLS } from "./tools.js";
 import type { ToolDef } from "./tooldef.js";
 import { runTool } from "./runTool.js";
 import { setRollGate, type RollGate } from "./rollGate.js";
-import { getLogger } from "../log.js";
+import { getLogger } from "@dicelore/logs";
 
 export interface CanonWriteEvent {
   kind: "mutation" | "event" | "visibility" | "reveal" | "choice_staged" | "game_end";

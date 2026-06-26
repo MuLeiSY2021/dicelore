@@ -12,7 +12,7 @@
 import { readFileSync } from "node:fs";
 import { openSession } from "../../session/resolve.js";
 import { runTurnEnd } from "../turnEnd.js";
-import { getLogger } from "../../log.js";
+import { getLogger } from "@dicelore/logs";
 
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = [];

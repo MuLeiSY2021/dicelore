@@ -11,7 +11,7 @@ import { readdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { metaGet, openSession, sessionDbPath } from "./session/resolve.js";
 import { runInit } from "./adapter/init.js";
-import { getLogger } from "./log.js";
+import { getLogger } from "@dicelore/logs";
 
 const [cmd, arg] = process.argv.slice(2);
 
