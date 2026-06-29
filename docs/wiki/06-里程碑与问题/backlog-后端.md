@@ -1,6 +1,6 @@
 # backlog · 后端层
 
-> **本页职责**：`apps/orchestrator` 层的 **issue 池**——HTTP·WS 接口 / 会话生命周期 / 进程编排。按**主题**聚类、按 **fix/feat** 标注，广度无序（先还哪个见 [路线图](路线图.md)）。
+> **本页职责**：`backend/` 层的 **issue 池**——HTTP·WS 接口 / 会话生命周期 / 进程编排。按**主题**聚类、按 **fix/feat** 标注，广度无序（先还哪个见 [路线图](路线图.md)）。
 > **单源（勿重复）**：拍了方案 → 写 [ADR](../05-决策记录-ADR/)，条目改标 `→ ADR-00xx` 关闭；已达成 → 进 [里程碑](里程碑.md)。
 
 ## 状态图例
@@ -31,12 +31,12 @@
 | G-后端-version | feat | **About 真实版本号需 health 暴露**（前端 About 页等后端 `/health` 暴露版本号） | 接口页 §9 fast-follow | ✗ | health 端点加版本字段（前端项见 [backlog-前端](backlog-前端.md)） |
 | G-后端-toolcall | feat | **构建助手「显示调了哪些工具」需 lore-sessions 回 tool-call 痕迹** | 接口页 §9 fast-follow | ✗ | lore-session 回传 tool-call 痕迹（前端展示项见 [backlog-前端](backlog-前端.md)） |
 | G-后端-gmcore | feat | **真 GM 接 gm-core skill（去 stopgap）**：现 `dice/openingPrompt.ts` 内联教条全文是 stopgap（`16969d4`，解 GM 裸奔/OOC），正式 skill staged 接入 `DiceGm` 待 `RUN_LIVE` 实测。与 [主题F harness](backlog-core.md) **是一条线**——harness 要真 GM、真 GM 要教条 | ADR-0023 后果 + 2026-06-24 核对 | — | ✅ `DiceGm` skillStage 真接 gm-core + RUN_LIVE 验证通过（[ADR-0025](../05-决策记录-ADR/README.md)）；openingPrompt 内联教条 stopgap 保留作兜底，去 stopgap 留后续 |
-| G-后端-narration | fix | **narration 来源取错（违背 [ADR-0009](../05-决策记录-ADR/README.md) 三流分工）**：`DiceGm` 把 assistant text（`stripReasoning` 后）当 narration yield → `narration_commit.text` = GM 正文/思考，而非 **narrate MCP 工具调用**的 event content。core 架构明确 narration 该从 narrate event 来（[`playerView`](../../../packages/core/src/present/playerView.ts) 流①=narrate+reveal event、[`assertions`](../../../packages/core/src/eval/assertions.ts) `narrateLeak`=正文复述 narrate 即 bug）、assistant text 是流③只回 AI。后果：GM 思考/元叙述泄漏给玩家（RUN_LIVE 实测 orc-hunt 开场 seq1/seq2 英文思考泄漏："The table's set, let me check the world state..."），narrate 工具散文只进 `presentation_delta`（机械态）没进 narration stream；`stripReasoning` 只是掩盖此 bug 的补丁（见 [findings B7](../../../packages/core/eval/findings.md)） | RUN_LIVE 2026-06-24 + 用户质疑 | — | ✅ 已修（2026-06-24）：`DiceGm` 不再 yield assistant text（删 `stripReasoning` 调用）；`mapCanonWrite` 对 `kind=event·narrate` 发 `narration_commit`（text 由 `DiceSession.enrich` 从 log 行按 seq 取出注入）；`streamDriverTurn` 的 narration 分支**保留**（`LoreSession` 构建反馈仍依赖，dice 路径不再走它）。narrate-leak 根治；`RUN_LIVE` 复跑 orc-hunt 待实证（单测 `narrateLeak` 已覆盖） |
+| G-后端-narration | fix | **narration 来源取错（违背 [ADR-0009](../05-决策记录-ADR/README.md) 三流分工）**：`DiceGm` 把 assistant text（`stripReasoning` 后）当 narration yield → `narration_commit.text` = GM 正文/思考，而非 **narrate MCP 工具调用**的 event content。core 架构明确 narration 该从 narrate event 来（[`playerView`](../../../backend/src/present/playerView.ts) 流①=narrate+reveal event、[`assertions`](../../../backend/src/eval/assertions.ts) `narrateLeak`=正文复述 narrate 即 bug）、assistant text 是流③只回 AI。后果：GM 思考/元叙述泄漏给玩家（RUN_LIVE 实测 orc-hunt 开场 seq1/seq2 英文思考泄漏："The table's set, let me check the world state..."），narrate 工具散文只进 `presentation_delta`（机械态）没进 narration stream；`stripReasoning` 只是掩盖此 bug 的补丁（见 [findings B7](../../../harness/eval-dicegm/findings.md)） | RUN_LIVE 2026-06-24 + 用户质疑 | — | ✅ 已修（2026-06-24）：`DiceGm` 不再 yield assistant text（删 `stripReasoning` 调用）；`mapCanonWrite` 对 `kind=event·narrate` 发 `narration_commit`（text 由 `DiceSession.enrich` 从 log 行按 seq 取出注入）；`streamDriverTurn` 的 narration 分支**保留**（`LoreSession` 构建反馈仍依赖，dice 路径不再走它）。narrate-leak 根治；`RUN_LIVE` 复跑 orc-hunt 待实证（单测 `narrateLeak` 已覆盖） |
 | G-后端-game_end | fix | **`game_end` 消息后端从不发**：`mapCanonWrite` 无 `game_end` 分支，core `game_end` 工具触发被塌成 `presentation_delta`；前端 `useSession` 已 `setGameEnd` 但永不触发，终局画面缺失。core 侧已正确 `onCanonWrite(kind=game_end)`，断在后端不识别此 kind | [接口页 §10.1 B3](../04-子系统设计/玩家客户端-接口.md) 核验 2026-06-24 | ✗ | ✅ 已修（2026-06-24）：`mapCanonWrite` 加 `kind=game_end` 分支发 `type:"game_end"`（reason/outcome 由 `DiceSession.enrich` 从 `session_meta.ended` 注入）；前端 `setGameEnd` 可触发 |
 | G-后端-choices | fix | **`POST /choices` 后端仍绕路**：前端已正式 `postChoice`(REST `{eventId,optionIndex}`+乐观锁)，后端仍伪装文本 `[choice {eventId}#{optionIndex}]` 喂 `handleMessage`，未走 §5「记录所选 + 下一回合 user turn」正式路径；HTTP 通、业务半通（接口页注①已纠旧） | [接口页 §10.1 B1](../04-子系统设计/玩家客户端-接口.md) 核验 2026-06-24 | ✗ | ✅ 已修（2026-06-24）：`POST /choices` 走 `DiceSession.handleChoice` 正式路径——读 choice event→落 `player_choice` note→所选 option 作下一回合 `TurnInput`；去 `[choice …]` 文本绕路；无待选项返 409 |
 | G-后端-mapkind | feat | **`mapCanonWrite` 粒度粗**：非明骰一律塌 `presentation_delta`，`reveal`/`watcherFired`/`choice_staged`/`game_end` 信号丢失（`shared` `PresentationChanges` 的 reveal/watcherFired 字段闲置），靠前端全量对账兜底正确性；与 G-后端-game_end 同根 | [接口页 §10.1 A2](../04-子系统设计/玩家客户端-接口.md) / §5.1 核验 | ✓ | 🟡 映射侧已修（2026-06-24）：`mapCanonWrite` 已按 kind 显式分发（narrate/game_end/reveal/mutation/visibility/choice_staged 各自映射，不再统一塌 `presentation_delta`）；**剩**前端解析 `changes` 增量（注⑦，现仍全量对账）留第四批优化 |
 | G-后端-packName | fix | **`SessionSummary.packName` 后端未填**：`shared` schema 有 `packName?`，前端 `PlayPage` 用 `s.packName` 做团本名前缀分组，后端 `sessions.ts` 只填 `title`(从 `tuanben_name`)，`packName` 恒空 → 团本名分组失效 | [接口页 §10.1 B5](../04-子系统设计/玩家客户端-接口.md) / §9.4 核验 | ✗ | ✅ 已修（2026-06-24）：`sessions.ts` `packName`←`tuanben_name`、`title`←`sessionId`（sessionId 为友好 slug/短 hash，渲染 `packName · title`）；团本名分组生效 |
-| BE-stripReasoning-wire | fix | **`stripReasoning` 未接入 DiceGm**（P3 观察，2026-06-26 wave4 浮现）：`pkg/reasoning.ts` `stripReasoning`（剥 `<think>/<thinking>/<reasoning>`）**实际未接入 `DiceGm`**——DiceGm 只消费到 `result`、assistant text 不当 narration（narration 已改从 narrate event 来，见 G-后端-narration），故 stripReasoning 无生效点。P6 当初设计「stripReasoning 接进 DiceGm」与现状不符 | 2026-06-26 wave4 | ✗ | 🔧 确认是设计漂移还是有意：narration 来自 narrate event 而非 assistant text 后，stripReasoning 可能已无必要（应删 + 改设计页措辞），或仍需在某处接入（确认后定）。与 [G-后端-narration](#) 同根。 |
+| BE-stripReasoning-wire | fix | **`stripReasoning` 未接入 DiceGm**（P3 观察，2026-06-26 wave4 浮现）：`harness/src/runtime/reasoning.ts` `stripReasoning`（剥 `<think>/<thinking>/<reasoning>`）**实际未接入 `DiceGm`**——DiceGm 只消费到 `result`、assistant text 不当 narration（narration 已改从 narrate event 来，见 G-后端-narration），故 stripReasoning 无生效点。P6 当初设计「stripReasoning 接进 DiceGm」与现状不符 | 2026-06-26 wave4 | ✗ | 🔧 确认是设计漂移还是有意：narration 来自 narrate event 而非 assistant text 后，stripReasoning 可能已无必要（应删 + 改设计页措辞），或仍需在某处接入（确认后定）。与 [G-后端-narration](#) 同根。 |
 
 ---
 
@@ -44,7 +44,7 @@
 
 > 设计已定稿（[团本与manifest.md](../04-子系统设计/团本与manifest.md) / [团本构建工具链.md](../04-子系统设计/团本构建工具链.md)，[ADR-0015](../05-决策记录-ADR/)）。
 >
-> **历史注记（已闭）**：**H1 → [ADR-0023](../05-决策记录-ADR/README.md)**（团本构建走缓存 DB、非系统文件）已落地——Catalog 团本包库（`packages/core/src/catalog/`）DB-only 集中录，构建层 `Draft`→`commitDraft`→Catalog；文件只在上传/导出边界；设计单源 → [04 后端双路径架构](../04-子系统设计/后端双路径架构.md)。**H2 → [ADR-0023](../05-决策记录-ADR/README.md)**：跨地基资产已在 P5 重新派生（构建层 Draft + 构建 MCP `dicelore_build_*` + 构建 skill `dicelore-build-pack` + `LoreSession`，文件式→Catalog DB）；旧 `event-log` worktree 那批旧 spec/plans 可清。
+> **历史注记（已闭）**：**H1 → [ADR-0023](../05-决策记录-ADR/README.md)**（团本构建走缓存 DB、非系统文件）已落地——Catalog 团本包库（`backend/src/catalog/`）DB-only 集中录，构建层 `Draft`→`commitDraft`→Catalog；文件只在上传/导出边界；设计单源 → [04 后端双路径架构](../04-子系统设计/后端双路径架构.md)。**H2 → [ADR-0023](../05-决策记录-ADR/README.md)**：跨地基资产已在 P5 重新派生（构建层 Draft + 构建 MCP `dicelore_build_*` + 构建 skill `dicelore-build-pack` + `LoreSession`，文件式→Catalog DB）；旧 `event-log` worktree 那批旧 spec/plans 可清。
 
 | # | 类型 | 问题 | 来源 | 恶化 | 下一步/依赖 |
 |---|------|------|------|:--:|--------|
@@ -59,17 +59,17 @@
 
 > **跨层主题**：病根与统一方案在 [backlog-core 主题O · O1](backlog-core.md)；本页挂后端侧症状条目。
 >
-> **2026-06-25 复核·O1 描述显著漂移**：① core **已有成熟 logger**（`packages/core/src/log.ts`：pino 分级文件 + `getLogger`/`initGlobalLogger`/`createFileLogger`，全仓 17+ 处用），**非「需抽同构 shared/logger」**——`shared/` 是 schema 层（rest/ws 契约），不该塞 logger；O1 原「抽 shared/logger 三层共用」是误判，实际是「core 已有、后端复用 core logger、前端另需 browser sink」。② 后端 `DiceGm.ts` 已用 sessionLogger（per-session 分级文件 + usage 落 raw log），关键路径（GM 回合/usage）**已覆盖 ~80%**，非「全程零日志」。真缺口收窄为：HTTP 路由/WS 连接/会话启停/编排异常的**补点覆盖**（低优先），+ **前端零日志框架**（真缺口）。
+> **2026-06-25 复核·O1 描述显著漂移**：① core **已有成熟 logger**（`packages/logs/src/`：pino 分级文件 + `getLogger`/`initGlobalLogger`/`createFileLogger`，全仓 17+ 处用），**非「需抽同构 shared/logger」**——`packages/shared` 是 schema 层（rest/ws 契约），不该塞 logger；O1 原「抽 shared/logger 三层共用」是误判，实际是「`packages/logs` 已有、后端复用它、前端另需 browser sink」。② 后端 `DiceGm.ts` 已用 sessionLogger（per-session 分级文件 + usage 落 raw log），关键路径（GM 回合/usage）**已覆盖 ~80%**，非「全程零日志」。真缺口收窄为：HTTP 路由/WS 连接/会话启停/编排异常的**补点覆盖**（低优先），+ **前端零日志框架**（真缺口）。
 
 | # | 类型 | 问题 | 来源 | 恶化 | 下一步/依赖 |
 |---|------|------|------|:--:|--------|
-| O-后端 | feat | **后端运行时日志补点覆盖**（2026-06-25 复核降级）：`DiceGm` sessionLogger 已覆盖 GM 回合/usage（~80%）；剩 HTTP 路由/WS 连接/会话启停/编排异常**未走 logger**（部分裸 console 或无日志）。补这些点的 `error/warn/info/debug` 分级覆盖 | 用户 + 2026-06-25 复核 | ✓ | 复用 core `getLogger`/`createFileLogger`（**无需新建 shared/logger**）；分级约定与 core 对齐。降为 P2（关键路径已覆盖）。**2026-06-26 部分收尾**：`server.ts` 删重复裸 `console.log`（已有 `getLogger().info` 覆盖）；HTTP 路由/WS 连接/会话启停/编排异常的系统化补点仍欠，保留为后续 |
+| O-后端 | feat | **后端运行时日志补点覆盖**（2026-06-25 复核降级）：`DiceGm` sessionLogger 已覆盖 GM 回合/usage（~80%）；剩 HTTP 路由/WS 连接/会话启停/编排异常**未走 logger**（部分裸 console 或无日志）。补这些点的 `error/warn/info/debug` 分级覆盖 | 用户 + 2026-06-25 复核 | ✓ | 复用 `packages/logs` `getLogger`/`createFileLogger`（**无需新建 shared/logger**）；分级约定与引擎侧对齐。降为 P2（关键路径已覆盖）。**2026-06-26 部分收尾**：`server.ts` 删重复裸 `console.log`（已有 `getLogger().info` 覆盖）；HTTP 路由/WS 连接/会话启停/编排异常的系统化补点仍欠，保留为后续 |
 
 ---
 
 ## 主题 · 成本可观测性（token / 金钱计量）💡
 
-> **跨层主题**：LLM 调用发生在 `apps/orchestrator`（Agent SDK 驱动 `DiceGm` / `LoreSession`），但**全程零 token 采集**——`packages/shared` 无 usage schema、orchestrator 不回传/落库 token 用量、无查询接口、前端无可视化。后果：每 turn / 每会话烧多少 token 无感知、按 MCP 工具或 agent 归因无数据、金钱消耗不可估、[SEC2](#) 计费/限流缺数据前置。与 [主题O](#主题--可观测性--日志分级统一) 同属可观测性但**不同物**——O 是日志流、本主题是**结构化指标 + 归因 + 前端可视化**，单列。
+> **跨层主题**：LLM 调用发生在 `backend/`（Agent SDK 驱动 `DiceGm` / `LoreSession`），但**全程零 token 采集**——`packages/shared` 无 usage schema、backend 不回传/落库 token 用量、无查询接口、前端无可视化。后果：每 turn / 每会话烧多少 token 无感知、按 MCP 工具或 agent 归因无数据、金钱消耗不可估、[SEC2](#) 计费/限流缺数据前置。与 [主题O](#主题--可观测性--日志分级统一) 同属可观测性但**不同物**——O 是日志流、本主题是**结构化指标 + 归因 + 前端可视化**，单列。
 >
 > **概念待澄清（💡 设计待 ADR）**：「每个 mcp/skill 消耗多少 token」归因维度需先定——**skill 是 staged 教条（gm-core / dicelore-build-pack）非每次调用单位**、**MCP 工具执行本身不烧 token**，token 烧在 LLM 调用。可归因维度实为：per turn / per session / per agent（DiceGm vs 构建 GM）/ per 回合内工具调用链（粗粒度）。归因模型 + 定价换算（每 token 单价按模型）需 ADR。
 >

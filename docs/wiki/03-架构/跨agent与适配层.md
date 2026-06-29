@@ -82,7 +82,7 @@ L2 教条内容是 core 标准件，但**装载走 Claude Code 的 skill 机制*
 ```
 
 - **轴一**：core 标准、交付绑基底——但"绑"是**有意承重**，非旧版"可选装法"。
-- **轴二 · 呈现层 = 玩家客户端（组件7，[ADR-0018](../05-决策记录-ADR/README.md)）**：v1 终端（`dicelore play` / `claude`）仍在，**并行推进 web 玩家客户端**——机制 ＝ **Agent SDK headless host**（用 `@anthropic-ai/claude-agent-sdk` ＝ 程序化 Claude Code 把 GM 作为库嵌进自建 Node 服务），而非 Tauri 包交互式终端。**这不离开轴一"骑定 Claude Code"**：三 hook / 进程内 MCP / skill 装载原样复用，只换宿主外壳（TUI → web）。一个编排契约（REST + 流式）套两种分发壳：**Tauri（个人向头等分发、开箱即用，壳内捎带 orchestrator 的 Node sidecar）** / **Web（企业·多人向托管 ＝ [场景 B](../01-业务分析/用户与场景.md)）**。GUI 仍读 SQLite store / `narrate` 展示人物卡 / 剧情 / 卡池，**与"哪个模型当 GM"正交**；与 core 则**单向依赖 + 一条变更通知缝**（core/MCP 写规范态时发信号、后端订阅推呈现增量，为反应式 / 性能，详见 [04 玩家客户端](../04-子系统设计/玩家客户端.md)）。详见 [总体架构 §7 组件7](总体架构.md)。
+- **轴二 · 呈现层 = 玩家客户端（组件7，[ADR-0018](../05-决策记录-ADR/README.md)）**：v1 终端（`dicelore play` / `claude`）仍在，**并行推进 web 玩家客户端**——机制 ＝ **Agent SDK headless host**（用 `@anthropic-ai/claude-agent-sdk` ＝ 程序化 Claude Code 把 GM 作为库嵌进自建 Node 服务），而非 Tauri 包交互式终端。**这不离开轴一"骑定 Claude Code"**：三 hook / 进程内 MCP / skill 装载原样复用，只换宿主外壳（TUI → web）。一个编排契约（REST + 流式）套两种分发壳：**Tauri（个人向头等分发、开箱即用，壳内捎带后端的 Node sidecar）** / **Web（企业·多人向托管 ＝ [场景 B](../01-业务分析/用户与场景.md)）**。GUI 仍读 SQLite store / `narrate` 展示人物卡 / 剧情 / 卡池，**与"哪个模型当 GM"正交**；与 core 则**单向依赖 + 一条变更通知缝**（core/MCP 写规范态时发信号、后端订阅推呈现增量，为反应式 / 性能，详见 [04 玩家客户端](../04-子系统设计/玩家客户端.md)）。详见 [总体架构 §7 组件7](总体架构.md)。
 
 ---
 

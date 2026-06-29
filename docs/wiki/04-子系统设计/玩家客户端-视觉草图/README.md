@@ -41,7 +41,7 @@
 
 直接用浏览器打开任一 `.html`。**需联网**——字体(Google Fonts)与图标(Lucide CDN unpkg)走 CDN;离线则字体 fallback、图标不显。`play.html` / `home.html` 的明暗/色板按钮可点切换。
 
-> 这些是 brainstorming 视觉伴侣的定稿快照(2026-06-21),后续实现以 `packages/shared` 契约 + apps/web 为准,样式从这些草图取色取形。
+> 这些是 brainstorming 视觉伴侣的定稿快照(2026-06-21),后续实现以 `packages/shared` 契约 + `frontend/` 为准,样式从这些草图取色取形。
 
 ## 品牌 / Logo
 

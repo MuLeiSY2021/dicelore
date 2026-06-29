@@ -4,7 +4,7 @@
 > **与其它页的边界（单源规矩，勿重复）**：
 > - 各节 `TODO.md`（如 [03](../03-架构/TODO.md)/[04](../04-子系统设计/TODO.md)）= **节内** 做没做完的流水，本页不抄，只在里程碑里引「某节已定稿」。
 > - [05-决策记录 ADR](../05-决策记录-ADR/) = **已接受**的决策；条目一旦拍了方案就写成 ADR，该条改标「→ ADR-00xx」关闭。
-> - `packages/core/eval/findings.md` = **eval 专项** A/B 账本（措辞/架构缺口）；backlog 池把它**按主题卷上来**，细节仍留 findings.md。
+> - `harness/eval-dicegm/findings.md` = **eval 专项** A/B 账本（措辞/架构缺口）；backlog 池把它**按主题卷上来**，细节仍留 findings.md。
 > - 本页只做 **索引 / 状态**，不放权威方案正文。
 > **上游依赖**：无（横切全项目）。**状态**：🚧 living（持续追加）。
 
@@ -22,9 +22,9 @@
 |------|----------|------|
 | [里程碑](里程碑.md) | 宏大目标/愿景（未来 ⬜ + 已达成 ✅） | 人工维护 · AI 仅在人干预下追加 ⬜ |
 | [路线图](路线图.md) | 还欠哪些账、先还哪个（有序批次） | 未来 · AI 维护·可重排 |
-| [backlog-前端](backlog-前端.md) | `apps/web` issue 池（按主题 × fix/feat） | issue 池 · 广度无序 |
-| [backlog-后端](backlog-后端.md) | `apps/orchestrator` issue 池 | issue 池 · 广度无序 |
-| [backlog-core](backlog-core.md) | `packages/core`(+`shared`) issue 池 | issue 池 · 广度无序 |
+| [backlog-前端](backlog-前端.md) | `frontend/` issue 池（按主题 × fix/feat） | issue 池 · 广度无序 |
+| [backlog-后端](backlog-后端.md) | `backend/` issue 池（HTTP/WS·会话生命周期·进程编排） | issue 池 · 广度无序 |
+| [backlog-core](backlog-core.md) | core 层 issue 池（引擎/底层：`backend/` store·resolve·present·catalog·build·toolgen·expr·eval + `harness/` 运行时/mcp 工具面 + `packages/*` 纯库） | issue 池 · 广度无序 |
 
 ## 当前最高优先级（详见[路线图](路线图.md)）
 

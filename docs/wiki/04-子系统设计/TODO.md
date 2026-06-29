@@ -28,7 +28,7 @@ resolver = 把未定局面产出一个「叙述者无法伪造」的结果并推
 | 团本构建台（组件5/6） | [团本与manifest.md](团本与manifest.md) / [团本构建工具链.md](团本构建工具链.md) + ADR-0015 |
 | PbtA 对齐 + Agenda + Front/Clock | [Skills包.md](Skills包.md) + ADR-0016 |
 | 组件4 adapter + L3 + 输出层 | [adapter与L3审计.md](adapter与L3审计.md) + ADR-0014 |
-| 玩家闸控明骰（core 侧） | [MCP工具面.md](MCP工具面.md) + ADR-0019 |
+| 玩家闸控明骰（后端引擎侧） | [MCP工具面.md](MCP工具面.md) + ADR-0019 |
 | Skills eval-loop 工装 | [Skills-eval.md](Skills-eval.md) |
 
 ## 未结 / 在途项（已迁 06）

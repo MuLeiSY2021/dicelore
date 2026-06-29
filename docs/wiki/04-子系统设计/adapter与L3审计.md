@@ -235,7 +235,7 @@ CC 的对话记录（transcript jsonl）本身是 **UUID 父子链树**（/rewin
 
 ### 9.2 裸 CC 降级：无 `awaitPlayerRoll` 能力 → 当场立即 commit
 
-`awaitPlayerRoll(eventId)` 是 orchestrator（组件7）注入 handler 的**接缝**（core 只定接口）。在**裸 Claude Code**（无 orchestrator、无可阻塞的前端）下该能力缺失——此时 `resolve_*_open` handler **当场立即 `commitPendingRoll` 掷、直接返回，不阻塞**（设计 §3/§4）。同 §6「`narrate` v1 直用、绕过靠兜底」、同隔壁线「notify-URL 未配 = no-op」的精神：**能力在则走桥接，能力缺则就地退化、绝不卡死**。
+`awaitPlayerRoll(eventId)` 是后端（组件7）注入 handler 的**接缝**（运行时只定接口）。在**裸 Claude Code**（无后端编排、无可阻塞的前端）下该能力缺失——此时 `resolve_*_open` handler **当场立即 `commitPendingRoll` 掷、直接返回，不阻塞**（设计 §3/§4）。同 §6「`narrate` v1 直用、绕过靠兜底」、同隔壁线「notify-URL 未配 = no-op」的精神：**能力在则走桥接，能力缺则就地退化、绝不卡死**。
 
 降级路下明骰退化为「引擎即刻掷、回合内返回」，与暗骰行为趋同（无按钮、无 BG3 动效、无人机往返），但点数仍由 core 计算——anti-F1 不因降级破。这一路是 core 本线可单测的部分（`commitPendingRoll` 纯函数、RNG 注入；见 [内层能力库 `pending_roll`](内层能力库.md)）。
 
@@ -245,8 +245,8 @@ CC 的对话记录（transcript jsonl）本身是 **UUID 父子链树**（/rewin
 
 **分线裁定**：
 
-- **重驱 GM 的实现归组件7 线**——orchestrator 持有 Agent SDK 会话，恢复路的「拿 verdict 当输入再驱 GM」是它的活，**不在本页 adapter（Claude Code TUI 接线层）职责内**。
-- **core / adapter 侧只保证两条**：① `pending_roll` 持久落库（真相源，[内层能力库](内层能力库.md)）；② `commitPendingRoll` **幂等**（已 `committed` 不重掷）。有这两条，verdict event 总能补达，结果不丢。
+- **重驱 GM 的实现归组件7 线**——后端持有 Agent SDK 会话，恢复路的「拿 verdict 当输入再驱 GM」是它的活，**不在本页 adapter（Claude Code TUI 接线层）职责内**。
+- **运行时 / adapter 侧只保证两条**：① `pending_roll` 持久落库（真相源，[内层能力库](内层能力库.md)）；② `commitPendingRoll` **幂等**（已 `committed` 不重掷）。有这两条，verdict event 总能补达，结果不丢。
 
 ### 9.4 明确不在本页（本线）范围
 
