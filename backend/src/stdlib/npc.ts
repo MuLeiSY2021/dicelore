@@ -7,9 +7,9 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import type { ToolDecl } from "@dicelore/backend";
-import { toolgenToToolDef } from "@dicelore/backend";
-import type { ToolDef } from "../tooldef.js";
+import type { ToolDecl } from "../toolgen/compile.js";
+import { toolgenToToolDef } from "../toolgen/toToolDef.js";
+import type { ToolDef } from "@dicelore/interface";
 
 // NPC 一等抽象（A1，spec 2026-06-26-npc一等抽象-design）：把 state 的 `npc` kind 升为
 // 运行时一等概念。读侧＝已投影的 `npc` 视图（store/views.ts `WHERE kind='npc'`）；

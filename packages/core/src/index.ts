@@ -14,7 +14,7 @@ export { openDb, initSchema, type DB } from "@dicelore/backend";
 export { initViews } from "@dicelore/backend";
 // 声明式工具生成层接线（叙事层 dogfooding，spec §8 + DT-9 step③）
 export { toolgenToToolDef } from "@dicelore/backend";
-export { narrationStdlibTools, narrationToolDecls } from "./mcp/stdlib/narration.js";
+export { narrationStdlibTools, narrationToolDecls } from "@dicelore/backend";
 export {
   buildPresentationModel,
   type PresentationModel,
@@ -32,15 +32,15 @@ export {
   type RollShape,
 } from "@dicelore/backend";
 export { commitPendingRoll, type RollResult } from "@dicelore/backend";
-export { setRollGate, getRollGate, type RollGate } from "./mcp/rollGate.js";
+export { setRollGate, getRollGate, type RollGate } from "@dicelore/harness";
 
 // in-process MCP 工厂 + 写后回调接缝（组件7 orchestrator 用）。
 export {
   createMcpServer,
   type CanonWriteEvent,
   type McpServerDeps,
-} from "./mcp/server.js";
-export { makeTools, BUILTIN_TOOL_NAMES, BUILTIN_TOOL_COUNT } from "./mcp/tools.js"; // 内置工具工厂 + 元数据（组件7 配置页展示真实工具数）
+} from "@dicelore/harness";
+export { makeTools, BUILTIN_TOOL_NAMES, BUILTIN_TOOL_COUNT } from "@dicelore/harness"; // 内置工具工厂 + 元数据（组件7 配置页展示真实工具数）
 // SessionBackend 端口接口聚合 + 组合根工厂（storage-port ADR §3/§4）——组合根建实例注入 createMcpServer。
 export { openSessionBackend } from "@dicelore/backend";
 export type { SessionBackend } from "@dicelore/interface";
@@ -49,7 +49,7 @@ export type { SessionBackend } from "@dicelore/interface";
 export { loadScenario, prepareSessionDb, type Scenario, type PreparedSession } from "@dicelore/backend";
 
 // 回合末 hook（choice 物化 + L3 审计）——组件4，供 orchestrator turn-end 复用。
-export { runTurnEnd } from "./adapter/turnEnd.js";
+export { runTurnEnd } from "@dicelore/harness";
 
 // ===== Catalog 团本包库（后端双路径架构 P2）=====
 export {
@@ -73,7 +73,7 @@ export { stateList, stateGet, type RuntimeStateCell } from "@dicelore/backend";
 // session_meta KV(团本名/prologue/started 等,P2 Play 生命周期) + 路径规则(sessionDbPath/openSession)。
 // 后端 server.ts 与 eval prepareSessionDb 共用 openSession 路径规则,避免种子灌到 core 路径而后端开平铺空库。
 export { metaGet, metaSet, sessionDbPath, sessionDir, openSession, type SessionKind } from "@dicelore/backend";
-export { buildSessionContext } from "./adapter/sessionContext.js";
+export { buildSessionContext } from "@dicelore/harness";
 export { createFileLogger, initGlobalLogger, getLogger } from "@dicelore/logs";
 
 // ===== 回合快照（SNAP-1 / ADR-0017 v1：自动持久化、存档/读档）=====

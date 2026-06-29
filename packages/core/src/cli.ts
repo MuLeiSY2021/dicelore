@@ -10,7 +10,7 @@
 import { readdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { metaGet, openSession, sessionDbPath } from "@dicelore/backend";
-import { runInit } from "./adapter/init.js";
+import { runInit } from "@dicelore/harness";
 import { getLogger } from "@dicelore/logs";
 
 const [cmd, arg] = process.argv.slice(2);

@@ -10,7 +10,7 @@
 import { describe, expect, test, beforeEach } from "vitest";
 import { openDb, initSchema, openSessionBackend, type DB } from "@dicelore/backend";
 import { wrapToolForTest } from "./server.js";
-import { narrationStdlibTools } from "./stdlib/narration.js";
+import { narrationStdlibTools } from "@dicelore/backend";
 import { frontList } from "@dicelore/backend";
 import { plotlineList } from "@dicelore/backend";
 

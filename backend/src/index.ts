@@ -130,3 +130,9 @@ export { type ToolDecl } from "./toolgen/compile.js";
 // openSessionBackend(db) 组装 SessionBackend(Store & Resolver & Meta)；接口契约 + 域类型在 @dicelore/interface。
 export { openSessionBackend } from "./sessionBackend.js";
 export type { SessionBackend, Store, Resolver, Meta } from "@dicelore/interface";
+
+// ===== 声明式工具标准库（叙事层 / NPC 一等抽象）=====
+// 原 core/mcp/stdlib，紧贴 toolgen + store 引擎（toolgenToToolDef + applyMutations），随 store 一族迁入 backend（阶段5a ②B）。
+// 工具面（mcp server）经 harness 装配它们；core barrel 经裸 @dicelore/backend 转出 narration 部分。
+export { narrationStdlibTools, narrationToolDecls } from "./stdlib/narration.js";
+export { npcStdlibTools, npcToolDecls } from "./stdlib/npc.js";

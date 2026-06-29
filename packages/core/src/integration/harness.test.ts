@@ -25,8 +25,8 @@ import {
   closureFloor,
   openSessionBackend,
 } from "@dicelore/backend";
-import { makeTools } from "../mcp/tools.js";
-import { runTool } from "../mcp/runTool.js";
+import { makeTools } from "@dicelore/harness";
+import { runTool } from "@dicelore/harness";
 
 // 内置工具 handler 经注入的 SessionBackend 调存储——故工具须绑定到本测试的同一 db
 // (storage-port ADR §4)。每次按当前 db 造工具，名字命中即取。

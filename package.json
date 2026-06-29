@@ -19,7 +19,8 @@
     "apps/*",
     "packages/*",
     "frontend",
-    "backend"
+    "backend",
+    "harness"
   ],
   "scripts": {
     "test": "npm run test -w @dicelore/core",
@@ -27,7 +28,7 @@
     "test:all": "npm run test --workspaces --if-present",
     "typecheck:all": "npm run typecheck --workspaces --if-present",
     "dicelore": "npm run dicelore -w @dicelore/core",
-    "dicelore:mcp": "npm run dicelore:mcp -w @dicelore/core"
+    "dicelore:mcp": "npm run dicelore:mcp -w @dicelore/harness"
   },
   "devDependencies": {
     "playwright": "^1.61.0"

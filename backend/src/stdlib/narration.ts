@@ -7,9 +7,9 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import type { ToolDecl } from "@dicelore/backend";
-import { toolgenToToolDef } from "@dicelore/backend";
-import type { ToolDef } from "../tooldef.js";
+import type { ToolDecl } from "../toolgen/compile.js";
+import { toolgenToToolDef } from "../toolgen/toToolDef.js";
+import type { ToolDef } from "@dicelore/interface";
 
 // 框架自带「第一个标准库包」（dogfooding，spec §8）：叙事层 front/plotline/foreshadow
 // 业务工具不硬编码，用声明式工具生成层声明出来。只含 writeMatch 三模式可表达者；

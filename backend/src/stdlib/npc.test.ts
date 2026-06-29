@@ -10,7 +10,7 @@
 import { describe, expect, test, beforeEach } from "vitest";
 import { openDb, initSchema, openSessionBackend, type DB } from "@dicelore/backend";
 import { logSince } from "@dicelore/backend";
-import { wrapToolForTest } from "../server.js";
+import { wrapToolForTest } from "@dicelore/harness";
 import { npcToolDecls, npcStdlibTools } from "./npc.js";
 
 let db: DB;
@@ -98,7 +98,7 @@ describe("dogfooding：NPC 声明工具经 MCP server 端到端", () => {
   });
 
   test("框架零改动：npc 工具全部来自声明（不在硬编码 TOOLS 中）", async () => {
-    const { BUILTIN_TOOL_NAMES } = await import("../tools.js");
+    const { BUILTIN_TOOL_NAMES } = await import("@dicelore/harness");
     const hardcoded = new Set(BUILTIN_TOOL_NAMES);
     for (const n of ["npc_register", "npc_update_affinity", "npc_update_hp", "npc_set_identity"]) {
       expect(hardcoded.has(n)).toBe(false);

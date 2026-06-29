@@ -232,8 +232,8 @@ describe("importPack front 物化(Clock init + 凶兆→watcher)", () => {
 
 // ── 作者面 tools/*.json：import → 编译 → 装载（DT-9 作者侧）─────────────────
 import { foreshadowList, stateSet, stateGet as stateGetCell, openSessionBackend } from "@dicelore/backend";
-import { wrapToolForTest } from "../mcp/server.js";
-import { BUILTIN_TOOL_NAMES } from "../mcp/tools.js";
+import { wrapToolForTest } from "@dicelore/harness";
+import { BUILTIN_TOOL_NAMES } from "@dicelore/harness";
 
 describe("importPack 作者面 tools/*.json（DT-9）", () => {
   const TOOLS_JSON = JSON.stringify([
