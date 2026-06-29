@@ -18,7 +18,7 @@ import {
   defaultParticipants,
   tableParticipant,
 } from "./snapshot.js";
-import { loreUpsert, loreGet, loreSearch } from "./world.js";
+import { loreUpsert, loreGet, loreSearch } from "./world/world.js";
 
 function freshDb(): DB {
   const db = openDb(":memory:");

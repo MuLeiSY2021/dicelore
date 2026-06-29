@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, it, expect } from "vitest";
-import { openDb, initSchema } from "./db.js";
+import { openDb, initSchema } from "../db.js";
 import { stagePendingRoll, getPendingRoll, markRollCommitted } from "./pendingRoll.js";
 
 function freshDb() { const db = openDb(":memory:"); initSchema(db); return db; }

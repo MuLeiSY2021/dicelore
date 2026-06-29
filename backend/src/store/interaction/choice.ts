@@ -7,8 +7,8 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import type { DB } from "./db.js";
-import { logAppend } from "./record.js";
+import type { DB } from "../db.js";
+import { logAppend } from "../event/record.js";
 
 // ChoiceOption 定义下沉 @dicelore/interface(SessionBackend 方法面引用)；re-export 保持公共面。
 import type { ChoiceOption } from "@dicelore/interface";

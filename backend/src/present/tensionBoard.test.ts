@@ -9,10 +9,10 @@
 
 import { beforeEach, expect, test } from "vitest";
 import { initSchema, openDb, type DB } from "../store/db.js";
-import { frontUpsert, frontSetStatus } from "../store/front.js";
-import { plotlineUpsert } from "../store/plotline.js";
-import { foreshadowUpsert, foreshadowSetStatus } from "../store/foreshadow.js";
-import { watcherSet } from "../store/watcher.js";
+import { frontUpsert, frontSetStatus } from "../store/narrative/front.js";
+import { plotlineUpsert } from "../store/narrative/plotline.js";
+import { foreshadowUpsert, foreshadowSetStatus } from "../store/narrative/foreshadow.js";
+import { watcherSet } from "../store/narrative/watcher.js";
 import { tensionBoard } from "./tensionBoard.js";
 
 let db: DB;

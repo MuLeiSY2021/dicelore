@@ -8,15 +8,15 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import type { DB } from "../store/db.js";
-import { loreUpsert } from "../store/world.js";
-import { poolAdd } from "../store/world.js";
-import { ruleUpsert } from "../store/rule.js";
-import { frontUpsert } from "../store/front.js";
-import { plotlineUpsert } from "../store/plotline.js";
-import { foreshadowUpsert } from "../store/foreshadow.js";
-import { anchorAdd } from "../store/anchor.js";
-import { stateSetClock } from "../store/state.js";
-import { watcherSet } from "../store/watcher.js";
+import { loreUpsert } from "../store/world/world.js";
+import { poolAdd } from "../store/world/world.js";
+import { ruleUpsert } from "../store/world/rule.js";
+import { frontUpsert } from "../store/narrative/front.js";
+import { plotlineUpsert } from "../store/narrative/plotline.js";
+import { foreshadowUpsert } from "../store/narrative/foreshadow.js";
+import { anchorAdd } from "../store/world/anchor.js";
+import { stateSetClock } from "../store/sheet/state.js";
+import { watcherSet } from "../store/narrative/watcher.js";
 import { checkout, type PackFile } from "./catalog.js";
 import type { CatalogDB } from "./db.js";
 import { validatePack as validatePackFull, parseFrontmatter, parseFront, parseToolsFile, type ValidateIssue } from "../build/pack/validate.js";

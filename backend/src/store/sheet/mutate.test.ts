@@ -8,11 +8,11 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { beforeEach, describe, expect, it, test } from "vitest";
-import { initSchema, openDb, type DB } from "./db.js";
+import { initSchema, openDb, type DB } from "../db.js";
 import { stateGet, stateSet } from "./state.js";
 import { applyMutations } from "./mutate.js";
-import { watcherSet } from "./watcher.js";
-import { logSince } from "./record.js";
+import { watcherSet } from "../narrative/watcher.js";
+import { logSince } from "../event/record.js";
 import { DiceloreError } from "@dicelore/errors";
 
 let db: DB;

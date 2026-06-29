@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { beforeEach, expect, test } from "vitest";
-import { initSchema, openDb, type DB } from "./db.js";
+import { initSchema, openDb, type DB } from "../db.js";
 import { anchorAdd, anchorsByOwner, anchorsByTarget } from "./anchor.js";
 
 let db: DB;

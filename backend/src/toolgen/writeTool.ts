@@ -9,11 +9,11 @@
 
 import type { DB } from "../store/db.js";
 import { DiceloreError } from "@dicelore/errors";
-import { applyMutations } from "../store/mutate.js";
-import type { StateKind } from "../store/state.js";
-import { frontSetStatus, frontUpsert } from "../store/front.js";
-import { plotlineSetStatus, plotlineUpsert } from "../store/plotline.js";
-import { foreshadowSetStatus, foreshadowUpsert } from "../store/foreshadow.js";
+import { applyMutations } from "../store/sheet/mutate.js";
+import type { StateKind } from "../store/sheet/state.js";
+import { frontSetStatus, frontUpsert } from "../store/narrative/front.js";
+import { plotlineSetStatus, plotlineUpsert } from "../store/narrative/plotline.js";
+import { foreshadowSetStatus, foreshadowUpsert } from "../store/narrative/foreshadow.js";
 import { matchWrite, type WritePlan } from "./writeMatch.js";
 
 export interface WriteToolDecl {

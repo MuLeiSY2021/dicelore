@@ -9,9 +9,9 @@
 
 import { describe, it, expect } from "vitest";
 import { openDb, initSchema } from "../store/db.js";
-import { logSince } from "../store/record.js";
-import { stateSet } from "../store/state.js";
-import { stagePendingRoll, getPendingRoll } from "../store/pendingRoll.js";
+import { logSince } from "../store/event/record.js";
+import { stateSet } from "../store/sheet/state.js";
+import { stagePendingRoll, getPendingRoll } from "../store/interaction/pendingRoll.js";
 import { commitPendingRoll } from "./commitRoll.js";
 
 function freshDb() { const db = openDb(":memory:"); initSchema(db); return db; }

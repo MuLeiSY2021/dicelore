@@ -29,7 +29,7 @@ export {
   type PendingRollRow,
   type RollSpec,
   type RollShape,
-} from "./store/pendingRoll.js";
+} from "./store/interaction/pendingRoll.js";
 export { commitPendingRoll, type RollResult } from "./resolve/commitRoll.js";
 
 // eval 场景准备（run.ts 手动调试 + orchestrator harness 自动闭环共用）。
@@ -59,10 +59,10 @@ export { Draft, commitDraft, type StateCell } from "./build/draft.js";
 export { createBuildMcpServer, invokeBuildTool, type BuildCtx, BUILD_SCHEMAS } from "./build/buildMcp.js";
 
 // ===== 运行时只读浏览（组件7 跑团页左活动轨自查源；additive 只读，不改引擎） =====
-export { loreSearch, loreGet, type Lore } from "./store/world.js";
-export { ruleSearch, ruleGet, type Rule } from "./store/rule.js";
-export { logSince, logRecall, type LogRow } from "./store/record.js";
-export { stateList, stateGet, type StateCell as RuntimeStateCell } from "./store/state.js";
+export { loreSearch, loreGet, type Lore } from "./store/world/world.js";
+export { ruleSearch, ruleGet, type Rule } from "./store/world/rule.js";
+export { logSince, logRecall, type LogRow } from "./store/event/record.js";
+export { stateList, stateGet, type StateCell as RuntimeStateCell } from "./store/sheet/state.js";
 // session_meta KV(团本名/prologue/started 等,P2 Play 生命周期) + 路径规则(sessionDbPath/openSession)。
 // 后端 server.ts 与 eval prepareSessionDb 共用 openSession 路径规则,避免种子灌到 core 路径而后端开平铺空库。
 export { metaGet, metaSet, sessionDbPath, sessionDir, openSession, type SessionKind } from "./session/resolve.js";
@@ -97,31 +97,31 @@ export {
 
 // ===== core 侧 mcp/adapter/cli/main 经裸 @dicelore/backend 消费、但不在上面公共面里的补充符号 =====
 // adapter/turnEnd.ts 用 logAppend（store/record）+ getPendingChoice/materializePendingChoice（store/choice）。
-export { logAppend, type LogKind, type LogInput } from "./store/record.js";
+export { logAppend, type LogKind, type LogInput } from "./store/event/record.js";
 export {
   stagePendingChoice,
   getPendingChoice,
   materializePendingChoice,
   type ChoiceOption,
-} from "./store/choice.js";
+} from "./store/interaction/choice.js";
 
 // ===== core 侧集成测试（integration/import.test.ts）经 barrel 消费的引擎符号 =====
 // 这些原是 backend 内部相对 import；集成测试移到 core 后必须经包入口拿，故在此显式转出。
-export { watcherList, type WatcherRow } from "./store/watcher.js";
-export { foreshadowList, type Foreshadow } from "./store/foreshadow.js";
-export { stateSet } from "./store/state.js";
+export { watcherList, type WatcherRow } from "./store/narrative/watcher.js";
+export { foreshadowList, type Foreshadow } from "./store/narrative/foreshadow.js";
+export { stateSet } from "./store/sheet/state.js";
 export { parseFront, type ParsedFront } from "./build/pack/validate.js";
 
 // ===== core 侧 mcp 工具面（handlers/stdlib）经裸 @dicelore/backend 直接消费的引擎符号 =====
 // mcp/handlers 与 mcp/stdlib 紧贴 store/resolve/toolgen 引擎；store 一族迁出后这些 import 全改裸 barrel。
-export { worldRegister, poolSample, loreUpsert } from "./store/world.js";
-export { ruleUpsert } from "./store/rule.js";
-export { frontList } from "./store/front.js";
-export { plotlineList } from "./store/plotline.js";
-export { applyMutations } from "./store/mutate.js";
+export { worldRegister, poolSample, loreUpsert } from "./store/world/world.js";
+export { ruleUpsert } from "./store/world/rule.js";
+export { frontList } from "./store/narrative/front.js";
+export { plotlineList } from "./store/narrative/plotline.js";
+export { applyMutations } from "./store/sheet/mutate.js";
 export { truncateText } from "@dicelore/interface";
-export { sheetShow, worldShow, revealOnce } from "./store/visibility.js";
-export { watcherSet, recomputeWatchers } from "./store/watcher.js";
+export { sheetShow, worldShow, revealOnce } from "./store/sheet/visibility.js";
+export { watcherSet, recomputeWatchers } from "./store/narrative/watcher.js";
 export { makeEvalCtx } from "./store/evalCtx.js";
 export { resolveContest } from "./resolve/contest.js";
 export { type ToolDecl } from "./toolgen/compile.js";

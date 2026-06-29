@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, it, expect } from "vitest";
-import type { LogRow } from "../store/record.js";
+import type { LogRow } from "../store/event/record.js";
 import { narrateLeak, missingNarrate, toolStats, rollFloor, closureFloor } from "./assertions.js";
 
 let seqCounter = 0;

@@ -9,7 +9,7 @@
 
 import { describe, expect, test } from "vitest";
 import { openDb, initSchema } from "../store/db.js";
-import { stateSet } from "../store/state.js";
+import { stateSet } from "../store/sheet/state.js";
 import { defineView } from "./view.js";
 
 describe("defineView", () => {

@@ -7,7 +7,7 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import type { DB } from "./db.js";
+import type { DB } from "../db.js";
 
 // StateKind / StateCell 定义下沉 @dicelore/interface(SessionBackend 方法面引用)；此处 re-export 保持本模块公共面不变。
 import type { StateKind, StateCell } from "@dicelore/interface";

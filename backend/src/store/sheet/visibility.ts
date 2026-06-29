@@ -7,9 +7,9 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import type { DB } from "./db.js";
+import type { DB } from "../db.js";
 import { stateGet, stateSet } from "./state.js";
-import { logAppend } from "./record.js";
+import { logAppend } from "../event/record.js";
 import { DiceloreError } from "@dicelore/errors";
 
 // 可见性变更审计:kind=note、visible=0(对玩家隐),供 L3 / 回看(§4.2)。返回 audit event seq。

@@ -7,11 +7,11 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import { evalPredicate } from "../expr/predicate.js";
-import type { EvalCtx } from "../expr/evaluate.js";
-import { logAppend } from "./record.js";
-import { makeExistsMatch } from "./existsMatch.js";
-import type { DB } from "./db.js";
+import { evalPredicate } from "../../expr/predicate.js";
+import type { EvalCtx } from "../../expr/evaluate.js";
+import { logAppend } from "../event/record.js";
+import { makeExistsMatch } from "../existsMatch.js";
+import type { DB } from "../db.js";
 
 // WatcherRow 定义下沉 @dicelore/interface(SessionBackend 方法面引用)；re-export 保持公共面。
 import type { WatcherRow } from "@dicelore/interface";

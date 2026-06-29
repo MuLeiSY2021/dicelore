@@ -9,9 +9,9 @@
 
 import { describe, expect, test } from "vitest";
 import { openDb, initSchema } from "../store/db.js";
-import { stateSet, stateGet } from "../store/state.js";
-import { plotlineUpsert } from "../store/plotline.js";
-import { foreshadowUpsert } from "../store/foreshadow.js";
+import { stateSet, stateGet } from "../store/sheet/state.js";
+import { plotlineUpsert } from "../store/narrative/plotline.js";
+import { foreshadowUpsert } from "../store/narrative/foreshadow.js";
 import { compileWriteTool } from "./writeTool.js";
 
 describe("compileWriteTool", () => {

@@ -10,7 +10,7 @@
 import type { DB } from "./db.js";
 import type { EvalCtx, RefGetter } from "../expr/evaluate.js";
 import type { Rng } from "@dicelore/dice";
-import { stateGet } from "./state.js";
+import { stateGet } from "./sheet/state.js";
 import { makeExistsMatch } from "./existsMatch.js";
 
 export function makeEvalCtx(db: DB, opts?: { rng?: Rng }): EvalCtx {

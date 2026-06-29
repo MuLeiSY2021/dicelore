@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { beforeEach, describe, expect, test } from "vitest";
-import { initSchema, openDb, type DB } from "./db.js";
+import { initSchema, openDb, type DB } from "../db.js";
 import { plotlineUpsert, plotlineGet, plotlineList, plotlineSetStatus } from "./plotline.js";
 
 let db: DB;

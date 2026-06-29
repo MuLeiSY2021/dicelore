@@ -17,10 +17,10 @@ import {
 } from "./loreScenario.js";
 import { gradeLoreRun, runDbCounts } from "./loreAssertions.js";
 import { invokeBuildTool } from "../build/buildMcp.js";
-import { frontGet } from "../store/front.js";
-import { plotlineGet } from "../store/plotline.js";
-import { foreshadowGet } from "../store/foreshadow.js";
-import { loreGet } from "../store/world.js";
+import { frontGet } from "../store/narrative/front.js";
+import { plotlineGet } from "../store/narrative/plotline.js";
+import { foreshadowGet } from "../store/narrative/foreshadow.js";
+import { loreGet } from "../store/world/world.js";
 
 describe("lore eval harness — frontier-saga 场景", () => {
   it("场景文件可加载，buildCalls 非空且含 commit", () => {

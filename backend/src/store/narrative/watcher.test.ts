@@ -8,10 +8,10 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { beforeEach, describe, expect, test } from "vitest";
-import { initSchema, openDb, type DB } from "./db.js";
+import { initSchema, openDb, type DB } from "../db.js";
 import { recomputeWatchers, watcherList, watcherSet } from "./watcher.js";
-import { logAppend, logSince } from "./record.js";
-import { makeEvalCtx } from "./evalCtx.js";
+import { logAppend, logSince } from "../event/record.js";
+import { makeEvalCtx } from "../evalCtx.js";
 
 let db: DB;
 beforeEach(() => { db = openDb(":memory:"); initSchema(db); });

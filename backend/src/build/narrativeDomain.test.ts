@@ -11,10 +11,10 @@ import { describe, it, expect } from "vitest";
 import { openCatalog } from "../catalog/db.js";
 import { importPack } from "../catalog/import.js";
 import { openDb, initSchema } from "../store/db.js";
-import { frontList } from "../store/front.js";
-import { plotlineList } from "../store/plotline.js";
-import { foreshadowList } from "../store/foreshadow.js";
-import { anchorsByOwner } from "../store/anchor.js";
+import { frontList } from "../store/narrative/front.js";
+import { plotlineList } from "../store/narrative/plotline.js";
+import { foreshadowList } from "../store/narrative/foreshadow.js";
+import { anchorsByOwner } from "../store/world/anchor.js";
 import { Draft, commitDraft } from "./draft.js";
 
 describe("叙事域 Draft → commit → import 全链(front/plotline/foreshadow/anchor)", () => {

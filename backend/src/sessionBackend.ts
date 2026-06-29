@@ -17,20 +17,20 @@
 
 import type { DB, SessionBackend } from "@dicelore/interface";
 
-import { stateGet, stateList, stateSet } from "./store/state.js";
-import { applyMutations } from "./store/mutate.js";
-import { logAppend, logSince, logRecall } from "./store/record.js";
-import { watcherSet, watcherList, recomputeWatchers } from "./store/watcher.js";
+import { stateGet, stateList, stateSet } from "./store/sheet/state.js";
+import { applyMutations } from "./store/sheet/mutate.js";
+import { logAppend, logSince, logRecall } from "./store/event/record.js";
+import { watcherSet, watcherList, recomputeWatchers } from "./store/narrative/watcher.js";
 import { makeEvalCtx } from "./store/evalCtx.js";
-import { sheetShow, worldShow, revealOnce } from "./store/visibility.js";
-import { loreGet, loreSearch, loreUpsert, worldRegister, poolSample } from "./store/world.js";
-import { ruleSearch } from "./store/rule.js";
+import { sheetShow, worldShow, revealOnce } from "./store/sheet/visibility.js";
+import { loreGet, loreSearch, loreUpsert, worldRegister, poolSample } from "./store/world/world.js";
+import { ruleSearch } from "./store/world/rule.js";
 import {
   stagePendingChoice,
   getPendingChoice,
   materializePendingChoice,
-} from "./store/choice.js";
-import { stagePendingRoll, getPendingRoll } from "./store/pendingRoll.js";
+} from "./store/interaction/choice.js";
+import { stagePendingRoll, getPendingRoll } from "./store/interaction/pendingRoll.js";
 import { resolveContest } from "./resolve/contest.js";
 import { commitPendingRoll } from "./resolve/commitRoll.js";
 import { metaGet, metaSet } from "./session/resolve.js";

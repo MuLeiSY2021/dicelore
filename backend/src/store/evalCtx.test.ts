@@ -9,8 +9,8 @@
 
 import { expect, test } from "vitest";
 import { openDb, initSchema } from "./db.js";
-import { stateSet } from "./state.js";
-import { plotlineUpsert } from "./plotline.js";
+import { stateSet } from "./sheet/state.js";
+import { plotlineUpsert } from "./narrative/plotline.js";
 import { makeEvalCtx } from "./evalCtx.js";
 
 test("getRef: 裸名 与 state: 前缀都走 state", () => {

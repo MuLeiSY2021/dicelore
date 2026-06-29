@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { beforeEach, describe, expect, test } from "vitest";
-import { initSchema, openDb, type DB } from "./db.js";
+import { initSchema, openDb, type DB } from "../db.js";
 import { frontUpsert, frontGet, frontList, frontSetStatus, frontOmenList } from "./front.js";
 import { watcherSet } from "./watcher.js";
 

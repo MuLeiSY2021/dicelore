@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from "vitest";
 import { openDb, initSchema } from "../store/db.js";
-import { stateSet } from "../store/state.js";
+import { stateSet } from "../store/sheet/state.js";
 import { resolveContest } from "./contest.js";
 import { DiceloreError } from "@dicelore/errors";
 

@@ -7,7 +7,7 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import type { LogRow } from "../store/record.js";
+import type { LogRow } from "../store/event/record.js";
 
 // eval 机械断言地板（客观、确定性、零 LLM）。语义判断（软着陆、明暗骰选对、与真人 GM 质量差距）
 // 归带语料参考的 grader（见 eval/grader.md），不在此。本模块只判能机械确证的：

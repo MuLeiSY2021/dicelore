@@ -50,9 +50,9 @@ export async function prepareSessionDb(
   process.env.DICELORE_SESSIONS_DIR = sessionsDir;
   process.env.DICELORE_SESSION = sessionName;
   const { openSession, metaSet } = await import("../session/resolve.js");
-  const { ruleUpsert } = await import("../store/rule.js");
-  const { stateSet } = await import("../store/state.js");
-  const { sheetShow } = await import("../store/visibility.js");
+  const { ruleUpsert } = await import("../store/world/rule.js");
+  const { stateSet } = await import("../store/sheet/state.js");
+  const { sheetShow } = await import("../store/sheet/visibility.js");
   const { db, path: dbPath } = openSession();
   if (scenario.seed.tone) metaSet(db, "tone", scenario.seed.tone);
   for (const r of scenario.seed.rules ?? []) ruleUpsert(db, { name: r.name, content: r.content });

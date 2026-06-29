@@ -8,8 +8,8 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import type { Rng } from "@dicelore/dice";
-import type { DB } from "./db.js";
-import { ftsIndex, ftsSearch } from "./fts.js";
+import type { DB } from "../db.js";
+import { ftsIndex, ftsSearch } from "../fts.js";
 
 // Lore 定义下沉 @dicelore/interface(SessionBackend 方法面引用)；re-export 保持公共面。
 import type { Lore } from "@dicelore/interface";

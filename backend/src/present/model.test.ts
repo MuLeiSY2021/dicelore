@@ -9,10 +9,10 @@
 
 import { describe, it, expect } from "vitest";
 import { openDb, initSchema } from "../store/db.js";
-import { logAppend } from "../store/record.js";
-import { stateSet } from "../store/state.js";
-import { sheetShow } from "../store/visibility.js";
-import { stagePendingChoice, materializePendingChoice } from "../store/choice.js";
+import { logAppend } from "../store/event/record.js";
+import { stateSet } from "../store/sheet/state.js";
+import { sheetShow } from "../store/sheet/visibility.js";
+import { stagePendingChoice, materializePendingChoice } from "../store/interaction/choice.js";
 import { buildPresentationModel } from "./model.js";
 
 function freshDb() {

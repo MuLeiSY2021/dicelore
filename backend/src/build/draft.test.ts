@@ -10,8 +10,8 @@
 import { describe, it, expect } from "vitest";
 import { openCatalog } from "../catalog/db.js";
 import { importPack } from "../catalog/import.js";
-import { loreGet } from "../store/world.js";
-import { ruleGet } from "../store/rule.js";
+import { loreGet } from "../store/world/world.js";
+import { ruleGet } from "../store/world/rule.js";
 import { openDb, initSchema } from "../store/db.js";
 import { Draft, commitDraft } from "./draft.js";
 

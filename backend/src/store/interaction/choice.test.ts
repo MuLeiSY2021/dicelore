@@ -8,8 +8,8 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, it, expect } from "vitest";
-import { openDb, initSchema } from "./db.js";
-import { logSince } from "./record.js";
+import { openDb, initSchema } from "../db.js";
+import { logSince } from "../event/record.js";
 import { stagePendingChoice, getPendingChoice, materializePendingChoice } from "./choice.js";
 
 function freshDb() {

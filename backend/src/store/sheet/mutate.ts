@@ -8,12 +8,12 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import type { Rng } from "@dicelore/dice";
-import { evalExpr } from "../expr/evaluate.js";
-import type { DB } from "./db.js";
+import { evalExpr } from "../../expr/evaluate.js";
+import type { DB } from "../db.js";
 import { stateGet, stateSet, type StateKind } from "./state.js";
-import { logAppend } from "./record.js";
-import { recomputeWatchers } from "./watcher.js";
-import { makeEvalCtx } from "./evalCtx.js";
+import { logAppend } from "../event/record.js";
+import { recomputeWatchers } from "../narrative/watcher.js";
+import { makeEvalCtx } from "../evalCtx.js";
 import { DiceloreError } from "@dicelore/errors";
 
 // MutOp / Mutation / MutationApplied / MutationResult 定义下沉 @dicelore/interface(SessionBackend 方法面引用)；re-export 保持公共面。

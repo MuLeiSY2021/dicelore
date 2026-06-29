@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { evalExpr, type RefGetter } from "../expr/evaluate.js";
-import { stateGet } from "../store/state.js";
+import { stateGet } from "../store/sheet/state.js";
 import type { DB } from "../store/db.js";
 import type { Rng } from "@dicelore/dice";
 

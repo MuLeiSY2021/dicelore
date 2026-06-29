@@ -8,10 +8,10 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import type { DB } from "../store/db.js";
-import { frontList, type Front } from "../store/front.js";
-import { plotlineList, type Plotline } from "../store/plotline.js";
-import { foreshadowList, type Foreshadow } from "../store/foreshadow.js";
-import { watcherList, type WatcherRow } from "../store/watcher.js";
+import { frontList, type Front } from "../store/narrative/front.js";
+import { plotlineList, type Plotline } from "../store/narrative/plotline.js";
+import { foreshadowList, type Foreshadow } from "../store/narrative/foreshadow.js";
+import { watcherList, type WatcherRow } from "../store/narrative/watcher.js";
 
 export interface TensionBoard {
   fronts: Front[];

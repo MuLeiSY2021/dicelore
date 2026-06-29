@@ -9,8 +9,8 @@
 
 import { beforeEach, expect, test } from "vitest";
 import { initSchema, openDb, type DB } from "./db.js";
-import { plotlineUpsert } from "./plotline.js";
-import { logAppend } from "./record.js";
+import { plotlineUpsert } from "./narrative/plotline.js";
+import { logAppend } from "./event/record.js";
 import { makeExistsMatch } from "./existsMatch.js";
 
 let db: DB, ex: ReturnType<typeof makeExistsMatch>;

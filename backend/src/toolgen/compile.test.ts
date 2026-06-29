@@ -9,7 +9,7 @@
 
 import { beforeEach, describe, expect, test } from "vitest";
 import { initSchema, openDb, type DB } from "../store/db.js";
-import { stateSet, stateGet } from "../store/state.js";
+import { stateSet, stateGet } from "../store/sheet/state.js";
 import { defineView } from "./view.js";
 import { compileTool } from "./compile.js";
 

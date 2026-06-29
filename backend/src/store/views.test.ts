@@ -9,10 +9,10 @@
 
 import { describe, expect, test, beforeEach } from "vitest";
 import { openDb, initSchema, type DB } from "./db.js";
-import { frontUpsert } from "./front.js";
-import { plotlineUpsert } from "./plotline.js";
-import { foreshadowUpsert } from "./foreshadow.js";
-import { watcherSet } from "./watcher.js";
+import { frontUpsert } from "./narrative/front.js";
+import { plotlineUpsert } from "./narrative/plotline.js";
+import { foreshadowUpsert } from "./narrative/foreshadow.js";
+import { watcherSet } from "./narrative/watcher.js";
 
 // 造 kind 数据的测试辅助：stateSet 不接 kind 参数，直接 INSERT 造 player/npc/world 行。
 function seedState(

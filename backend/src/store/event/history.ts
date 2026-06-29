@@ -7,7 +7,7 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import type { DB } from "./db.js";
+import type { DB } from "../db.js";
 
 export interface History {
   id: number;
