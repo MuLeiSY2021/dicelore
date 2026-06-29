@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, it, expect } from "vitest";
-import { openDb, initSchema } from "../store/db.js";
+import { openDb, initSchema } from "@dicelore/backend";
 import { createMcpServer, wrapToolForTest, type CanonWriteEvent } from "./server.js";
 import type { ToolDef } from "./tooldef.js";
 import { z } from "zod";

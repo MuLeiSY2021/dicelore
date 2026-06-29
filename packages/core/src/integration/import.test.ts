@@ -8,15 +8,20 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, it, expect } from "vitest";
-import { openDb, initSchema } from "../store/db.js";
-import { loreGet } from "../store/world.js";
-import { ruleGet } from "../store/rule.js";
-import { stateGet } from "../store/state.js";
-import { watcherList } from "../store/watcher.js";
-import { openCatalog } from "./db.js";
-import { commit, tag } from "./catalog.js";
-import { importPack, validatePack } from "./import.js";
-import { parseFront } from "../build/pack/validate.js";
+import {
+  openDb,
+  initSchema,
+  loreGet,
+  ruleGet,
+  stateGet,
+  watcherList,
+  openCatalog,
+  commit,
+  tag,
+  importPack,
+  validatePack,
+  parseFront,
+} from "@dicelore/backend";
 
 const PACK = [
   { path: "manifest.md", content: "# 凡人修仙传\n\n- id: fanren" },
@@ -226,8 +231,7 @@ describe("importPack front 物化(Clock init + 凶兆→watcher)", () => {
 });
 
 // ── 作者面 tools/*.json：import → 编译 → 装载（DT-9 作者侧）─────────────────
-import { foreshadowList } from "../store/foreshadow.js";
-import { stateSet, stateGet as stateGetCell } from "../store/state.js";
+import { foreshadowList, stateSet, stateGet as stateGetCell } from "@dicelore/backend";
 import { wrapToolForTest } from "../mcp/server.js";
 import { TOOLS } from "../mcp/tools.js";
 

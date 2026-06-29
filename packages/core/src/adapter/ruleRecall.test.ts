@@ -9,10 +9,10 @@
 
 // packages/core/src/adapter/ruleRecall.test.ts
 import { describe, it, expect } from "vitest";
-import { openDb, initSchema } from "../store/db.js";
-import { ruleUpsert } from "../store/rule.js";
-import { logAppend } from "../store/record.js";
-import { metaGet } from "../session/resolve.js";
+import { openDb, initSchema } from "@dicelore/backend";
+import { ruleUpsert } from "@dicelore/backend";
+import { logAppend } from "@dicelore/backend";
+import { metaGet } from "@dicelore/backend";
 import { recallRules, recordTurnStart } from "./ruleRecall.js";
 
 function freshDb() { const db = openDb(":memory:"); initSchema(db); return db; }

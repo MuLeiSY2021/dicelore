@@ -13,14 +13,19 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { openDb, initSchema, type DB } from "../store/db.js";
+import { createRequire } from "node:module";
+import {
+  openDb,
+  initSchema,
+  type DB,
+  logSince,
+  logRecall,
+  loadScenario,
+  rollFloor,
+  closureFloor,
+} from "@dicelore/backend";
 import { TOOLS } from "../mcp/tools.js";
 import { runTool } from "../mcp/runTool.js";
-import { logSince } from "../store/record.js";
-import { logRecall } from "../store/record.js";
-import { loadScenario } from "./scenario.js";
-import { rollFloor, closureFloor } from "./assertions.js";
 
 function tool(name: string) {
   const t = TOOLS.find((x) => x.name === name);
@@ -34,10 +39,13 @@ beforeEach(() => {
   initSchema(db);
 });
 
-// ── list_scenarios 等价：枚举 eval/scenarios 下全部场景，loadScenario 都能读、且 expects 合法 ──
+// ── list_scenarios 等价：枚举 backend/eval/scenarios 下全部场景，loadScenario 都能读、且 expects 合法 ──
 describe("场景枚举（list_scenarios 等价：所有 scenario.json 可加载且 schema 合法）", () => {
-  const here = dirname(fileURLToPath(import.meta.url));
-  const scenariosDir = join(here, "..", "..", "eval", "scenarios");
+  // scenario 数据随 eval 模块迁入 @dicelore/backend（backend/eval/scenarios/）。
+  // 经 backend 包入口（src/index.ts）定位其包根，拼出数据目录——跨包稳健，不靠 core↔backend 的相对层级。
+  const require = createRequire(import.meta.url);
+  const backendPkgRoot = dirname(dirname(require.resolve("@dicelore/backend")));
+  const scenariosDir = join(backendPkgRoot, "eval", "scenarios");
   const ids = readdirSync(scenariosDir).filter((f) => f.endsWith(".json")).map((f) => f.replace(/\.json$/, ""));
 
   it("至少有一个场景（兜底防空目录）", () => {

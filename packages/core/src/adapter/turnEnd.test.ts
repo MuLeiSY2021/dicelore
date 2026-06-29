@@ -9,10 +9,10 @@
 
 // packages/core/src/adapter/turnEnd.test.ts
 import { describe, it, expect } from "vitest";
-import { openDb, initSchema } from "../store/db.js";
-import { logAppend, logSince } from "../store/record.js";
-import { stagePendingChoice, getPendingChoice } from "../store/choice.js";
-import { metaSet } from "../session/resolve.js";
+import { openDb, initSchema } from "@dicelore/backend";
+import { logAppend, logSince } from "@dicelore/backend";
+import { stagePendingChoice, getPendingChoice } from "@dicelore/backend";
+import { metaSet } from "@dicelore/backend";
 import { runTurnEnd } from "./turnEnd.js";
 
 function freshDb() { const db = openDb(":memory:"); initSchema(db); return db; }

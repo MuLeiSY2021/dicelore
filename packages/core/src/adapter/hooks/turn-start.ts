@@ -9,7 +9,7 @@
 
 // packages/core/src/adapter/hooks/turn-start.ts
 // 薄入口:读 stdin.prompt(字段以实现期官方文档为准)→ rule 召回 + 记 seq → 注 additionalContext。
-import { openSession } from "../../session/resolve.js";
+import { openSession } from "@dicelore/backend";
 import { recallRules, recordTurnStart } from "../ruleRecall.js";
 import { getLogger } from "@dicelore/logs";
 

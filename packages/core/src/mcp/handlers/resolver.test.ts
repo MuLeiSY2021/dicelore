@@ -9,10 +9,10 @@
 
 // src/mcp/handlers/resolver.test.ts
 import { describe, it, expect } from "vitest";
-import { openDb, initSchema } from "../../store/db.js";
-import { stateSet } from "../../store/state.js";
-import { logSince } from "../../store/record.js";
-import { getPendingChoice } from "../../store/choice.js";
+import { openDb, initSchema } from "@dicelore/backend";
+import { stateSet } from "@dicelore/backend";
+import { logSince } from "@dicelore/backend";
+import { getPendingChoice } from "@dicelore/backend";
 import { setRollGate } from "../rollGate.js";
 import { resolverTools } from "./resolver.js";
 

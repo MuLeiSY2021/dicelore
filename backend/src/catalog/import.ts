@@ -21,7 +21,7 @@ import { checkout, type PackFile } from "./catalog.js";
 import type { CatalogDB } from "./db.js";
 import { validatePack as validatePackFull, parseFrontmatter, parseFront, parseToolsFile, type ValidateIssue } from "../build/pack/validate.js";
 import { toolgenToToolDef } from "../toolgen/toToolDef.js";
-import type { ToolDef } from "../mcp/tooldef.js";
+import type { ToolDef } from "@dicelore/interface";
 
 // 团本包 → per-session 运行库的物化映射(对齐 数据层 spec §9)。
 // 包路径约定: lore/<n>.md、rules/<n>.md、pools/<n>.csv、state/<n>.csv、manifest.md

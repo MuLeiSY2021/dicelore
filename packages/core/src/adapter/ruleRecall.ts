@@ -8,9 +8,9 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 // packages/core/src/adapter/ruleRecall.ts
-import type { DB } from "../store/db.js";
-import { ruleSearch } from "../store/rule.js";
-import { metaSet } from "../session/resolve.js";
+import type { DB } from "@dicelore/backend";
+import { ruleSearch } from "@dicelore/backend";
+import { metaSet } from "@dicelore/backend";
 
 // 被动 rule 召回:AI 只读、本地 FTS,远小于 UserPromptSubmit 30s 超时。
 export function recallRules(db: DB, prompt: string, limit = 5): string {

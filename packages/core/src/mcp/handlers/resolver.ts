@@ -8,13 +8,13 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 // src/mcp/handlers/resolver.ts
-import type { DB } from "../../store/db.js";
-import { stagePendingChoice } from "../../store/choice.js";
-import { resolveOutcome } from "../../resolve/outcome.js";
-import { resolveContest } from "../../resolve/contest.js";
-import { logAppend } from "../../store/record.js";
-import { stagePendingRoll } from "../../store/pendingRoll.js";
-import { commitPendingRoll } from "../../resolve/commitRoll.js";
+import type { DB } from "@dicelore/backend";
+import { stagePendingChoice } from "@dicelore/backend";
+import { resolveOutcome } from "@dicelore/backend";
+import { resolveContest } from "@dicelore/backend";
+import { logAppend } from "@dicelore/backend";
+import { stagePendingRoll } from "@dicelore/backend";
+import { commitPendingRoll } from "@dicelore/backend";
 import { getRollGate } from "../rollGate.js";
 import { DiceloreError } from "@dicelore/errors";
 import type { ToolDef } from "../tooldef.js";

@@ -8,9 +8,9 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, expect, test, beforeEach } from "vitest";
-import { openDb, initSchema, type DB } from "../../store/db.js";
-import { frontList } from "../../store/front.js";
-import { foreshadowList } from "../../store/foreshadow.js";
+import { openDb, initSchema, type DB } from "@dicelore/backend";
+import { frontList } from "@dicelore/backend";
+import { foreshadowList } from "@dicelore/backend";
 import { narrationToolDecls, narrationStdlibTools } from "./narration.js";
 
 let db: DB;

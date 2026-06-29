@@ -8,11 +8,11 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 // src/mcp/handlers/io.ts
-import type { DB } from "../../store/db.js";
-import { sheetShow, worldShow, revealOnce } from "../../store/visibility.js";
-import { loreGet } from "../../store/world.js";
-import { logAppend } from "../../store/record.js";
-import { metaSet } from "../../session/resolve.js";
+import type { DB } from "@dicelore/backend";
+import { sheetShow, worldShow, revealOnce } from "@dicelore/backend";
+import { loreGet } from "@dicelore/backend";
+import { logAppend } from "@dicelore/backend";
+import { metaSet } from "@dicelore/backend";
 import { DiceloreError } from "@dicelore/errors";
 import type { ToolDef } from "../tooldef.js";
 import {

@@ -8,10 +8,10 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 // src/mcp/handlers/sheet.ts
-import type { DB } from "../../store/db.js";
-import { stateGet, stateList } from "../../store/state.js";
-import { applyMutations } from "../../store/mutate.js";
-import { truncateText } from "../../store/truncate.js";
+import type { DB } from "@dicelore/backend";
+import { stateGet, stateList } from "@dicelore/backend";
+import { applyMutations } from "@dicelore/backend";
+import { truncateText } from "@dicelore/backend";
 import type { ToolDef } from "../tooldef.js";
 import {
   sheetGetIn,

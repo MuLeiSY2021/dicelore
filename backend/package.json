@@ -1,25 +1,17 @@
 {
-  "name": "@dicelore/core",
+  "name": "@dicelore/backend",
   "version": "0.0.0",
   "type": "module",
   "private": true,
   "license": "AGPL-3.0-or-later",
   "author": "MuLeiSY2021 <mulei_sy@qq.com>",
   "main": "./src/index.ts",
-  "exports": {
-    ".": "./src/index.ts"
-  },
-  "engines": {
-    "node": ">=20"
-  },
+  "exports": { ".": "./src/index.ts" },
   "scripts": {
-    "test": "vitest run",
-    "typecheck": "tsc --noEmit",
-    "dicelore": "tsx src/cli.ts",
-    "dicelore:mcp": "tsx src/mcp/main.ts"
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dicelore/backend": "*",
     "@dicelore/dice": "*",
     "@dicelore/errors": "*",
     "@dicelore/interface": "*",
@@ -27,7 +19,6 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@node-rs/jieba": "^2.0.1",
     "better-sqlite3": "^12.11.1",
-    "pino": "^9.5.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {

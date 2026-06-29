@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 // packages/core/src/mcp/runTool.ts
-import type { DB } from "../store/db.js";
+import type { DB } from "@dicelore/backend";
 import type { ToolDef } from "./tooldef.js";
 import { successEnvelope, errorEnvelope, type CallToolResult } from "./envelope.js";
 import { remindersFor } from "./reminders.js";

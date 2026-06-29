@@ -8,10 +8,12 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 // @dicelore/core 公共面（additive；引擎纯逻辑反向零 import 本文件）。
-export { openDb, initSchema, type DB } from "./store/db.js";
-export { initViews } from "./store/views.js";
+// store 一族引擎层已迁入 @dicelore/backend；core 经裸 @dicelore/backend barrel 转出，
+// orchestrator 仍经 @dicelore/core 消费、签名不变（见重构 storage-port 阶段）。
+export { openDb, initSchema, type DB } from "@dicelore/backend";
+export { initViews } from "@dicelore/backend";
 // 声明式工具生成层接线（叙事层 dogfooding，spec §8 + DT-9 step③）
-export { toolgenToToolDef } from "./toolgen/toToolDef.js";
+export { toolgenToToolDef } from "@dicelore/backend";
 export { narrationStdlibTools, narrationToolDecls } from "./mcp/stdlib/narration.js";
 export {
   buildPresentationModel,
@@ -19,7 +21,7 @@ export {
   type EchoEntry,
   type VisibleCell,
   type ChoiceView,
-} from "./present/model.js";
+} from "@dicelore/backend";
 
 // 玩家闸控明骰原语（供 orchestrator / 组件7 注入 gate、触发 commit）。
 export {
@@ -28,8 +30,8 @@ export {
   type PendingRollRow,
   type RollSpec,
   type RollShape,
-} from "./store/pendingRoll.js";
-export { commitPendingRoll, type RollResult } from "./resolve/commitRoll.js";
+} from "@dicelore/backend";
+export { commitPendingRoll, type RollResult } from "@dicelore/backend";
 export { setRollGate, getRollGate, type RollGate } from "./mcp/rollGate.js";
 
 // in-process MCP 工厂 + 写后回调接缝（组件7 orchestrator 用）。
@@ -41,7 +43,7 @@ export {
 export { TOOLS } from "./mcp/tools.js"; // 工具清单（组件7 配置页展示真实工具数）
 
 // eval 场景准备（run.ts 手动调试 + orchestrator harness 自动闭环共用）。
-export { loadScenario, prepareSessionDb, type Scenario, type PreparedSession } from "./eval/scenario.js";
+export { loadScenario, prepareSessionDb, type Scenario, type PreparedSession } from "@dicelore/backend";
 
 // 回合末 hook（choice 物化 + L3 审计）——组件4，供 orchestrator turn-end 复用。
 export { runTurnEnd } from "./adapter/turnEnd.js";
@@ -50,24 +52,24 @@ export { runTurnEnd } from "./adapter/turnEnd.js";
 export {
   openCatalog, type CatalogDB, uuidv5, resolveId, commit, history, checkout, tag, list,
   type PackFile, type CommitRow, type TuanbenSummary,
-} from "./catalog/index.js";
+} from "@dicelore/backend";
 // import 信任闸门 + 建库（P3）
-export { importPack, validatePack, type ImportResult, type ImportIssue } from "./catalog/index.js";
+export { importPack, validatePack, type ImportResult, type ImportIssue } from "@dicelore/backend";
 // git 单向投影（P4）
-export { exportGit, importGit } from "./catalog/index.js";
+export { exportGit, importGit } from "@dicelore/backend";
 
 // ===== 团本构建层（P5）=====
-export { Draft, commitDraft, type StateCell } from "./build/draft.js";
-export { createBuildMcpServer, invokeBuildTool, type BuildCtx, BUILD_SCHEMAS } from "./build/buildMcp.js";
+export { Draft, commitDraft, type StateCell } from "@dicelore/backend";
+export { createBuildMcpServer, invokeBuildTool, type BuildCtx, BUILD_SCHEMAS } from "@dicelore/backend";
 
 // ===== 运行时只读浏览（组件7 跑团页左活动轨自查源；additive 只读，不改引擎） =====
-export { loreSearch, loreGet, type Lore } from "./store/world.js";
-export { ruleSearch, ruleGet, type Rule } from "./store/rule.js";
-export { logSince, logRecall, type LogRow } from "./store/record.js";
-export { stateList, stateGet, type StateCell as RuntimeStateCell } from "./store/state.js";
+export { loreSearch, loreGet, type Lore } from "@dicelore/backend";
+export { ruleSearch, ruleGet, type Rule } from "@dicelore/backend";
+export { logSince, logRecall, type LogRow } from "@dicelore/backend";
+export { stateList, stateGet, type RuntimeStateCell } from "@dicelore/backend";
 // session_meta KV(团本名/prologue/started 等,P2 Play 生命周期) + 路径规则(sessionDbPath/openSession)。
 // 后端 server.ts 与 eval prepareSessionDb 共用 openSession 路径规则,避免种子灌到 core 路径而后端开平铺空库。
-export { metaGet, metaSet, sessionDbPath, sessionDir, openSession, type SessionKind } from "./session/resolve.js";
+export { metaGet, metaSet, sessionDbPath, sessionDir, openSession, type SessionKind } from "@dicelore/backend";
 export { buildSessionContext } from "./adapter/sessionContext.js";
 export { createFileLogger, initGlobalLogger, getLogger } from "@dicelore/logs";
 
@@ -84,7 +86,7 @@ export {
   type SnapshotParticipant,
   type SnapshotRow,
   type CheckpointOpts,
-} from "./store/snapshot.js";
+} from "@dicelore/backend";
 
 // ===== token 用量计量(CO-采集 / store/usage.ts)=====
 // DiceGm 消费到 result.usage → recordUsage 落库;查询按 turn/agent/session 聚合(可视化另起 CO-前端线)。
@@ -97,4 +99,4 @@ export {
   type UsageInput,
   type UsageRow,
   type UsageTotals,
-} from "./store/usage.js";
+} from "@dicelore/backend";

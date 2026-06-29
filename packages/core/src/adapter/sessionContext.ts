@@ -8,8 +8,8 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 // packages/core/src/adapter/sessionContext.ts
-import type { DB } from "../store/db.js";
-import { metaGet } from "../session/resolve.js";
+import type { DB } from "@dicelore/backend";
+import { metaGet } from "@dicelore/backend";
 
 // 只注指路牌级:身份 + Agenda + 极简纪律 + 调性一句;教条本体靠 gm-core skill 触发载入。
 export function buildSessionContext(db: DB): string {

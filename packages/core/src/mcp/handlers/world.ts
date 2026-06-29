@@ -8,10 +8,10 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 // src/mcp/handlers/world.ts
-import type { DB } from "../../store/db.js";
-import { loreSearch, poolSample, worldRegister, loreUpsert, type Lore } from "../../store/world.js";
-import { ruleSearch, type Rule } from "../../store/rule.js";
-import { truncateText } from "../../store/truncate.js";
+import type { DB } from "@dicelore/backend";
+import { loreSearch, poolSample, worldRegister, loreUpsert, type Lore } from "@dicelore/backend";
+import { ruleSearch, type Rule } from "@dicelore/backend";
+import { truncateText } from "@dicelore/backend";
 import { DiceloreError } from "@dicelore/errors";
 import type { ToolDef } from "../tooldef.js";
 import {

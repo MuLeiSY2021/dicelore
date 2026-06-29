@@ -8,8 +8,8 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, expect, test, beforeEach } from "vitest";
-import { openDb, initSchema, type DB } from "../../store/db.js";
-import { logSince } from "../../store/record.js";
+import { openDb, initSchema, type DB } from "@dicelore/backend";
+import { logSince } from "@dicelore/backend";
 import { wrapToolForTest } from "../server.js";
 import { npcToolDecls, npcStdlibTools } from "./npc.js";
 

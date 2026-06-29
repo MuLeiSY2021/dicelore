@@ -7,11 +7,11 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import type { DB } from "../../store/db.js";
-import { logAppend, logRecall, type LogRow } from "../../store/record.js";
-import { watcherSet, watcherList, recomputeWatchers, type WatcherRow } from "../../store/watcher.js";
-import { makeEvalCtx } from "../../store/evalCtx.js";
-import { truncateText } from "../../store/truncate.js";
+import type { DB } from "@dicelore/backend";
+import { logAppend, logRecall, type LogRow } from "@dicelore/backend";
+import { watcherSet, watcherList, recomputeWatchers, type WatcherRow } from "@dicelore/backend";
+import { makeEvalCtx } from "@dicelore/backend";
+import { truncateText } from "@dicelore/backend";
 import type { ToolDef } from "../tooldef.js";
 import {
   eventAppendIn,

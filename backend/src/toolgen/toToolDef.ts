@@ -11,7 +11,7 @@ import { z } from "zod";
 import type { DB } from "../store/db.js";
 import { firstKeyword } from "./sqlGuard.js";
 import { compileTool, type ToolDecl } from "./compile.js";
-import type { ToolDef } from "../mcp/tooldef.js";
+import type { ToolDef } from "@dicelore/interface";
 
 // 把声明的 params 类型字符串映射为 zod 校验器。
 function paramSchema(type: string): z.ZodTypeAny {

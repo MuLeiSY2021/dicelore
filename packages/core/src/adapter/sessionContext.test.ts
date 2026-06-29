@@ -9,8 +9,8 @@
 
 // packages/core/src/adapter/sessionContext.test.ts
 import { describe, it, expect } from "vitest";
-import { openDb, initSchema } from "../store/db.js";
-import { metaSet } from "../session/resolve.js";
+import { openDb, initSchema } from "@dicelore/backend";
+import { metaSet } from "@dicelore/backend";
 import { buildSessionContext } from "./sessionContext.js";
 
 describe("buildSessionContext", () => {

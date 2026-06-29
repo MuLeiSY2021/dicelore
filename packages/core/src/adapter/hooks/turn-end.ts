@@ -10,7 +10,7 @@
 // packages/core/src/adapter/hooks/turn-end.ts
 // 薄入口:读 stdin(transcript_path / stop_hook_active,字段以实现期官方文档为准)→ 装配 → decision JSON。
 import { readFileSync } from "node:fs";
-import { openSession } from "../../session/resolve.js";
+import { openSession } from "@dicelore/backend";
 import { runTurnEnd } from "../turnEnd.js";
 import { getLogger } from "@dicelore/logs";
 

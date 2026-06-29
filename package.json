@@ -18,7 +18,8 @@
   "workspaces": [
     "apps/*",
     "packages/*",
-    "frontend"
+    "frontend",
+    "backend"
   ],
   "scripts": {
     "test": "npm run test -w @dicelore/core",

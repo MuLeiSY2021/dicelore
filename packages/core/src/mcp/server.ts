@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { DB } from "../store/db.js";
+import type { DB } from "@dicelore/backend";
 import { TOOLS } from "./tools.js";
 import type { ToolDef } from "./tooldef.js";
 import { runTool } from "./runTool.js";

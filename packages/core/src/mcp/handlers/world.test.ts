@@ -9,9 +9,9 @@
 
 // src/mcp/handlers/world.test.ts
 import { describe, it, expect } from "vitest";
-import { openDb, initSchema } from "../../store/db.js";
-import { loreGet } from "../../store/world.js";
-import { ruleUpsert } from "../../store/rule.js";
+import { openDb, initSchema } from "@dicelore/backend";
+import { loreGet } from "@dicelore/backend";
+import { ruleUpsert } from "@dicelore/backend";
 import { worldTools } from "./world.js";
 import { DiceloreError } from "@dicelore/errors";
 

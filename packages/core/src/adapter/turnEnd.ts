@@ -8,10 +8,10 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 // packages/core/src/adapter/turnEnd.ts
-import type { DB } from "../store/db.js";
-import { logSince, logAppend } from "../store/record.js";
-import { getPendingChoice, materializePendingChoice } from "../store/choice.js";
-import { metaGet } from "../session/resolve.js";
+import type { DB } from "@dicelore/backend";
+import { logSince, logAppend } from "@dicelore/backend";
+import { getPendingChoice, materializePendingChoice } from "@dicelore/backend";
+import { metaGet } from "@dicelore/backend";
 import { auditTurn } from "./l3.js";
 
 export function runTurnEnd(

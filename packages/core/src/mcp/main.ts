@@ -9,7 +9,7 @@
 
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { dirname } from "node:path";
-import { openSession } from "../session/resolve.js";
+import { openSession } from "@dicelore/backend";
 import { initGlobalLogger, getLogger } from "@dicelore/logs";
 import { createMcpServer } from "./server.js";
 
