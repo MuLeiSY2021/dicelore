@@ -40,7 +40,10 @@ export {
   type CanonWriteEvent,
   type McpServerDeps,
 } from "./mcp/server.js";
-export { TOOLS } from "./mcp/tools.js"; // 工具清单（组件7 配置页展示真实工具数）
+export { makeTools, BUILTIN_TOOL_NAMES, BUILTIN_TOOL_COUNT } from "./mcp/tools.js"; // 内置工具工厂 + 元数据（组件7 配置页展示真实工具数）
+// SessionBackend 端口接口聚合 + 组合根工厂（storage-port ADR §3/§4）——组合根建实例注入 createMcpServer。
+export { openSessionBackend } from "@dicelore/backend";
+export type { SessionBackend } from "@dicelore/interface";
 
 // eval 场景准备（run.ts 手动调试 + orchestrator harness 自动闭环共用）。
 export { loadScenario, prepareSessionDb, type Scenario, type PreparedSession } from "@dicelore/backend";

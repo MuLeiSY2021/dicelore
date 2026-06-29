@@ -231,9 +231,9 @@ describe("importPack front 物化(Clock init + 凶兆→watcher)", () => {
 });
 
 // ── 作者面 tools/*.json：import → 编译 → 装载（DT-9 作者侧）─────────────────
-import { foreshadowList, stateSet, stateGet as stateGetCell } from "@dicelore/backend";
+import { foreshadowList, stateSet, stateGet as stateGetCell, openSessionBackend } from "@dicelore/backend";
 import { wrapToolForTest } from "../mcp/server.js";
-import { TOOLS } from "../mcp/tools.js";
+import { BUILTIN_TOOL_NAMES } from "../mcp/tools.js";
 
 describe("importPack 作者面 tools/*.json（DT-9）", () => {
   const TOOLS_JSON = JSON.stringify([
@@ -265,7 +265,7 @@ describe("importPack 作者面 tools/*.json（DT-9）", () => {
     const run = openDb(":memory:"); initSchema(run);
     const res = importPack(cat, run, r.tuanbenId, r.commitId);
     // 仿 DiceSession：把 import 出的 toolDefs 经 extraTools 注入 MCP
-    const invoke = wrapToolForTest(run, {}, res.toolDefs);
+    const invoke = wrapToolForTest(openSessionBackend(run), run, {}, res.toolDefs);
     // 作者写工具：埋伏笔（落 foreshadow 表）
     const plant = (await invoke("author_plant", { id: "fs1", content: "断剑" })) as { isError?: boolean };
     expect(plant.isError).toBeFalsy();
@@ -276,8 +276,8 @@ describe("importPack 作者面 tools/*.json（DT-9）", () => {
     const gold = (await invoke("author_gold", { who: "韩立", n: 5 })) as { isError?: boolean };
     expect(gold.isError).toBeFalsy();
     expect(stateGetCell(run, "韩立", "金币")?.value).toBe("15");
-    // 承重墙不破：框架标准 TOOLS 仍可调（作者工具是叠加，非替换）
-    expect(TOOLS.some((t) => t.name === "sheet_update")).toBe(true);
+    // 承重墙不破：框架标准工具仍可调（作者工具是叠加，非替换）
+    expect(BUILTIN_TOOL_NAMES.includes("sheet_update")).toBe(true);
     cat.close(); run.close();
   });
 

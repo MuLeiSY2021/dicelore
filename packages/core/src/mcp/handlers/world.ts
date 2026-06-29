@@ -8,9 +8,8 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 // src/mcp/handlers/world.ts
-import type { DB } from "@dicelore/backend";
-import { loreSearch, poolSample, worldRegister, loreUpsert, type Lore } from "@dicelore/backend";
-import { ruleSearch, type Rule } from "@dicelore/backend";
+import type { SessionBackend } from "@dicelore/interface";
+import type { Lore, Rule } from "@dicelore/backend";
 import { truncateText } from "@dicelore/backend";
 import { DiceloreError } from "@dicelore/errors";
 import type { ToolDef } from "../tooldef.js";
@@ -19,43 +18,45 @@ import {
   worldRegisterIn, worldRegisterOut, ruleSearchIn, ruleSearchOut,
 } from "../schemas/world.js";
 
-function searchHandler(db: DB, input: { query: string; k: number; category?: string }) {
-  let docs = loreSearch(db, input.query, input.k);
-  if (input.category) docs = docs.filter((d) => d.category === input.category);
-  const mapped = docs.map((d: Lore) => ({ rowid: d.rowid, name: d.name, content: d.content, category: d.category, visible: d.visible }));
-  const { truncated } = truncateText(JSON.stringify(mapped));
-  return { docs: mapped, truncated };
-}
-
-function sampleHandler(db: DB, input: { pool: string; n: number; filter?: Record<string, string | number> }) {
-  const rows = poolSample(db, input.pool, input.n, { filter: input.filter });
-  return { rows };
-}
-
-function registerHandler(
-  db: DB,
-  input: { target: "doc" | "pool"; doc?: any; pool?: any; visible: 0 | 1 },
-) {
-  // target↔payload 一致性校验(原 schema refine 下沉至此)
-  if (input.target === "doc" ? !input.doc : !input.pool) {
-    throw new DiceloreError("INTERNAL", "world_register: target 与 doc/pool 不匹配");
+/** 内置 world/rule 工具集（handler 闭包持注入的 SessionBackend）。 */
+export function makeWorldTools(backend: SessionBackend): ToolDef[] {
+  function searchHandler(_: unknown, input: { query: string; k: number; category?: string }) {
+    let docs = backend.loreSearch(input.query, input.k);
+    if (input.category) docs = docs.filter((d) => d.category === input.category);
+    const mapped = docs.map((d: Lore) => ({ rowid: d.rowid, name: d.name, content: d.content, category: d.category, visible: d.visible }));
+    const { truncated } = truncateText(JSON.stringify(mapped));
+    return { docs: mapped, truncated };
   }
-  let rowid: number;
-  if (input.target === "doc") {
-    rowid = loreUpsert(db, { ...input.doc, visible: input.visible });
-  } else {
-    rowid = worldRegister(db, { pool: input.pool.pool, row: input.pool.row, weight: input.pool.weight, visible: input.visible });
+
+  function sampleHandler(_: unknown, input: { pool: string; n: number; filter?: Record<string, string | number> }) {
+    const rows = backend.poolSample(input.pool, input.n, { filter: input.filter });
+    return { rows };
   }
-  return { ok: true as const, rowid };
-}
 
-function ruleHandler(db: DB, input: { query: string; k: number }) {
-  const rules = ruleSearch(db, input.query, input.k).map((r: Rule) => ({ name: r.name, content: r.content, version: r.version }));
-  const { truncated } = truncateText(JSON.stringify(rules));
-  return { rules, truncated };
-}
+  function registerHandler(
+    _: unknown,
+    input: { target: "doc" | "pool"; doc?: any; pool?: any; visible: 0 | 1 },
+  ) {
+    // target↔payload 一致性校验(原 schema refine 下沉至此)
+    if (input.target === "doc" ? !input.doc : !input.pool) {
+      throw new DiceloreError("INTERNAL", "world_register: target 与 doc/pool 不匹配");
+    }
+    let rowid: number;
+    if (input.target === "doc") {
+      rowid = backend.loreUpsert({ ...input.doc, visible: input.visible });
+    } else {
+      rowid = backend.worldRegister({ pool: input.pool.pool, row: input.pool.row, weight: input.pool.weight, visible: input.visible });
+    }
+    return { ok: true as const, rowid };
+  }
 
-export const worldTools: ToolDef[] = [
+  function ruleHandler(_: unknown, input: { query: string; k: number }) {
+    const rules = backend.ruleSearch(input.query, input.k).map((r: Rule) => ({ name: r.name, content: r.content, version: r.version }));
+    const { truncated } = truncateText(JSON.stringify(rules));
+    return { rules, truncated };
+  }
+
+  return [
   {
     name: "world_search",
     title: "检索世界设定",
@@ -100,4 +101,5 @@ export const worldTools: ToolDef[] = [
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     handler: ruleHandler,
   },
-];
+  ];
+}

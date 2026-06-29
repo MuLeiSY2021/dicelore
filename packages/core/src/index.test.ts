@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, it, expect } from "vitest";
-import { openDb, initSchema, buildPresentationModel, createMcpServer, runTurnEnd } from "./index.js";
+import { openDb, initSchema, buildPresentationModel, createMcpServer, openSessionBackend, runTurnEnd } from "./index.js";
 
 describe("@dicelore/core barrel", () => {
   it("openDb + initSchema + 空库 buildPresentationModel 不崩、返回空投影", () => {
@@ -23,7 +23,7 @@ describe("@dicelore/core barrel", () => {
   it("导出 createMcpServer(可建 in-process server) + runTurnEnd", () => {
     const db = openDb(":memory:");
     initSchema(db);
-    expect(createMcpServer(db, {})).toBeTruthy();
+    expect(createMcpServer(openSessionBackend(db), db, {})).toBeTruthy();
     expect(typeof runTurnEnd).toBe("function");
   });
 });

@@ -9,20 +9,21 @@
 
 // src/mcp/handlers/sheet.test.ts
 import { describe, it, expect } from "vitest";
-import { openDb, initSchema } from "@dicelore/backend";
+import { openDb, initSchema, openSessionBackend } from "@dicelore/backend";
 import { stateGet, stateSet } from "@dicelore/backend";
 import { logSince } from "@dicelore/backend";
-import { sheetTools } from "./sheet.js";
+import { makeSheetTools } from "./sheet.js";
 
 function freshDb() { const db = openDb(":memory:"); initSchema(db); return db; }
-const byName = (n: string) => sheetTools.find((t) => t.name === n)!;
+// 内置工具 handler 经注入 SessionBackend 调存储——按 db 造工具、handler 忽略传入的 db 形参。
+const byName = (db: any, n: string) => makeSheetTools(openSessionBackend(db)).find((t) => t.name === n)!;
 
 describe("sheet handlers", () => {
   it("sheet_get:命中返回 value+visible;缺失返回 {value:null,visible:0}", () => {
     const db = freshDb();
     stateSet(db, "张三", "HP", "30", 1);
-    expect(byName("sheet_get").handler(db, { entity: "张三", attr: "HP" })).toEqual({ value: "30", visible: 1 });
-    expect(byName("sheet_get").handler(db, { entity: "张三", attr: "无" })).toEqual({ value: null, visible: 0 });
+    expect(byName(db, "sheet_get").handler(db, { entity: "张三", attr: "HP" })).toEqual({ value: "30", visible: 1 });
+    expect(byName(db, "sheet_get").handler(db, { entity: "张三", attr: "无" })).toEqual({ value: null, visible: 0 });
   });
 
   it("sheet_list:前缀扫 + 分页字段", () => {
@@ -30,7 +31,7 @@ describe("sheet handlers", () => {
     stateSet(db, "张三", "库存:剑", "1");
     stateSet(db, "张三", "库存:盾", "1");
     stateSet(db, "张三", "库存:药", "3");
-    const out = byName("sheet_list").handler(db, { entity: "张三", prefix: "库存:", limit: 2, offset: 0 });
+    const out = byName(db, "sheet_list").handler(db, { entity: "张三", prefix: "库存:", limit: 2, offset: 0 });
     expect(out.cells).toHaveLength(2);
     expect(out.has_more).toBe(true);
     expect(out.next_offset).toBe(2);
@@ -40,7 +41,7 @@ describe("sheet handlers", () => {
   it("sheet_update:落 mutation event 透传 event_id + applied 账本", () => {
     const db = freshDb();
     stateSet(db, "张三", "HP", "30");
-    const out = byName("sheet_update").handler(db, {
+    const out = byName(db, "sheet_update").handler(db, {
       entity: "张三",
       mutations: [{ attr: "HP", op: "-", expr: "5" }],
     });
@@ -54,7 +55,7 @@ describe("sheet handlers", () => {
   it("sheet_update:非数值算术抛 NOT_NUMERIC(整批回滚由内层保证)", () => {
     const db = freshDb();
     stateSet(db, "张三", "名", "李四");
-    expect(() => byName("sheet_update").handler(db, {
+    expect(() => byName(db, "sheet_update").handler(db, {
       entity: "张三",
       mutations: [{ attr: "名", op: "+", expr: "1" }],
     })).toThrow(/非数值/);

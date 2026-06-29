@@ -8,11 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 // src/mcp/handlers/io.ts
-import type { DB } from "@dicelore/backend";
-import { sheetShow, worldShow, revealOnce } from "@dicelore/backend";
-import { loreGet } from "@dicelore/backend";
-import { logAppend } from "@dicelore/backend";
-import { metaSet } from "@dicelore/backend";
+import type { SessionBackend } from "@dicelore/interface";
 import { DiceloreError } from "@dicelore/errors";
 import type { ToolDef } from "../tooldef.js";
 import {
@@ -23,65 +19,67 @@ import {
   gameEndIn, gameEndOut,
 } from "../schemas/io.js";
 
-function sheetShowHandler(db: DB, input: { entity: string; attrs?: string[]; recursive?: boolean }) {
-  if (input.attrs && input.attrs.length > 0) {
-    let audit_event_id = 0;
-    for (const attr of input.attrs) audit_event_id = sheetShow(db, input.entity, attr);
-    return { shown: input.attrs, ok: true as const, audit_event_id };
+/** 内置可见性/叙事/终局工具集（handler 闭包持注入的 SessionBackend）。 */
+export function makeIoTools(backend: SessionBackend): ToolDef[] {
+  function sheetShowHandler(_: unknown, input: { entity: string; attrs?: string[]; recursive?: boolean }) {
+    if (input.attrs && input.attrs.length > 0) {
+      let audit_event_id = 0;
+      for (const attr of input.attrs) audit_event_id = backend.sheetShow(input.entity, attr);
+      return { shown: input.attrs, ok: true as const, audit_event_id };
+    }
+    // recursive=true or no attrs → write __show_all
+    if (!input.recursive) {
+      throw new DiceloreError("INTERNAL", "sheet_show: 需给 attrs 或 recursive=true");
+    }
+    const audit_event_id = backend.sheetShow(input.entity); // entity 级:写 __show_all
+    return { shown: ["__show_all"], ok: true as const, audit_event_id };
   }
-  // recursive=true or no attrs → write __show_all
-  if (!input.recursive) {
-    throw new DiceloreError("INTERNAL", "sheet_show: 需给 attrs 或 recursive=true");
+
+  function worldShowHandler(_: unknown, input: { doc?: string; pool_rowid?: number }) {
+    if ((input.doc === undefined) === (input.pool_rowid === undefined)) {
+      throw new DiceloreError("INTERNAL", "world_show: doc 与 pool_rowid 二选一");
+    }
+    let audit_event_id: number;
+    if (input.doc !== undefined) {
+      const d = backend.loreGet(input.doc);
+      if (!d) throw new DiceloreError("NOT_FOUND", `world_show: doc 不存在 "${input.doc}"`);
+      audit_event_id = backend.worldShow("lore", d.rowid);
+    } else {
+      audit_event_id = backend.worldShow("pool", input.pool_rowid!);
+    }
+    return { ok: true as const, audit_event_id };
   }
-  const audit_event_id = sheetShow(db, input.entity); // entity 级:写 __show_all
-  return { shown: ["__show_all"], ok: true as const, audit_event_id };
-}
 
-function worldShowHandler(db: DB, input: { doc?: string; pool_rowid?: number }) {
-  if ((input.doc === undefined) === (input.pool_rowid === undefined)) {
-    throw new DiceloreError("INTERNAL", "world_show: doc 与 pool_rowid 二选一");
+  function revealOnceHandler(_: unknown, input: { sheet?: { entity: string; attr: string }; world?: { rowid: number } }) {
+    if ((input.sheet === undefined) === (input.world === undefined)) {
+      throw new DiceloreError("INTERNAL", "reveal_once: sheet 与 world 二选一");
+    }
+    const event_id = input.sheet
+      ? backend.revealOnce({ kind: "sheet", entity: input.sheet.entity, attr: input.sheet.attr })
+      : backend.revealOnce({ kind: "lore", rowid: input.world!.rowid });
+    return { event_id };
   }
-  let audit_event_id: number;
-  if (input.doc !== undefined) {
-    const d = loreGet(db, input.doc);
-    if (!d) throw new DiceloreError("NOT_FOUND", `world_show: doc 不存在 "${input.doc}"`);
-    audit_event_id = worldShow(db, "lore", d.rowid);
-  } else {
-    audit_event_id = worldShow(db, "pool", input.pool_rowid!);
+
+  function narrateHandler(_: unknown, input: { text: string; tags?: string[] }) {
+    const event_id = backend.logAppend({
+      kind: "narrate",
+      content: input.text,
+      tags: input.tags?.length ? input.tags.join(" ") : undefined,
+    });
+    return { event_id };
   }
-  return { ok: true as const, audit_event_id };
-}
 
-function revealOnceHandler(db: DB, input: { sheet?: { entity: string; attr: string }; world?: { rowid: number } }) {
-  if ((input.sheet === undefined) === (input.world === undefined)) {
-    throw new DiceloreError("INTERNAL", "reveal_once: sheet 与 world 二选一");
+  function gameEndHandler(_: unknown, input: { reason: string; outcome?: string }) {
+    const event_id = backend.logAppend({
+      kind: "note",
+      visible: 0,
+      data_json: { reason: input.reason, outcome: input.outcome },
+    });
+    backend.metaSet("ended", JSON.stringify({ reason: input.reason, outcome: input.outcome, seq: event_id }));
+    return { ended: true as const, event_id };
   }
-  const event_id = input.sheet
-    ? revealOnce(db, { kind: "sheet", entity: input.sheet.entity, attr: input.sheet.attr })
-    : revealOnce(db, { kind: "lore", rowid: input.world!.rowid });
-  return { event_id };
-}
 
-function narrateHandler(db: DB, input: { text: string; tags?: string[] }) {
-  const event_id = logAppend(db, {
-    kind: "narrate",
-    content: input.text,
-    tags: input.tags?.length ? input.tags.join(" ") : undefined,
-  });
-  return { event_id };
-}
-
-function gameEndHandler(db: DB, input: { reason: string; outcome?: string }) {
-  const event_id = logAppend(db, {
-    kind: "note",
-    visible: 0,
-    data_json: { reason: input.reason, outcome: input.outcome },
-  });
-  metaSet(db, "ended", JSON.stringify({ reason: input.reason, outcome: input.outcome, seq: event_id }));
-  return { ended: true as const, event_id };
-}
-
-export const ioTools: ToolDef[] = [
+  return [
   {
     name: "sheet_show",
     title: "持久揭示卡格",
@@ -138,4 +136,5 @@ export const ioTools: ToolDef[] = [
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
     handler: gameEndHandler,
   },
-];
+  ];
+}

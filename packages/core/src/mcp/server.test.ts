@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, it, expect } from "vitest";
-import { openDb, initSchema } from "@dicelore/backend";
+import { openDb, initSchema, openSessionBackend } from "@dicelore/backend";
 import { createMcpServer, wrapToolForTest, type CanonWriteEvent } from "./server.js";
 import type { ToolDef } from "./tooldef.js";
 import { z } from "zod";
@@ -17,14 +17,14 @@ describe("createMcpServer onCanonWrite 接缝", () => {
   it("返回 McpServer 实例且不崩", () => {
     const db = openDb(":memory:");
     initSchema(db);
-    expect(createMcpServer(db, {})).toBeTruthy();
+    expect(createMcpServer(openSessionBackend(db), db, {})).toBeTruthy();
   });
 
   it("规范态写工具(event_append)成功后触发 onCanonWrite(kind/toolName/seq)", async () => {
     const db = openDb(":memory:");
     initSchema(db);
     const events: CanonWriteEvent[] = [];
-    const invoke = wrapToolForTest(db, { onCanonWrite: (e) => events.push(e) });
+    const invoke = wrapToolForTest(openSessionBackend(db), db, { onCanonWrite: (e: CanonWriteEvent) => events.push(e) });
     await invoke("event_append", { kind: "narrate", content: "你推门进去" });
     expect(events.length).toBe(1);
     expect(events[0].kind).toBe("event");
@@ -36,7 +36,7 @@ describe("createMcpServer onCanonWrite 接缝", () => {
     const db = openDb(":memory:");
     initSchema(db);
     const events: CanonWriteEvent[] = [];
-    const invoke = wrapToolForTest(db, { onCanonWrite: (e) => events.push(e) });
+    const invoke = wrapToolForTest(openSessionBackend(db), db, { onCanonWrite: (e: CanonWriteEvent) => events.push(e) });
     await invoke("sheet_get", { entity: "张三" });
     expect(events.length).toBe(0);
   });
@@ -58,7 +58,7 @@ describe("createMcpServer extraTools 接缝（声明式生成工具并入）", (
   it("extraTools 经 wrapToolForTest 可调", async () => {
     const db = openDb(":memory:");
     initSchema(db);
-    const invoke = wrapToolForTest(db, {}, [fakeReadTool()]);
+    const invoke = wrapToolForTest(openSessionBackend(db), db, {}, [fakeReadTool()]);
     const res = await invoke("fake_board", {});
     expect(res).toBeTruthy();
   });
@@ -66,13 +66,13 @@ describe("createMcpServer extraTools 接缝（声明式生成工具并入）", (
   it("createMcpServer 接受 extraTools 不崩", () => {
     const db = openDb(":memory:");
     initSchema(db);
-    expect(createMcpServer(db, {}, [fakeReadTool()])).toBeTruthy();
+    expect(createMcpServer(openSessionBackend(db), db, {}, [fakeReadTool()])).toBeTruthy();
   });
 
   it("默认无 extraTools 时现有工具仍在（向后兼容）", async () => {
     const db = openDb(":memory:");
     initSchema(db);
-    const invoke = wrapToolForTest(db, {});
+    const invoke = wrapToolForTest(openSessionBackend(db), db, {});
     const res = await invoke("event_append", { kind: "narrate", content: "x" });
     expect(res).toBeTruthy();
   });

@@ -7,10 +7,8 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import type { DB } from "@dicelore/backend";
-import { logAppend, logRecall, type LogRow } from "@dicelore/backend";
-import { watcherSet, watcherList, recomputeWatchers, type WatcherRow } from "@dicelore/backend";
-import { makeEvalCtx } from "@dicelore/backend";
+import type { SessionBackend } from "@dicelore/interface";
+import type { LogRow, WatcherRow } from "@dicelore/backend";
 import { truncateText } from "@dicelore/backend";
 import type { ToolDef } from "../tooldef.js";
 import {
@@ -24,58 +22,60 @@ import {
   watcherListOut,
 } from "../schemas/event.js";
 
-function appendHandler(
-  db: DB,
-  input: { content?: string; kind: any; data_json?: unknown; tags?: string[]; visible?: 0 | 1 },
-) {
-  const event_id = logAppend(db, {
-    content: input.content,
-    kind: input.kind,
-    data_json: input.data_json,
-    tags: input.tags?.length ? input.tags.join(" ") : undefined,
-    visible: input.visible,
-  });
-  const fired_watchers = recomputeWatchers(db, makeEvalCtx(db));
-  return { event_id, fired_watchers };
-}
+/** 内置 event/watcher 工具集（handler 闭包持注入的 SessionBackend）。 */
+export function makeEventTools(backend: SessionBackend): ToolDef[] {
+  function appendHandler(
+    _: unknown,
+    input: { content?: string; kind: any; data_json?: unknown; tags?: string[]; visible?: 0 | 1 },
+  ) {
+    const event_id = backend.logAppend({
+      content: input.content,
+      kind: input.kind,
+      data_json: input.data_json,
+      tags: input.tags?.length ? input.tags.join(" ") : undefined,
+      visible: input.visible,
+    });
+    const fired_watchers = backend.recomputeWatchers();
+    return { event_id, fired_watchers };
+  }
 
-function recallHandler(db: DB, input: { query: string; k: number }) {
-  const rows = logRecall(db, input.query, { limit: input.k });
-  const events = rows.map((e: LogRow) => ({
-    seq: e.seq,
-    kind: e.kind,
-    content: e.content,
-    visible: e.visible,
-  }));
-  const { truncated } = truncateText(JSON.stringify(events));
-  return { events, truncated };
-}
+  function recallHandler(_: unknown, input: { query: string; k: number }) {
+    const rows = backend.logRecall(input.query, { limit: input.k });
+    const events = rows.map((e: LogRow) => ({
+      seq: e.seq,
+      kind: e.kind,
+      content: e.content,
+      visible: e.visible,
+    }));
+    const { truncated } = truncateText(JSON.stringify(events));
+    return { events, truncated };
+  }
 
-function watcherHandler(
-  db: DB,
-  input: { condition: string; payload: string; mode: "once" | "repeat" },
-) {
-  const watcher_id = watcherSet(db, {
-    condition: input.condition,
-    payload: input.payload,
-    mode: input.mode,
-  });
-  return { watcher_id };
-}
+  function watcherHandler(
+    _: unknown,
+    input: { condition: string; payload: string; mode: "once" | "repeat" },
+  ) {
+    const watcher_id = backend.watcherSet({
+      condition: input.condition,
+      payload: input.payload,
+      mode: input.mode,
+    });
+    return { watcher_id };
+  }
 
-function watcherListHandler(db: DB) {
-  const watchers = watcherList(db).map((w: WatcherRow) => ({
-    id: w.id,
-    condition: w.condition,
-    payload: w.payload,
-    mode: w.mode,
-    armed: w.armed,
-    status: w.status,
-  }));
-  return { watchers };
-}
+  function watcherListHandler() {
+    const watchers = backend.watcherList().map((w: WatcherRow) => ({
+      id: w.id,
+      condition: w.condition,
+      payload: w.payload,
+      mode: w.mode,
+      armed: w.armed,
+      status: w.status,
+    }));
+    return { watchers };
+  }
 
-export const eventTools: ToolDef[] = [
+  return [
   {
     name: "event_append",
     title: "追加事件",
@@ -140,4 +140,5 @@ export const eventTools: ToolDef[] = [
     },
     handler: watcherListHandler,
   },
-];
+  ];
+}

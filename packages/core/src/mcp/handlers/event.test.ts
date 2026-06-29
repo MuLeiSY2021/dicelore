@@ -9,20 +9,21 @@
 
 // src/mcp/handlers/event.test.ts
 import { describe, it, expect } from "vitest";
-import { openDb, initSchema } from "@dicelore/backend";
+import { openDb, initSchema, openSessionBackend } from "@dicelore/backend";
 import { logSince } from "@dicelore/backend";
 import { watcherList, watcherSet } from "@dicelore/backend";
-import { eventTools } from "./event.js";
+import { makeEventTools } from "./event.js";
 import { eventAppendOut } from "../schemas/event.js";
 import { wrapToolForTest } from "../server.js";
 
 function freshDb() { const db = openDb(":memory:"); initSchema(db); return db; }
-const byName = (n: string) => eventTools.find((t) => t.name === n)!;
+// 内置工具 handler 经注入 SessionBackend 调存储——按 db 造工具、handler 忽略传入的 db 形参。
+const byName = (db: any, n: string) => makeEventTools(openSessionBackend(db)).find((t) => t.name === n)!;
 
 describe("event handlers", () => {
   it("event_append:落 event 回 event_id;tags 数组合并写入", () => {
     const db = freshDb();
-    const out = byName("event_append").handler(db, {
+    const out = byName(db, "event_append").handler(db, {
       content: "夜里下起暴雨", kind: "note", tags: ["天气", "夜"],
     });
     expect(typeof out.event_id).toBe("number");
@@ -31,9 +32,9 @@ describe("event handlers", () => {
 
   it("event_recall:FTS 召回独有词", () => {
     const db = freshDb();
-    byName("event_append").handler(db, { content: "苍鹭栖息在钟楼尖顶", kind: "note" });
-    byName("event_append").handler(db, { content: "无关的另一条记录", kind: "note" });
-    const out = byName("event_recall").handler(db, { query: "苍鹭", k: 8 });
+    byName(db, "event_append").handler(db, { content: "苍鹭栖息在钟楼尖顶", kind: "note" });
+    byName(db, "event_append").handler(db, { content: "无关的另一条记录", kind: "note" });
+    const out = byName(db, "event_recall").handler(db, { query: "苍鹭", k: 8 });
     expect(out.events.length).toBeGreaterThanOrEqual(1);
     expect(out.events.some((e: any) => e.content.includes("苍鹭"))).toBe(true);
     expect(out.truncated).toBe(false);
@@ -41,7 +42,7 @@ describe("event handlers", () => {
 
   it("watcher_set:登记 active watcher 回 watcher_id", () => {
     const db = freshDb();
-    const out = byName("watcher_set").handler(db, {
+    const out = byName(db, "watcher_set").handler(db, {
       condition: "{张三.HP} < 10", payload: "濒死!", mode: "once",
     });
     expect(typeof out.watcher_id).toBe("number");
@@ -50,9 +51,9 @@ describe("event handlers", () => {
 
   it("watcher_list:列出所有 active(armed) watcher,供 GM 回顾未触发的钟/Front", () => {
     const db = freshDb();
-    byName("watcher_set").handler(db, { condition: "{世界.入侵} >= 6", payload: "破阵", mode: "once" });
-    byName("watcher_set").handler(db, { condition: "{张三.HP} < 10", payload: "濒死", mode: "repeat" });
-    const out = byName("watcher_list").handler(db, {});
+    byName(db, "watcher_set").handler(db, { condition: "{世界.入侵} >= 6", payload: "破阵", mode: "once" });
+    byName(db, "watcher_set").handler(db, { condition: "{张三.HP} < 10", payload: "濒死", mode: "repeat" });
+    const out = byName(db, "watcher_list").handler(db, {});
     expect(out.watchers).toHaveLength(2);
     const w = out.watchers.find((x: any) => x.condition === "{世界.入侵} >= 6");
     expect(w).toMatchObject({ payload: "破阵", mode: "once", armed: 1, status: "active" });
@@ -62,7 +63,7 @@ describe("event handlers", () => {
   it("event_append 触发 log-has watcher,回 fired_watchers", () => {
     const db = freshDb();
     watcherSet(db, { condition: "{log:has(kind=reveal)}", payload: "有新揭示", mode: "once" });
-    const out = byName("event_append").handler(db, { kind: "reveal", content: "秘密曝光" });
+    const out = byName(db, "event_append").handler(db, { kind: "reveal", content: "秘密曝光" });
     expect(out.fired_watchers).toBeDefined();
     expect(out.fired_watchers.length).toBe(1);
     expect(out.fired_watchers[0].payload).toBe("有新揭示");
@@ -88,7 +89,7 @@ describe("event_append 经 server 路径端到端", () => {
     const db = openDb(":memory:");
     initSchema(db);
     watcherSet(db, { condition: "{log:has(kind=reveal)}", payload: "秘密暴露提示", mode: "once" });
-    const invoke = wrapToolForTest(db, {});
+    const invoke = wrapToolForTest(openSessionBackend(db), db, {});
     const result = await invoke("event_append", { kind: "reveal", content: "重要秘密" }) as any;
     expect(result.isError).toBeFalsy();
     // structuredContent 是 SDK 传给 outputSchema 校验的对象——必须含 fired_watchers

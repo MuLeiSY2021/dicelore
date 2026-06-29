@@ -9,7 +9,7 @@
 
 import { Hono } from "hono";
 import { existsSync } from "node:fs";
-import { TOOLS, getLogger } from "@dicelore/core";
+import { BUILTIN_TOOL_COUNT, getLogger } from "@dicelore/core";
 
 // 缝 B 自检面（组件7 配置页/顶栏运行态指示的真值来源）：
 // - GET  /diagnostics/health    服务器真实运行态(端口/模型/MCP工具数/notify/存储)
@@ -50,7 +50,7 @@ export function createDiagnosticsApp(deps: DiagDeps): Hono {
       fakeGm: deps.fakeGm,
       port: deps.port,
       model: { gm: process.env.DICELORE_GM_MODEL ?? (deps.fakeGm ? "fake-gm" : "glm-5.2"), configured, baseUrl },
-      mcp: { name: "dicelore", transport: "in-process", toolCount: TOOLS.length, running: true },
+      mcp: { name: "dicelore", transport: "in-process", toolCount: BUILTIN_TOOL_COUNT, running: true },
       notify: { url: notifyUrl, configured: !!notifyUrl },
       storage: {
         sessionsDir: process.env.DICELORE_SESSIONS_DIR ?? ".",

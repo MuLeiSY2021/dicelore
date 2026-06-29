@@ -7,7 +7,7 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import { openDb, initSchema, createMcpServer, buildPresentationModel, runTurnEnd, importPack, metaSet, metaGet, checkpoint, restore, latestSnapshot, getLogger, type DB, type CanonWriteEvent, type CatalogDB } from "@dicelore/core";
+import { openDb, initSchema, createMcpServer, openSessionBackend, buildPresentationModel, runTurnEnd, importPack, metaSet, metaGet, checkpoint, restore, latestSnapshot, getLogger, type DB, type CanonWriteEvent, type CatalogDB } from "@dicelore/core";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WsHub, type WsLike } from "../pkg/wsHub.js";
 import { PlayerRollGate } from "./rollGate.js";
@@ -56,7 +56,7 @@ export class DiceSession implements Session {
     // 经下面 createMcpServer 的 extraTools 装载进本 session 的 MCP(守 DT-9:作者只能声明式 SQL 工具)。
     // ⚠️ v1 仅首次 import(db 空)装载;重开已存在 session 不重载团本工具(catalog 此时不在场)——
     // 持久化/重开重载留 follow-up(见 backlog 主题A′)。
-    let extraTools: Parameters<typeof createMcpServer>[2] = [];
+    let extraTools: Parameters<typeof createMcpServer>[3] = [];
     if (deps.importFrom) {
       const empty = (this.db.prepare("SELECT COUNT(*) n FROM log").get() as { n: number }).n === 0;
       if (empty) {
@@ -77,7 +77,7 @@ export class DiceSession implements Session {
     if (!deps.debug) {
       this.gate = new PlayerRollGate(this.db, this.hub, sessionId);
     }
-    this.mcpServer = createMcpServer(this.db, {
+    this.mcpServer = createMcpServer(openSessionBackend(this.db), this.db, {
       onCanonWrite: (e) => this.onCanonWrite(e),
       ...(this.gate ? { rollGate: this.gate.gate } : {}),
     }, extraTools);

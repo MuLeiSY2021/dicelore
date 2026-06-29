@@ -9,7 +9,8 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { DB } from "@dicelore/backend";
-import { TOOLS } from "./tools.js";
+import type { SessionBackend } from "@dicelore/interface";
+import { makeTools } from "./tools.js";
 import type { ToolDef } from "./tooldef.js";
 import { runTool } from "./runTool.js";
 import { setRollGate, type RollGate } from "./rollGate.js";
@@ -49,8 +50,10 @@ function maxSeq(db: DB): number {
 }
 
 // 「调用工具 + 写后 onCanonWrite」封装(供工厂注册 + 单测复用)。runTool 是 async、返回信封。
-export function wrapToolForTest(db: DB, deps: McpServerDeps, extraTools: ToolDef[] = []) {
-  const byName = new Map([...TOOLS, ...extraTools].map((t) => [t.name, t]));
+// backend: 注入的会话存储端口(内置工具经它调 ported ops)。db: 仍需——供 toolgen extraTools handler
+// 的作者 SQL(不在端口面内)+ maxSeq 取写后 head seq。
+export function wrapToolForTest(backend: SessionBackend, db: DB, deps: McpServerDeps, extraTools: ToolDef[] = []) {
+  const byName = new Map([...makeTools(backend), ...extraTools].map((t) => [t.name, t]));
   return async (name: string, args: unknown): Promise<unknown> => {
     const t = byName.get(name);
     if (!t) throw new Error(`未知工具: ${name}`);
@@ -65,11 +68,11 @@ export function wrapToolForTest(db: DB, deps: McpServerDeps, extraTools: ToolDef
   };
 }
 
-export function createMcpServer(db: DB, deps: McpServerDeps = {}, extraTools: ToolDef[] = []): McpServer {
+export function createMcpServer(backend: SessionBackend, db: DB, deps: McpServerDeps = {}, extraTools: ToolDef[] = []): McpServer {
   if (deps.rollGate) setRollGate(deps.rollGate); // 单人明骰：接既有模块级 gate seam
   const server = new McpServer({ name: "dicelore", version: "0.0.0" });
-  const invoke = wrapToolForTest(db, deps, extraTools);
-  for (const t of [...TOOLS, ...extraTools]) {
+  const invoke = wrapToolForTest(backend, db, deps, extraTools);
+  for (const t of [...makeTools(backend), ...extraTools]) {
     server.registerTool(
       `dicelore_${t.name}`,
       {

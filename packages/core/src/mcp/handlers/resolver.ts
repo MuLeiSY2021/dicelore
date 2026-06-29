@@ -8,13 +8,10 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 // src/mcp/handlers/resolver.ts
-import type { DB } from "@dicelore/backend";
-import { stagePendingChoice } from "@dicelore/backend";
+// ported ops(choice/contest/pendingRoll/commit/logAppend)经注入 SessionBackend 调用；
+// resolveOutcome(纯函数·无 db)保持直接 import @dicelore/backend(storage-port ADR §3 单骰串不进端口)。
+import type { SessionBackend } from "@dicelore/interface";
 import { resolveOutcome } from "@dicelore/backend";
-import { resolveContest } from "@dicelore/backend";
-import { logAppend } from "@dicelore/backend";
-import { stagePendingRoll } from "@dicelore/backend";
-import { commitPendingRoll } from "@dicelore/backend";
 import { getRollGate } from "../rollGate.js";
 import { DiceloreError } from "@dicelore/errors";
 import type { ToolDef } from "../tooldef.js";
@@ -30,56 +27,58 @@ const anns = (idempotent: boolean) => ({
   readOnlyHint: false, destructiveHint: false, idempotentHint: idempotent, openWorldHint: false,
 });
 
-function choiceHandler(db: DB, input: { prompt: string; options: { label: string; consequence: string }[] }) {
-  stagePendingChoice(db, input.prompt, input.options);
-  return { staged: true as const, options: input.options };
-}
+/** 内置裁决工具集（handler 闭包持注入的 SessionBackend）。 */
+export function makeResolverTools(backend: SessionBackend): ToolDef[] {
+  function choiceHandler(_: unknown, input: { prompt: string; options: { label: string; consequence: string }[] }) {
+    backend.stagePendingChoice(input.prompt, input.options);
+    return { staged: true as const, options: input.options };
+  }
 
-function outcomeHandler(db: DB, input: { context: string; die: string; bands: any[] }) {
-  const r = resolveOutcome(input.die, input.bands);
-  const event_id = logAppend(db, {
-    kind: "verdict",
-    content: input.context,
-    data_json: { context: input.context, die: r.die, roll: r.roll, band: r.band },
-  });
-  return { roll: r.roll, die: r.die, band: { label: r.band.label, consequence: r.band.consequence ?? "" }, event_id };
-}
+  function outcomeHandler(_: unknown, input: { context: string; die: string; bands: any[] }) {
+    const r = resolveOutcome(input.die, input.bands);
+    const event_id = backend.logAppend({
+      kind: "verdict",
+      content: input.context,
+      data_json: { context: input.context, die: r.die, roll: r.roll, band: r.band },
+    });
+    return { roll: r.roll, die: r.die, band: { label: r.band.label, consequence: r.band.consequence ?? "" }, event_id };
+  }
 
-function contestHandler(db: DB, input: { context: string; a: any; b: any }) {
-  const r = resolveContest(db, input.a, input.b);
-  const rolls = (s: typeof r.a) => s.ledger.terms.flatMap((t) => t.rolls ?? []);
-  const event_id = logAppend(db, {
-    kind: "verdict",
-    content: input.context,
-    data_json: { context: input.context, a: r.a, b: r.b, winner: r.winner },
-  });
-  return {
-    a: { name: r.a.name, total: r.a.ledger.total, rolls: rolls(r.a) },
-    b: { name: r.b.name, total: r.b.ledger.total, rolls: rolls(r.b) },
-    winner: r.winner,
-    event_id,
-  };
-}
+  function contestHandler(_: unknown, input: { context: string; a: any; b: any }) {
+    const r = backend.resolveContest(input.a, input.b);
+    const rolls = (s: typeof r.a) => s.ledger.terms.flatMap((t) => t.rolls ?? []);
+    const event_id = backend.logAppend({
+      kind: "verdict",
+      content: input.context,
+      data_json: { context: input.context, a: r.a, b: r.b, winner: r.winner },
+    });
+    return {
+      a: { name: r.a.name, total: r.a.ledger.total, rolls: rolls(r.a) },
+      b: { name: r.b.name, total: r.b.ledger.total, rolls: rolls(r.b) },
+      winner: r.winner,
+      event_id,
+    };
+  }
 
-async function outcomeOpenHandler(db: DB, input: { context: string; die: string; bands: any[] }) {
-  const eventId = stagePendingRoll(db, { shape: "outcome", spec: { context: input.context, die: input.die, bands: input.bands } });
-  const gate = getRollGate();
-  if (gate) await gate(eventId); // 组件7:通知前端待掷 + await 玩家点击;裸 CC 无 gate → 直接降级立即掷
-  const r = commitPendingRoll(db, eventId);
-  if (r.shape !== "outcome") throw new DiceloreError("INTERNAL", "commitPendingRoll shape 不符");
-  return { awaiting: "player_roll" as const, roll: r.roll, die: r.die, band: r.band, event_id: r.verdictSeq };
-}
+  async function outcomeOpenHandler(_: unknown, input: { context: string; die: string; bands: any[] }) {
+    const eventId = backend.stagePendingRoll({ shape: "outcome", spec: { context: input.context, die: input.die, bands: input.bands } });
+    const gate = getRollGate();
+    if (gate) await gate(eventId); // 组件7:通知前端待掷 + await 玩家点击;裸 CC 无 gate → 直接降级立即掷
+    const r = backend.commitPendingRoll(eventId);
+    if (r.shape !== "outcome") throw new DiceloreError("INTERNAL", "commitPendingRoll shape 不符");
+    return { awaiting: "player_roll" as const, roll: r.roll, die: r.die, band: r.band, event_id: r.verdictSeq };
+  }
 
-async function contestOpenHandler(db: DB, input: { context: string; a: any; b: any }) {
-  const eventId = stagePendingRoll(db, { shape: "contest", spec: { context: input.context, a: input.a, b: input.b } });
-  const gate = getRollGate();
-  if (gate) await gate(eventId);
-  const r = commitPendingRoll(db, eventId);
-  if (r.shape !== "contest") throw new DiceloreError("INTERNAL", "commitPendingRoll shape 不符");
-  return { awaiting: "player_roll" as const, a: r.a, b: r.b, winner: r.winner, event_id: r.verdictSeq };
-}
+  async function contestOpenHandler(_: unknown, input: { context: string; a: any; b: any }) {
+    const eventId = backend.stagePendingRoll({ shape: "contest", spec: { context: input.context, a: input.a, b: input.b } });
+    const gate = getRollGate();
+    if (gate) await gate(eventId);
+    const r = backend.commitPendingRoll(eventId);
+    if (r.shape !== "contest") throw new DiceloreError("INTERNAL", "commitPendingRoll shape 不符");
+    return { awaiting: "player_roll" as const, a: r.a, b: r.b, winner: r.winner, event_id: r.verdictSeq };
+  }
 
-export const resolverTools: ToolDef[] = [
+  return [
   {
     name: "resolve_choice",
     title: "暂存玩家选择",
@@ -142,4 +141,5 @@ export const resolverTools: ToolDef[] = [
     annotations: anns(false),
     handler: contestOpenHandler,
   },
-];
+  ];
+}

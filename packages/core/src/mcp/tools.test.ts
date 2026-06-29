@@ -8,7 +8,12 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, it, expect } from "vitest";
-import { TOOLS } from "./tools.js";
+import { openDb, initSchema, openSessionBackend } from "@dicelore/backend";
+import { makeTools } from "./tools.js";
+
+// 内置工具元数据(名字/描述/标注)不依赖具体 db——任取一个 backend 实例造工具读元数据即可。
+const db = (() => { const d = openDb(":memory:"); initSchema(d); return d; })();
+const TOOLS = makeTools(openSessionBackend(db));
 
 describe("TOOLS 注册表", () => {
   it("囊括全部 21 个工具,名字唯一", () => {

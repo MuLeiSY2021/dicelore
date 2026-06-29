@@ -8,9 +8,9 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 // src/mcp/handlers/sheet.ts
-import type { DB } from "@dicelore/backend";
-import { stateGet, stateList } from "@dicelore/backend";
-import { applyMutations } from "@dicelore/backend";
+// ported ops(state 读写/批改)经注入的 SessionBackend 端口调用，不再直连 @dicelore/backend 自由函数
+// (storage-port ADR §4)。纯函数 truncateText(无 db 首参)保持直接 import。
+import type { SessionBackend } from "@dicelore/interface";
 import { truncateText } from "@dicelore/backend";
 import type { ToolDef } from "../tooldef.js";
 import {
@@ -22,33 +22,35 @@ import {
   sheetUpdateOut,
 } from "../schemas/sheet.js";
 
-function getHandler(db: DB, input: { entity: string; attr: string }) {
-  const cell = stateGet(db, input.entity, input.attr);
-  return cell ? { value: cell.value, visible: cell.visible } : { value: null, visible: 0 };
-}
+/** 内置 sheet 工具集（handler 闭包持注入的 SessionBackend；忽略 runTool 传入的 db）。 */
+export function makeSheetTools(backend: SessionBackend): ToolDef[] {
+  function getHandler(_: unknown, input: { entity: string; attr: string }) {
+    const cell = backend.stateGet(input.entity, input.attr);
+    return cell ? { value: cell.value, visible: cell.visible } : { value: null, visible: 0 };
+  }
 
-function listHandler(db: DB, input: { entity: string; prefix?: string; limit: number; offset: number }) {
-  const all = stateList(db, `${input.entity}.${input.prefix ?? ""}`);
-  const page = all.slice(input.offset, input.offset + input.limit);
-  const has_more = input.offset + input.limit < all.length;
-  const cells = page.map((c) => ({ attr: c.attr, value: c.value, visible: c.visible }));
-  const { truncated } = truncateText(JSON.stringify(cells));
-  const out: any = { cells, has_more, truncated };
-  if (has_more) out.next_offset = input.offset + input.limit;
-  return out;
-}
+  function listHandler(_: unknown, input: { entity: string; prefix?: string; limit: number; offset: number }) {
+    const all = backend.stateList(`${input.entity}.${input.prefix ?? ""}`);
+    const page = all.slice(input.offset, input.offset + input.limit);
+    const has_more = input.offset + input.limit < all.length;
+    const cells = page.map((c) => ({ attr: c.attr, value: c.value, visible: c.visible }));
+    const { truncated } = truncateText(JSON.stringify(cells));
+    const out: any = { cells, has_more, truncated };
+    if (has_more) out.next_offset = input.offset + input.limit;
+    return out;
+  }
 
-function updateHandler(db: DB, input: { entity: string; mutations: any[] }) {
-  const r = applyMutations(db, input.entity, input.mutations); // mutation event 自落,透传 event_id
-  return {
-    entity: r.entity,
-    applied: r.applied,
-    fired_watchers: r.fired_watchers,
-    event_id: r.event_id,
-  };
-}
+  function updateHandler(_: unknown, input: { entity: string; mutations: any[] }) {
+    const r = backend.applyMutations(input.entity, input.mutations); // mutation event 自落,透传 event_id
+    return {
+      entity: r.entity,
+      applied: r.applied,
+      fired_watchers: r.fired_watchers,
+      event_id: r.event_id,
+    };
+  }
 
-export const sheetTools: ToolDef[] = [
+  return [
   {
     name: "sheet_get",
     title: "读单格",
@@ -82,4 +84,5 @@ export const sheetTools: ToolDef[] = [
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     handler: updateHandler,
   },
-];
+  ];
+}

@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, it, expect } from "vitest";
-import { openDb, initSchema, createMcpServer } from "@dicelore/core";
+import { openDb, initSchema, createMcpServer, openSessionBackend } from "@dicelore/core";
 import { buildQueryOptions } from "./gmAssembly.js";
 
 // TB-2：SDK 装配的 offline 回归网。
@@ -23,7 +23,7 @@ describe("buildQueryOptions（SDK 装配 offline 回归 / TB-2）", () => {
   function makeMcp() {
     const db = openDb(":memory:");
     initSchema(db);
-    return createMcpServer(db, {});
+    return createMcpServer(openSessionBackend(db), db, {});
   }
 
   it("MCP 以 sdk 类型挂在 dicelore 槽位，instance 即传入的 mcpServer", () => {

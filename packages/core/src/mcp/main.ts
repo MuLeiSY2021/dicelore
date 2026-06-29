@@ -9,7 +9,7 @@
 
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { dirname } from "node:path";
-import { openSession } from "@dicelore/backend";
+import { openSession, openSessionBackend } from "@dicelore/backend";
 import { initGlobalLogger, getLogger } from "@dicelore/logs";
 import { createMcpServer } from "./server.js";
 
@@ -18,7 +18,7 @@ async function main() {
   // stdio server:日志必须走文件/stderr,绝不能进 stdout(会污染 JSON-RPC 协议流)。
   // 把全局 logger 切到会话文件夹的分级文件(createFileLogger 只写 *.log,不碰 stdout)。
   initGlobalLogger(dirname(path));
-  const server = createMcpServer(db, {}); // stdio 路径无 onCanonWrite/rollGate(行为不变)
+  const server = createMcpServer(openSessionBackend(db), db, {}); // stdio 路径无 onCanonWrite/rollGate(行为不变)
   await server.connect(new StdioServerTransport());
 }
 

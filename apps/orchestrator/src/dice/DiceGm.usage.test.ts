@@ -17,7 +17,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
-import { openDb, initSchema, listUsage, usageByTurn, sessionDbPath, createMcpServer } from "@dicelore/core";
+import { openDb, initSchema, listUsage, usageByTurn, sessionDbPath, createMcpServer, openSessionBackend } from "@dicelore/core";
 import { parseUsage, DiceGm } from "./DiceGm.js";
 
 describe("parseUsage（SDK usage 字段名 → 计量字段，纯函数）", () => {
@@ -57,7 +57,8 @@ describe("DiceGm.recordTurnUsage（采集落库，per-turn + per-agent）", () =
     const path = sessionDbPath(sessionId, "dice");
     mkdirSync(dirname(path), { recursive: true });
     const seedDb = openDb(path); initSchema(seedDb); seedDb.close();
-    const mcpServer = createMcpServer(openDb(":memory:"), {});
+    const mcpDb = openDb(":memory:"); initSchema(mcpDb);
+    const mcpServer = createMcpServer(openSessionBackend(mcpDb), mcpDb, {});
     const gm = new DiceGm({ mcpServer, openingPrompt: "你是 GM。", skills: [], sessionId, model });
     return gm;
   }
@@ -89,7 +90,8 @@ describe("DiceGm.recordTurnUsage（采集落库，per-turn + per-agent）", () =
   });
 
   it("无 sessionId 的 DiceGm 不采集（lore/裸测试不落库）", () => {
-    const mcpServer = createMcpServer(openDb(":memory:"), {});
+    const mcpDb = openDb(":memory:"); initSchema(mcpDb);
+    const mcpServer = createMcpServer(openSessionBackend(mcpDb), mcpDb, {});
     const gm = new DiceGm({ mcpServer, openingPrompt: "x", skills: [] }); // 无 sessionId
     (gm as any).curTurnId = "t";
     expect(() => (gm as any).recordTurnUsage({ input_tokens: 1, output_tokens: 1 })).not.toThrow();

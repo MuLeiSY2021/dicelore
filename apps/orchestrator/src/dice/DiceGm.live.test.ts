@@ -16,10 +16,10 @@ const LIVE = process.env.RUN_LIVE === "1";
 
 describe.skipIf(!LIVE)("DiceGm 真 SDK 冒烟", () => {
   it("跑一个真回合，至少产出 turn_end", async () => {
-    const { openDb, initSchema, createMcpServer } = await import("@dicelore/core");
+    const { openDb, initSchema, createMcpServer, openSessionBackend } = await import("@dicelore/core");
     const { DiceGm } = await import("./DiceGm.js");
     const db = openDb(":memory:"); initSchema(db);
-    const mcpServer = createMcpServer(db, {});
+    const mcpServer = createMcpServer(openSessionBackend(db), db, {});
     const drv = new DiceGm({ mcpServer, openingPrompt: "你是 GM。", skills: [] });
     const got: string[] = [];
     for await (const e of drv.runTurn({ text: "用一句话开场。" })) got.push(e.type);

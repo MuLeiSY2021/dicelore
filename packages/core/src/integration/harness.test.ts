@@ -23,12 +23,15 @@ import {
   loadScenario,
   rollFloor,
   closureFloor,
+  openSessionBackend,
 } from "@dicelore/backend";
-import { TOOLS } from "../mcp/tools.js";
+import { makeTools } from "../mcp/tools.js";
 import { runTool } from "../mcp/runTool.js";
 
+// 内置工具 handler 经注入的 SessionBackend 调存储——故工具须绑定到本测试的同一 db
+// (storage-port ADR §4)。每次按当前 db 造工具，名字命中即取。
 function tool(name: string) {
-  const t = TOOLS.find((x) => x.name === name);
+  const t = makeTools(openSessionBackend(db)).find((x) => x.name === name);
   if (!t) throw new Error(`测试 fixture 引用了不存在的工具: ${name}`);
   return t;
 }

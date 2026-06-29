@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, expect, test, beforeEach } from "vitest";
-import { openDb, initSchema, type DB } from "@dicelore/backend";
+import { openDb, initSchema, openSessionBackend, type DB } from "@dicelore/backend";
 import { wrapToolForTest } from "./server.js";
 import { narrationStdlibTools } from "./stdlib/narration.js";
 import { frontList } from "@dicelore/backend";
@@ -19,7 +19,7 @@ let invoke: (name: string, args: unknown) => Promise<unknown>;
 beforeEach(() => {
   db = openDb(":memory:");
   initSchema(db);
-  invoke = wrapToolForTest(db, {}, narrationStdlibTools());
+  invoke = wrapToolForTest(openSessionBackend(db), db, {}, narrationStdlibTools());
 });
 
 // 信封 → 解出业务出参
@@ -61,8 +61,8 @@ describe("dogfooding：声明叙事工具经 MCP server 端到端", () => {
   });
 
   test("框架零改动验证：叙事工具全部来自声明（不在硬编码 TOOLS 中）", async () => {
-    const { TOOLS } = await import("./tools.js");
-    const hardcodedNames = new Set(TOOLS.map((t) => t.name));
+    const { BUILTIN_TOOL_NAMES } = await import("./tools.js");
+    const hardcodedNames = new Set(BUILTIN_TOOL_NAMES);
     for (const n of ["front_open", "plotline_open", "foreshadow_plant", "tension_board"]) {
       expect(hardcodedNames.has(n)).toBe(false); // 不硬编码
     }

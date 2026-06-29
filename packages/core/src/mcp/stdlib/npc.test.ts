@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { describe, expect, test, beforeEach } from "vitest";
-import { openDb, initSchema, type DB } from "@dicelore/backend";
+import { openDb, initSchema, openSessionBackend, type DB } from "@dicelore/backend";
 import { logSince } from "@dicelore/backend";
 import { wrapToolForTest } from "../server.js";
 import { npcToolDecls, npcStdlibTools } from "./npc.js";
@@ -71,7 +71,7 @@ describe("NPC 一等抽象标准库声明（A1）", () => {
 describe("dogfooding：NPC 声明工具经 MCP server 端到端", () => {
   let invoke: (name: string, args: unknown) => Promise<unknown>;
   beforeEach(() => {
-    invoke = wrapToolForTest(db, {}, npcStdlibTools());
+    invoke = wrapToolForTest(openSessionBackend(db), db, {}, npcStdlibTools());
   });
 
   async function call(name: string, args: unknown): Promise<any> {
@@ -98,8 +98,8 @@ describe("dogfooding：NPC 声明工具经 MCP server 端到端", () => {
   });
 
   test("框架零改动：npc 工具全部来自声明（不在硬编码 TOOLS 中）", async () => {
-    const { TOOLS } = await import("../tools.js");
-    const hardcoded = new Set(TOOLS.map((t) => t.name));
+    const { BUILTIN_TOOL_NAMES } = await import("../tools.js");
+    const hardcoded = new Set(BUILTIN_TOOL_NAMES);
     for (const n of ["npc_register", "npc_update_affinity", "npc_update_hp", "npc_set_identity"]) {
       expect(hardcoded.has(n)).toBe(false);
     }
