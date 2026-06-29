@@ -81,6 +81,18 @@ backend/server (组合根)   ──注入实现──→  harness 会话
 4. **barrel 用显式 re-export，别自动 `export *` 广面**：自动 `export *` 全模块 + pinned tsc 触发了一个未归因的解析墙（backend 自身 typecheck 报找不到存在的兄弟模块，而直跑 `tsc` 能解析）。下次按 phase 1 手写 `SessionBackend` 显式接口（也正好是 ADR 本意），不要图省事自动 export*。
 5. **严格按 ADR 顺序**：先 `packages/interface` 类型 + 注册 workspace（无悔），再小步搬、每步 `typecheck+test` 绿。不要 phase-2 先行造破环中间态。
 
+### 5.2 包级 harness↔backend 互指——已裁决：**接受**（2026-06-29）
+
+之前悬置「留 #7 再断包级环」。重构遗料清理（#7 核心）时复核后**最终裁决：接受这个包级互指，不再尝试断**。理由：
+
+- **模块级已无环 = ADR 目标已达成**：mcp 工具面经注入的 `SessionBackend` 端口（`@dicelore/interface`）访存储，不直连 `@dicelore/backend`。第 4 步断的就是这条模块级环，已断。
+- **剩余 4 处 import 全是组合根/入口**：`harness/src/dicegm/mcp/main.ts`（stdio MCP 入口，非死料——`adapter/init.ts:runInit` 写的 `.mcp.json` = `npx dicelore mcp` 指向它）+ `adapter/hooks/{session-start,turn-start,turn-end}.ts`。composition root 在入口把抽象接到具体实现是其本分（Fowler），不算耦合违例。
+- **hooks 结构上无法注入**：它们是 CC hook 契约下 CC **spawn 的独立进程脚本**（`node --import tsx hooks/<name>.ts`，读 stdin/写 stdout），从 env 自举 `openSession` + `openSessionBackend`——不是 harness 进程内被 import 的函数，没有「收注入 backend」的接缝。改注入要改 CC hook 执行模型。
+- **包级互指是 cosmetic**：npm workspaces（软链双向）、TS（无 project references）、运行时（无顶层求值环）全都容忍——gate 全绿为证。
+- **断它的代价 > 收益**：唯一断法是把 4 个入口整体搬去 backend 侧，要动 `adapter/templates.ts` 的 `hooksDir` + `settings.json` 生成路径 + `cli/init` 接线，碰运行期 hook 安装资产；为 cosmetic 收益冒运行期风险，不值。
+
+> 实现侧把这点的单源注记落在 [`harness/src/index.ts`](../../harness/src/index.ts) barrel 顶注释。
+
 ## 6. 被否 / 备选
 
 - **挪位避环**（api 放 harness）：能断环且零端口，但拿不到「后端可换存储 / 加 cache」的目标收益——用户明确要端口本身的价值，故否。

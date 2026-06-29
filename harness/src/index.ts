@@ -10,8 +10,15 @@
 // @dicelore/harness 公共面（agent 运行时工具面 + 适配器；显式手写 re-export，不用 auto export*）。
 // 这些行原样搬自旧 @dicelore/core barrel 的 mcp/* + adapter/* 部分(storage-port 阶段 5a)。
 // 5b 后 backend 组合根(api/server)与 eval 包直接经 @dicelore/harness 消费,不再经 @dicelore/core barrel。
-// mcp 工具面只依赖注入的 SessionBackend 端口（@dicelore/interface），不直连 @dicelore/backend；
-// 唯组合根 mcp/main.ts 与 adapter/hooks/* 经 @dicelore/backend 开库/注入（入口允许）。
+// mcp 工具面只依赖注入的 SessionBackend 端口（@dicelore/interface），不直连 @dicelore/backend——
+// 这才是 storage-port ADR 的实际目标：**模块级已无环**。
+// 仅 4 个组合根/入口 import @dicelore/backend：dicegm/mcp/main.ts(stdio MCP 入口) +
+// adapter/hooks/{session-start,turn-start,turn-end}.ts(CC 契约下独立进程脚本,从 env 自举开库)。
+// 这是有意的：composition root 在入口把抽象接到具体实现(Fowler),是入口的本分、不算违例;
+// hooks 是 CC spawn 的独立进程,结构上无法收注入。
+// 由此 harness↔backend 的**包级**互指(package.json 双向)被**接受为 composition-root 边界**——
+// npm workspaces(软链双向)/TS(无 project references)/运行时(无顶层求值环)全都容忍。
+// 裁决见 docs/重构/ADR-storage-port.md §5.1。
 
 // 玩家闸控明骰 gate（供 orchestrator / 组件7 注入 gate、触发 commit）。
 export { setRollGate, getRollGate, type RollGate } from "./dicegm/mcp/rollGate.js";
