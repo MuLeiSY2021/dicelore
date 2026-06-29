@@ -7,7 +7,7 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-// 架构依赖图生成器：扫描各 workspace 包的 src/**/*.ts，正则抓 import/export 边，
+// 架构依赖图生成器：扫描各 workspace 包的 src/**/*.{ts,tsx}，正则抓 import/export 边，
 // 重算依赖图数据（dir 层目录聚合 + file 层文件级 + palette 调色板），把结果作为
 // `var DATA={...};` 内联回写进 docs/reports/dep-graph.html（单一来源，无外部 json）。
 //
@@ -16,10 +16,11 @@
 // `var DATA=<新算出的 JSON>;` 再写回。模板（CDN/CSS/渲染 JS/HTML 骨架）永远跟现有 html
 // 同步；数据只内联在 html 里，不再有 .data.json 副本。
 //
-// 口径（与现有 html 里的 DATA 旧样本对齐）：
-//  - 只扫 *.ts，排除 *.test.ts；不含 *.tsx。判断依据：旧 DATA 的 shared 包恰好只列其
-//    非 *.test.ts 文件数（6 个），说明旧版排除 *.test.ts，本脚本沿用。React 前端的 .tsx
-//    源文件不出现在图里（与旧版一致的取舍）。
+// 口径：
+//  - 扫 *.ts 与 *.tsx，排除 *.test.ts / *.test.tsx。含 .tsx 是为让 React 前端（组件全是
+//    .tsx）的内部依赖与跨包边在图里显形——否则 frontend 这一整根近乎孤岛。相对 import 解析
+//    候选含 .tsx（.js→.ts/.tsx、补 /index.tsx）。`@/` 路径别名按所属包 src 根解析
+//    （vite/tsconfig 约定，目前仅 frontend）。
 //  - 包列表从根 package.json 的 workspaces 动态解析（glob 展开 packages/* + 读各包
 //    package.json 的 name），加包自动纳入、零硬编码包名。
 //  - 相对 import：moduleResolution=Bundler 写 .js 后缀但实文件是 .ts → .js→.ts；无后缀/
@@ -116,7 +117,12 @@ function walkTs(dir: string): string[] {
     const full = join(dir, e);
     const st = statSync(full);
     if (st.isDirectory()) out.push(...walkTs(full));
-    else if (e.endsWith(".ts") && !e.endsWith(".test.ts")) out.push(full);
+    else if (
+      (e.endsWith(".ts") || e.endsWith(".tsx")) &&
+      !e.endsWith(".test.ts") &&
+      !e.endsWith(".test.tsx")
+    )
+      out.push(full);
   }
   return out;
 }
@@ -145,6 +151,12 @@ function resolveSpec(
     const target = resolve(dirname(fromFileAbs), spec);
     return resolveTsTarget(target);
   }
+  if (spec.startsWith("@/")) {
+    // `@` 路径别名 → 所属包的 src 根（vite/tsconfig 约定，目前仅 frontend 用）
+    const owner = pkgs.find((p) => fromFileAbs.startsWith(p.srcDir));
+    if (!owner) return null;
+    return resolveTsTarget(join(owner.srcDir, spec.slice(2)));
+  }
   // 裸包名：@dicelore/<pkg> 或 @dicelore/<pkg>/<deep>
   const pkg = pkgs.find(
     (p) => spec === p.name || spec.startsWith(p.name + "/"),
@@ -160,12 +172,15 @@ function resolveSpec(
 }
 
 function resolveTsTarget(absNoExt: string): string | null {
-  // 把 .js → .ts；无后缀/指向目录补 /index.ts
+  // 把 .js → .ts/.tsx；无后缀/指向目录补 /index.ts(x)。.ts 优先于 .tsx。
   const candidates: string[] = [];
-  if (absNoExt.endsWith(".js")) candidates.push(absNoExt.slice(0, -3) + ".ts");
-  if (absNoExt.endsWith(".ts")) candidates.push(absNoExt);
-  candidates.push(absNoExt + ".ts");
-  candidates.push(join(absNoExt, "index.ts"));
+  if (absNoExt.endsWith(".js")) {
+    const stem = absNoExt.slice(0, -3);
+    candidates.push(stem + ".ts", stem + ".tsx");
+  }
+  if (absNoExt.endsWith(".ts") || absNoExt.endsWith(".tsx")) candidates.push(absNoExt);
+  candidates.push(absNoExt + ".ts", absNoExt + ".tsx");
+  candidates.push(join(absNoExt, "index.ts"), join(absNoExt, "index.tsx"));
   for (const c of candidates) {
     if (existsSync(c) && statSync(c).isFile()) return relRepo(c);
   }
@@ -232,7 +247,7 @@ const fileNodes = allFiles
     const deg = indeg.get(repo) ?? 0;
     return {
       id: repo,
-      label: basename(repo, ".ts"),
+      label: basename(repo).replace(/\.tsx?$/, ""),
       title: `${rel}  [${pkg.short}/${subdir}]  被依赖 ${deg}`,
       pkg: pkg.short,
       cluster: `${pkg.short}/${subdir}`,
