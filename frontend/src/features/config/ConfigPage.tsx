@@ -9,14 +9,14 @@
 
 import { useState, type ComponentType } from "react";
 import { SlidersHorizontal, Network, Plug, BrainCircuit, Palette, Database, Info } from "lucide-react";
-import { ThemeAppearance } from "../config/ThemeAppearance.js";
-import { General } from "../config/General.js";
-import { ServiceNetwork } from "../config/ServiceNetwork.js";
-import { McpServers } from "../config/McpServers.js";
-import { ModelConnection } from "../config/ModelConnection.js";
-import { DataStorage } from "../config/DataStorage.js";
-import { About } from "../config/About.js";
-import { useT } from "../i18n/index.js";
+import { ThemeAppearance } from "@/features/config/ThemeAppearance.js";
+import { General } from "@/features/config/General.js";
+import { ServiceNetwork } from "@/features/config/ServiceNetwork.js";
+import { McpServers } from "@/features/config/McpServers.js";
+import { ModelConnection } from "@/features/config/ModelConnection.js";
+import { DataStorage } from "@/features/config/DataStorage.js";
+import { About } from "@/features/config/About.js";
+import { useT } from "@/shared/i18n/index.js";
 
 // 配置（子页型 · 视觉页 §6 / config.html）：左导航(设置分组 + 图标) + 右子页。
 const NAV: { key: string; Icon: ComponentType<{ className?: string }>; Sub: ComponentType }[] = [

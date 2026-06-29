@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { useEffect, useState } from "react";
-import { getHealth, type HealthInfo } from "../api/client.js";
+import { getHealth, type HealthInfo } from "@/shared/api/http.js";
 
 // 运行态自检(顶栏指示 / 配置页真值)。失败静默(离线/未起后端时不崩 UI)。
 export function useHealth(): { health: HealthInfo | null; offline: boolean } {

@@ -11,11 +11,11 @@ import { render, screen } from "@testing-library/react";
 import { vi, type Mock } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import PlayPage from "./PlayPage.js";
-import { useSession } from "../live/useSession.js";
+import { useSession } from "./useSession.js";
 import type { PresentationSnapshot } from "@dicelore/shared";
 
-vi.mock("../live/useSession.js", () => ({ useSession: vi.fn() }));
-vi.mock("../api/client.js", () => ({
+vi.mock("./useSession.js", () => ({ useSession: vi.fn() }));
+vi.mock("@/features/play/api.js", () => ({
   browse: vi.fn().mockResolvedValue([]),
   listSessions: vi.fn().mockResolvedValue([]),
 }));

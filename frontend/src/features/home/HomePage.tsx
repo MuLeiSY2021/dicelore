@@ -11,8 +11,9 @@ import { useEffect, useState, type ComponentType } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Play, Dices, Hammer, MessagesSquare, Settings, Swords, Clock, Flag } from "lucide-react";
 import type { SessionSummary } from "@dicelore/shared";
-import { listSessions, commitPack, openPlaySession } from "../api/client.js";
-import { useT } from "../i18n/index.js";
+import { listSessions } from "@/features/play/api.js";
+import { commitPack, openPlaySession } from "@/features/catalog/api.js";
+import { useT } from "@/shared/i18n/index.js";
 
 // 示例团本(快速验证「建团本→开局玩」闭环;无需 LLM)。
 const SAMPLE_PACK = [

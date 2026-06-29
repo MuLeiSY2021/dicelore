@@ -10,25 +10,30 @@
 import { render, screen } from "@testing-library/react";
 import { vi } from "vitest";
 import { MemoryRouter, Routes, Route, Outlet } from "react-router-dom";
-import { ThemeProvider } from "./theme/ThemeProvider.js";
-import { I18nProvider } from "./i18n/index.js";
-import { SettingsProvider } from "./settings/useSettings.js";
-import { TopBar } from "./shell/TopBar.js";
-import HomePage from "./pages/HomePage.js";
-import PlayPage from "./pages/PlayPage.js";
+import { ThemeProvider } from "@/shared/theme/ThemeProvider.js";
+import { I18nProvider } from "@/shared/i18n/index.js";
+import { SettingsProvider } from "@/shared/settings/useSettings.js";
+import { TopBar } from "@/shell/TopBar.js";
+import HomePage from "@/features/home/HomePage.js";
+import PlayPage from "@/features/play/PlayPage.js";
 
-vi.mock("./api/client.js", () => ({
+vi.mock("@/features/play/api.js", () => ({
   listSessions: vi.fn().mockResolvedValue([{ sessionId: "demo", title: "demo", status: "active" }]),
+  browse: vi.fn().mockResolvedValue([]),
+  startGame: vi.fn(), deleteSession: vi.fn(),
+}));
+vi.mock("@/features/catalog/api.js", () => ({
+  commitPack: vi.fn(), openPlaySession: vi.fn(),
+}));
+vi.mock("@/shared/api/http.js", () => ({
   getHealth: vi.fn().mockResolvedValue({
     protocol: "dicelore.client/1", fakeGm: true, port: 8787,
     model: { gm: "fake-gm", configured: true, baseUrl: null },
     mcp: { name: "dicelore", transport: "in-process", toolCount: 20, running: true },
     notify: { url: null, configured: false }, storage: { sessionsDir: ".", ftsMode: "jieba" },
   }),
-  commitPack: vi.fn(), openPlaySession: vi.fn(), browse: vi.fn().mockResolvedValue([]),
-  startGame: vi.fn(), deleteSession: vi.fn(),
 }));
-vi.mock("./live/useSession.js", () => ({
+vi.mock("@/features/play/useSession.js", () => ({
   useSession: () => ({
     snapshot: null, narration: [], pendingRoll: null, generating: false, error: null, gameEnd: null, reveals: [],
     postMessage: vi.fn(), roll: vi.fn(), choose: vi.fn(), dismissReveal: vi.fn(),

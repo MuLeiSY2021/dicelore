@@ -13,11 +13,12 @@ import {
   Swords, FileCog, CircleCheckBig, CircleDot, Circle, User, Pencil, ChevronUp, ChevronDown,
   Sparkles, ArrowUp, ShieldCheck, AlertTriangle, FilePlus2, RefreshCw, FolderOpen,
 } from "lucide-react";
-import { useT } from "../i18n/index.js";
+import { useT } from "@/shared/i18n/index.js";
 import {
-  listCatalog, getCatalogFiles, validateCatalog, commitPack, postBuildMessage,
+  listCatalog, getCatalogFiles, validateCatalog, commitPack,
   type TuanbenSummary, type PackFile, type ValidateIssue,
-} from "../api/client.js";
+} from "@/features/catalog/api.js";
+import { postBuildMessage } from "@/features/build/api.js";
 
 type CType = "world" | "npc" | "pool" | "rule" | "front" | "manifest";
 interface Entity { entity: string; kind: string; cells: { attr: string; value: string }[] }

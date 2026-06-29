@@ -12,7 +12,7 @@ import type { PresentationSnapshot, PendingRoll, StreamMessage } from "@dicelore
 import {
   getPresentation, postMessage as apiPostMessage, postRoll as apiPostRoll, postChoice as apiPostChoice,
   postRewind as apiPostRewind, startGame as apiStartGame,
-} from "../api/client.js";
+} from "@/features/play/api.js";
 
 export interface RevealCard { seq: number; target: string; text: string }
 export interface GameEnd { reason: string; outcome: string }

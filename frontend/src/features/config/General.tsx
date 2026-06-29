@@ -7,8 +7,8 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import { useI18n, LANGS, type Lang } from "../i18n/index.js";
-import { useSettings, type StartupBehavior } from "../settings/useSettings.js";
+import { useI18n, LANGS, type Lang } from "@/shared/i18n/index.js";
+import { useSettings, type StartupBehavior } from "@/shared/settings/useSettings.js";
 
 // 配置 → 通用：语言切换(真生效+持久化) + 启动行为。
 export function General() {

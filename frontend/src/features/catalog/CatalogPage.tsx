@@ -10,8 +10,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BookMarked, Play, Pencil, Hammer, Sparkles } from "lucide-react";
-import { listCatalog, openPlaySession, commitPack, type TuanbenSummary } from "../api/client.js";
-import { useT } from "../i18n/index.js";
+import { listCatalog, openPlaySession, commitPack, type TuanbenSummary } from "@/features/catalog/api.js";
+import { useT } from "@/shared/i18n/index.js";
 
 // 团本名 → URL/文件名安全 slug(保留中文，去空格/分隔符)。会话 id 前缀团本名。
 function slug(name: string): string {

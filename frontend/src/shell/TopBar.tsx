@@ -10,11 +10,11 @@
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { Home, Dices, Hammer, Settings, Languages, Moon, Sun, Check, BookMarked } from "lucide-react";
-import { useTheme } from "../theme/ThemeProvider.js";
-import { useI18n, LANGS } from "../i18n/index.js";
-import { useHealth } from "./useHealth.js";
-import { Logo } from "./Logo.js";
-import { listSessions } from "../api/client.js";
+import { useTheme } from "@/shared/theme/ThemeProvider.js";
+import { useI18n, LANGS } from "@/shared/i18n/index.js";
+import { useHealth } from "@/shell/useHealth.js";
+import { Logo } from "@/shell/Logo.js";
+import { listSessions } from "@/features/play/api.js";
 
 export function TopBar() {
   const { resolved, setMode } = useTheme();

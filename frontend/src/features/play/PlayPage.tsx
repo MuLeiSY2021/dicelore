@@ -15,10 +15,10 @@ import {
   BookMarked, ChevronDown, ChevronUp, ScrollText, Play, Trash2,
   Scale, ArrowRightLeft, BellRing, GripVertical, RotateCcw, History,
 } from "lucide-react";
-import { useSession } from "../live/useSession.js";
-import { Markdown } from "../play/Markdown.js";
-import { useT } from "../i18n/index.js";
-import { browse, listSessions, deleteSession, type BrowseEntry } from "../api/client.js";
+import { useSession } from "@/features/play/useSession.js";
+import { Markdown } from "@/features/play/Markdown.js";
+import { useT } from "@/shared/i18n/index.js";
+import { browse, listSessions, deleteSession, type BrowseEntry } from "@/features/play/api.js";
 import { Link } from "react-router-dom";
 import type { SessionSummary } from "@dicelore/shared";
 

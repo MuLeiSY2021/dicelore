@@ -9,9 +9,9 @@
 
 import { useState } from "react";
 import { Check } from "lucide-react";
-import { useT } from "../i18n/index.js";
-import { useSettings } from "../settings/useSettings.js";
-import { useHealth } from "../shell/useHealth.js";
+import { useT } from "@/shared/i18n/index.js";
+import { useSettings } from "@/shared/settings/useSettings.js";
+import { useHealth } from "@/shell/useHealth.js";
 
 // 配置 → 服务与网络：展示后端真实端口/notify 状态(diagnostics) + notify URL 覆盖(持久化)。
 export function ServiceNetwork() {

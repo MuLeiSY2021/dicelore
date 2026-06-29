@@ -9,10 +9,10 @@
 
 import { useState } from "react";
 import { Dices, Globe, Server, Lock, ShieldCheck, Plus, Info, Plug, Trash2, Check, X } from "lucide-react";
-import { useT } from "../i18n/index.js";
-import { useHealth } from "../shell/useHealth.js";
-import { useSettings, type McpTransport } from "../settings/useSettings.js";
-import { testMcp, type TestResult } from "../api/client.js";
+import { useT } from "@/shared/i18n/index.js";
+import { useHealth } from "@/shell/useHealth.js";
+import { useSettings, type McpTransport } from "@/shared/settings/useSettings.js";
+import { testMcp, type TestResult } from "@/shared/api/http.js";
 
 // 配置 → MCP 服务器：核心 dicelore(真实工具数/锁定必需) + 自定义 out-of-canon(增删改/开关/授权/连接测试，持久化)。
 export function McpServers() {

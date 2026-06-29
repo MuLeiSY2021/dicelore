@@ -7,8 +7,8 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
-import { useT } from "../i18n/index.js";
-import { useHealth } from "../shell/useHealth.js";
+import { useT } from "@/shared/i18n/index.js";
+import { useHealth } from "@/shell/useHealth.js";
 
 // 配置 → 关于：真实版本 / 协议契约版本 / 运行壳。
 export function About() {

@@ -8,8 +8,8 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { Moon, Sun, Monitor } from "lucide-react";
-import { useTheme, type AccentName, type ThemeMode, type FontPreset } from "../theme/ThemeProvider.js";
-import { useT } from "../i18n/index.js";
+import { useTheme, type AccentName, type ThemeMode, type FontPreset } from "@/shared/theme/ThemeProvider.js";
+import { useT } from "@/shared/i18n/index.js";
 
 const ACCENTS: { value: AccentName; hex: string }[] = [
   { value: "gold", hex: "#d4a83e" }, { value: "copper", hex: "#c47a3e" },

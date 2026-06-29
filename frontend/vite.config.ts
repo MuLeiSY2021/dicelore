@@ -7,11 +7,16 @@
 // Software Foundation, either version 3 of the License, or (at your option)
 // any later version. See <https://www.gnu.org/licenses/>.
 
+import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
+  // @/* 路径别名 → /src，消除 ../../ 脆弱相对路径(与 tsconfig paths 对齐)。
+  resolve: {
+    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+  },
   // 开发期代理到 orchestrator；ws:true 透传 /sessions/:id/ws 的 WebSocket 升级。
   server: {
     proxy: {

@@ -8,7 +8,7 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { render, screen, act } from "@testing-library/react";
-import { ThemeProvider } from "../theme/ThemeProvider.js";
+import { ThemeProvider } from "@/shared/theme/ThemeProvider.js";
 import ConfigPage from "./ConfigPage.js";
 
 function mount() {

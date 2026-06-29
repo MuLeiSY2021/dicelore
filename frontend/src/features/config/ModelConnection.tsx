@@ -9,10 +9,10 @@
 
 import { useState } from "react";
 import { Check, X, Plug, Eye, EyeOff, Info } from "lucide-react";
-import { useT } from "../i18n/index.js";
-import { useSettings, GM_MODELS, AGENTS } from "../settings/useSettings.js";
-import { useHealth } from "../shell/useHealth.js";
-import { testModel, type TestResult } from "../api/client.js";
+import { useT } from "@/shared/i18n/index.js";
+import { useSettings, GM_MODELS, AGENTS } from "@/shared/settings/useSettings.js";
+import { useHealth } from "@/shell/useHealth.js";
+import { testModel, type TestResult } from "@/shared/api/http.js";
 
 // 配置 → 模型连接：GM 模型/agent 下拉(真实清单) + baseURL/key(掩码持久化) + 连接测试(真测通断)。
 export function ModelConnection() {

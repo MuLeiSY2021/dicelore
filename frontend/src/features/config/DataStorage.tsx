@@ -8,9 +8,9 @@
 // any later version. See <https://www.gnu.org/licenses/>.
 
 import { useEffect, useState } from "react";
-import { useT } from "../i18n/index.js";
-import { useHealth } from "../shell/useHealth.js";
-import { listSessions } from "../api/client.js";
+import { useT } from "@/shared/i18n/index.js";
+import { useHealth } from "@/shell/useHealth.js";
+import { listSessions } from "@/features/play/api.js";
 
 // 配置 → 数据与存储：展示后端真实会话目录 / FTS 模式 + 会话数统计。
 export function DataStorage() {

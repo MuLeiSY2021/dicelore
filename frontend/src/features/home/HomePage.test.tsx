@@ -11,10 +11,10 @@ import { render, screen } from "@testing-library/react";
 import { vi, type Mock } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import HomePage from "./HomePage.js";
-import { listSessions } from "../api/client.js";
+import { listSessions } from "@/features/play/api.js";
 import type { SessionSummary } from "@dicelore/shared";
 
-vi.mock("../api/client.js", () => ({ listSessions: vi.fn() }));
+vi.mock("@/features/play/api.js", () => ({ listSessions: vi.fn() }));
 
 function mount() {
   return render(
