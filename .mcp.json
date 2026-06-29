@@ -2,7 +2,7 @@
   "mcpServers": {
     "dicelore-play": {
       "command": "npx",
-      "args": ["tsx", "apps/orchestrator/eval/play-mcp.ts"],
+      "args": ["tsx", "harness/eval-dicegm/play-mcp.ts"],
       "env": {
         "DICELORE_PLAY_URL": "http://localhost:8787",
         "DICELORE_SESSIONS_DIR": ".dl-eval-doctrine"
@@ -10,7 +10,7 @@
     },
     "dicelore-build": {
       "command": "npx",
-      "args": ["tsx", "apps/orchestrator/eval/build-mcp.ts"],
+      "args": ["tsx", "harness/eval-loregm/build-mcp.ts"],
       "env": {
         "DICELORE_PLAY_URL": "http://localhost:8787"
       }

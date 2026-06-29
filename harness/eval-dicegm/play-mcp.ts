@@ -11,8 +11,8 @@
 // eval 入口(D1):包后端 play 接口为 MCP 工具。后端 URL=env DICELORE_PLAY_URL;sessions_dir=env DICELORE_SESSIONS_DIR。
 // 关键:narration 只经 WS 流式(streamDriverTurn 不落库),故 send_message/start_game 工具内连 WS
 // 收 narration_commit→turn_ended,返回 GM 散文;get_presentation 取机械态快照(sheets/mechanics/choices/ended)。
-// 工具 handler 抽纯函数(可测,见 play-mcp.test.ts);main() 起 stdio McpServer。参照 packages/core/src/mcp/server.ts。
-// 落 eval/(非 src):import @modelcontextprotocol/sdk(orchestrator 未声明,靠 transitive),不进 typecheck,作脚本。
+// 工具 handler 抽纯函数(可测,见 play-mcp.test.ts);main() 起 stdio McpServer。参照 @dicelore/harness dicegm/mcp/server.ts。
+// 落 harness/eval-dicegm/(非 src):import @modelcontextprotocol/sdk,经 tsx 直跑、不进 src typecheck,作脚本。
 import { readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -43,7 +43,7 @@ export async function doOpenSession(scenarioId: string): Promise<string> {
   return sessionName;
 }
 export const doListScenarios = async (): Promise<string[]> => {
-  const dir = join(here, "..", "..", "..", "packages", "core", "eval", "scenarios"); // eval/ → 3级.. → packages/core/eval/scenarios
+  const dir = join(here, "..", "..", "backend", "eval", "scenarios"); // harness/eval-dicegm/ → 2级.. → 仓库根 → backend/eval/scenarios
   return readdirSync(dir).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5));
 };
 

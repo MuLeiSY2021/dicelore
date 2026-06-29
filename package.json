@@ -16,7 +16,6 @@
     "node": ">=20"
   },
   "workspaces": [
-    "apps/*",
     "packages/*",
     "frontend",
     "backend",
