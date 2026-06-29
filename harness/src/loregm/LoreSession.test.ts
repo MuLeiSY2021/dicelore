@@ -47,8 +47,8 @@ describe("LoreSession", () => {
     draft.setManifest({ name: "魔道", id: "md" });
     draft.writeLore("入侵", "魔道压境");
     const r = commit(catalog, { name: "魔道", files: draft.toPackFiles(), message: "init", createdAt: "2026-01-01" });
-    expect(r.tuanbenId).toBe(resolveId("魔道"));
-    expect(history(catalog, r.tuanbenId).length).toBe(1);
+    expect(r.adventureId).toBe(resolveId("魔道"));
+    expect(history(catalog, r.adventureId).length).toBe(1);
     catalog.close();
   });
 });

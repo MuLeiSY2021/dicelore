@@ -71,7 +71,7 @@ export interface LoreScenario {
   // 本场景重点验证的构建侧失败模式（如「叙事域漏物化」「CSV 列映射错位」）。报告/grader 参考。
   focus: string[];
   // 团本名（决定 Catalog UUIDv5 身份 + commit 路由）。
-  tuanben: string;
+  adventure: string;
   // mock 作者预设的构建指令序列（确定性，不连 LLM）。
   buildCalls: BuildCall[];
   // 机械地板期望（loreAssertions 读它做确定性判定，零 LLM）。
@@ -83,12 +83,12 @@ export function loadLoreScenario(scenarioId: string): LoreScenario {
 }
 
 // 建一个 offline 构建上下文：内存 Catalog + 空 Draft + 内存检索库（供 ingest/search 用）。
-export function buildAuthorCtx(tuanben: string): { ctx: BuildCtx; catalog: CatalogDB; retrievalDb: RetrievalDB } {
+export function buildAuthorCtx(adventure: string): { ctx: BuildCtx; catalog: CatalogDB; retrievalDb: RetrievalDB } {
   const catalog = openCatalog(":memory:");
   // 检索库与运行库同为 better-sqlite3 句柄（DB ≡ RetrievalDB）；initRetrieval 在其上建自己的 build_material 表。
   const retrievalDb: RetrievalDB = openDb(":memory:");
   initRetrieval(retrievalDb);
-  const ctx: BuildCtx = { catalog, draft: new Draft(), name: tuanben, retrievalDb };
+  const ctx: BuildCtx = { catalog, draft: new Draft(), name: adventure, retrievalDb };
   return { ctx, catalog, retrievalDb };
 }
 
@@ -106,7 +106,7 @@ export interface LoreRunResult {
 // 不连任何 LLM。commit 之后用 commitId 物化进新建的运行库。
 export function runLoreScenario(scenarioId: string): LoreRunResult {
   const scenario = loadLoreScenario(scenarioId);
-  const { ctx, catalog } = buildAuthorCtx(scenario.tuanben);
+  const { ctx, catalog } = buildAuthorCtx(scenario.adventure);
 
   const callResults: { call: BuildCall; envelope: BuildEnvelope }[] = [];
   let commitId: string | undefined;
@@ -124,7 +124,7 @@ export function runLoreScenario(scenarioId: string): LoreRunResult {
   initSchema(runDb);
   let importResult: ImportResult | undefined;
   if (commitId) {
-    importResult = importPack(catalog, runDb, resolveId(scenario.tuanben), commitId);
+    importResult = importPack(catalog, runDb, resolveId(scenario.adventure), commitId);
   }
   return { scenario, callResults, commitId, importResult, runDb, catalog };
 }

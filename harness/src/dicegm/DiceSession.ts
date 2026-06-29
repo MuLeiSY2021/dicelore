@@ -39,7 +39,7 @@ export interface DiceSessionDeps {
   agentFactory: AgentFactory; // 适配缝:据 AgentInit 产一个会话 agent(真=DiceGm,fake=FakeDiceGm)
   skills?: SkillRef[]; // 会话本地 staged skill(dice 默认 gm-core);省略=不 stage
   model?: string; // GM 模型覆盖
-  importFrom?: { catalog: DB; tuanbenId: string; ref: string }; // 开局从 Catalog import 团本(信任闸门重验)→运行库
+  importFrom?: { catalog: DB; adventureId: string; ref: string }; // 开局从 Catalog import 团本(信任闸门重验)→运行库
   baseline?: boolean; // eval baseline 对照:去 doctrine(buildBaselinePrompt) + 强制 skills 空,分离「教条有无」
   debug?: boolean; // eval/裸 CC 明骰降级:不注入 rollGate,core outcomeOpenHandler 走「无 gate 立即掷」分支(否则 await 永不来的 POST /roll 卡死)
   sessionsDir?: string; // GM raw 日志根目录(日志落 <dir>/dicelore/sessions/<sessionId>.gm.log);省略=不记日志
@@ -67,16 +67,16 @@ export class DiceSession implements Session {
     if (deps.importFrom) {
       const empty = (this.db.prepare("SELECT COUNT(*) n FROM log").get() as { n: number }).n === 0;
       if (empty) {
-        const { catalog, tuanbenId, ref } = deps.importFrom;
-        const res = this.backend.importPack(catalog, tuanbenId, ref);
+        const { catalog, adventureId, ref } = deps.importFrom;
+        const res = this.backend.importPack(catalog, adventureId, ref);
         extraTools = res.toolDefs;
         // 写 session_meta:团本关联 + prologue + 未开场。供 Play 列表/kickoff/开场prompt。
-        this.backend.metaSet("tuanben_id", tuanbenId);
+        this.backend.metaSet("adventure_id", adventureId);
         this.backend.metaSet("ref", ref);
-        if (res.tuanbenName) this.backend.metaSet("tuanben_name", res.tuanbenName);
+        if (res.adventureName) this.backend.metaSet("adventure_name", res.adventureName);
         if (res.prologue) this.backend.metaSet("prologue", res.prologue);
         if (this.backend.metaGet("started") === undefined) this.backend.metaSet("started", "0");
-        getLogger().info({ sessionId, tuanbenId, ref, tuanbenName: res.tuanbenName, extraTools: extraTools.length }, "会话开局:import 团本→运行库");
+        getLogger().info({ sessionId, adventureId, ref, adventureName: res.adventureName, extraTools: extraTools.length }, "会话开局:import 团本→运行库");
       }
     }
     // debug 模式不建 gate:core outcomeOpenHandler 的 `if(gate) await gate` 走 false 分支立即掷(降级),

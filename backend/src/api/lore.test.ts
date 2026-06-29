@@ -32,11 +32,11 @@ describe("后端 e2e: 建团本 → 列 → 开局 import → 呈现", () => {
       body: JSON.stringify({ name: "凡人", message: "init", files: PACK }),
     });
     expect(commitRes.status).toBe(201);
-    const { tuanbenId, commitId } = (await commitRes.json()) as { tuanbenId: string; commitId: string };
+    const { adventureId, commitId } = (await commitRes.json()) as { adventureId: string; commitId: string };
 
     // 2. 列团本
-    const ls = (await (await lore.request("/catalog")).json()) as { tuanben: { id: string; name: string }[] };
-    expect(ls.tuanben.find((t) => t.id === tuanbenId)?.name).toBe("凡人");
+    const ls = (await (await lore.request("/catalog")).json()) as { adventure: { id: string; name: string }[] };
+    expect(ls.adventure.find((t) => t.id === adventureId)?.name).toBe("凡人");
 
     // 3. 开局:per-id 持久内存库,import 落其中
     const dbs = new Map<string, DB>();
@@ -48,7 +48,7 @@ describe("后端 e2e: 建团本 → 列 → 开局 import → 呈现", () => {
     const live = createLiveApp({ catalog, openSession, agentFactory: () => new FakeDiceGm([{ type: "narration", text: "门开了" }, { type: "turn_end" }]) });
     const openRes = await live.request("/sessions/s1/open", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ tuanbenId, ref: commitId }),
+      body: JSON.stringify({ adventureId, ref: commitId }),
     });
     expect(openRes.status).toBe(201);
 
@@ -157,8 +157,8 @@ describe("GET /lore-sessions/:id/draft 检视未 commit 的 Draft", () => {
     expect(draft.files.map((f) => f.path)).toEqual(expect.arrayContaining(["manifest.md", "lore/背景.md"]));
 
     // commit 前:catalog 仍空(Draft 未落)。
-    const cat = (await (await lore.request("/catalog")).json()) as { tuanben: unknown[] };
-    expect(cat.tuanben.length).toBe(0);
+    const cat = (await (await lore.request("/catalog")).json()) as { adventure: unknown[] };
+    expect(cat.adventure.length).toBe(0);
     catalog.close();
   });
 });

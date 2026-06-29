@@ -25,7 +25,7 @@ describe("Play 生命周期: open→session_meta→kickoff(幂等)→delete", ()
         { path: "state/开局.csv", content: "entity,kind,attr,value,visible\n旅人,player,HP,9,1\n" },
       ] }),
     });
-    const { tuanbenId, commitId } = (await cRes.json()) as { tuanbenId: string; commitId: string };
+    const { adventureId, commitId } = (await cRes.json()) as { adventureId: string; commitId: string };
 
     const dbs = new Map<string, DB>();
     const openSession = (id: string): DB => { let d = dbs.get(id); if (!d) { d = openDb(":memory:"); initSchema(d); dbs.set(id, d); } return d; };
@@ -36,10 +36,10 @@ describe("Play 生命周期: open→session_meta→kickoff(幂等)→delete", ()
 
     await live.request("/sessions/plife1/open", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ tuanbenId, ref: commitId }),
+      body: JSON.stringify({ adventureId, ref: commitId }),
     });
     const db = dbs.get("plife1")!;
-    expect(metaGet(db, "tuanben_name")).toBe("魔道");
+    expect(metaGet(db, "adventure_name")).toBe("魔道");
     expect(metaGet(db, "prologue")).toBe("夜色如墨,你立于鹰愁涧口。");
     expect(metaGet(db, "started")).toBe("0");
 

@@ -34,7 +34,7 @@ export interface ImportResult {
   lore: number; rules: number; pools: number; stateCells: number;
   fronts: number; plotlines: number; foreshadows: number; anchors: number;
   prologue?: string;     // 包根 prologue.md 正文(团本开场 prompt;不物化进 store,回传供 session_meta)
-  tuanbenName?: string;  // manifest.md H1(团本名,session_meta 兜底)
+  adventureName?: string;  // manifest.md H1(团本名,session_meta 兜底)
   /**
    * 作者面声明式工具（DT-9 作者侧）。pack 的 tools/*.json 声明经 toolgenToToolDef 编译为运行时 ToolDef，
    * 不物化进 store——回传供创建本 session 的 createMcpServer(db, deps, extraTools) 经 extraTools 注入。
@@ -84,8 +84,8 @@ function parseCsv(text: string): Record<string, string>[] {
 const META_COLS = new Set(["weight", "source", "visible"]);
 
 // 物化:checkout 某版本 → 校验(throw on error) → 按域写入运行库。caller 提供已 initSchema 的 runDB。
-export function importPack(catalogDB: CatalogDB, runDB: DB, tuanbenId: string, ref: string): ImportResult {
-  const files = checkout(catalogDB, tuanbenId, ref);
+export function importPack(catalogDB: CatalogDB, runDB: DB, adventureId: string, ref: string): ImportResult {
+  const files = checkout(catalogDB, adventureId, ref);
   const v = validatePackFull(files);
   if (!v.ok) {
     throw new Error(`团本包校验失败(信任闸门): ${v.issues.filter((i) => i.level === "error").map((i) => `${i.file}: ${i.msg}`).join("; ")}`);
@@ -174,7 +174,7 @@ export function importPack(catalogDB: CatalogDB, runDB: DB, tuanbenId: string, r
         }
       } else if (f.path === "manifest.md") {
         const m = /^#\s+(.+)$/m.exec(f.content);
-        if (m) res.tuanbenName = m[1].trim();
+        if (m) res.adventureName = m[1].trim();
       } else if (f.path === "prologue.md") {
         res.prologue = f.content; // 团本开场 prompt:不物化进 store,回传供 session_meta
       } else if (top === "tools" && f.path.endsWith(".json")) {

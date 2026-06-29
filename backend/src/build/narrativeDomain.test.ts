@@ -41,7 +41,7 @@ describe("叙事域 Draft → commit → import 全链(front/plotline/foreshadow
     const cat = openCatalog(":memory:");
     const r = commitDraft(cat, { name: "魔道入侵", message: "init", draft, createdAt: "2026-01-01" });
     const run = openDb(":memory:"); initSchema(run);
-    const res = importPack(cat, run, r.tuanbenId, r.commitId);
+    const res = importPack(cat, run, r.adventureId, r.commitId);
 
     expect(res.fronts).toBe(1);
     expect(res.plotlines).toBe(1);

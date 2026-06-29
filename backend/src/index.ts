@@ -47,7 +47,7 @@ export {
 // ===== Catalog 团本包库（后端双路径架构 P2）=====
 export {
   openCatalog, type CatalogDB, uuidv5, resolveId, commit, history, checkout, tag, list,
-  type PackFile, type CommitRow, type TuanbenSummary,
+  type PackFile, type CommitRow, type AdventureSummary,
 } from "./catalog/index.js";
 // import 信任闸门 + 建库（P3）
 export { importPack, validatePack, type ImportResult, type ImportIssue } from "./catalog/index.js";

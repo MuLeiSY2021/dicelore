@@ -81,16 +81,16 @@ describe("build-mcp handlers", () => {
     expect(draft.files.map((f) => f.path)).toEqual(expect.arrayContaining(["manifest.md", "prologue.md", "lore/世界观.md"]));
 
     // commit 前:catalog 应为空(Draft 未落)。
-    const before = (await doListCatalog()) as { tuanben: unknown[] };
-    expect(before.tuanben.length).toBe(0);
+    const before = (await doListCatalog()) as { adventure: unknown[] };
+    expect(before.adventure.length).toBe(0);
 
     // 第二轮:作者发"提交"→ 构建 GM commit Draft 到 catalog。
     await doSendToBuilder(sid, name, "提交这个版本");
 
     // 检视已 commit 的 catalog:团本目录现含该团本。
-    const after = (await doListCatalog()) as { tuanben: { id: string; name: string; head: string | null }[] };
-    expect(after.tuanben.length).toBe(1);
-    const entry = after.tuanben.find((t) => t.id === resolveId(name));
+    const after = (await doListCatalog()) as { adventure: { id: string; name: string; head: string | null }[] };
+    expect(after.adventure.length).toBe(1);
+    const entry = after.adventure.find((t) => t.id === resolveId(name));
     expect(entry?.name).toBe(name);
     expect(entry?.head).toBeTruthy();
 

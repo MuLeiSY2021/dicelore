@@ -29,7 +29,7 @@ describe("Draft → commit → import 全链", () => {
     const r = commitDraft(cat, { name: "凡人修仙传", message: "init", draft, createdAt: "2026-01-01" });
 
     const run = openDb(":memory:"); initSchema(run);
-    const res = importPack(cat, run, r.tuanbenId, r.commitId);
+    const res = importPack(cat, run, r.adventureId, r.commitId);
     expect(res).toMatchObject({ lore: 1, rules: 1, pools: 2, stateCells: 1, fronts: 0, plotlines: 0, foreshadows: 0, anchors: 0 });
     expect(loreGet(run, "黄枫谷")?.content).toBe("江南正道。");
     expect(ruleGet(run, "修炼")?.content).toBe("练气→筑基");

@@ -16,7 +16,7 @@ import {
 import { useT } from "@/shared/i18n/index.js";
 import {
   listCatalog, getCatalogFiles, validateCatalog, commitPack,
-  type TuanbenSummary, type PackFile, type ValidateIssue,
+  type AdventureSummary, type PackFile, type ValidateIssue,
 } from "@/features/catalog/api.js";
 import { postBuildMessage } from "@/features/build/api.js";
 
@@ -62,8 +62,8 @@ interface ChatMsg { role: "u" | "a"; text: string }
 // 团本制作（组件5 构建台 Web 门面）：接真 catalog（列/读包/校验/导出）+ 构建助手对话。
 export default function BuildPage() {
   const t = useT();
-  const [packs, setPacks] = useState<TuanbenSummary[]>([]);
-  const [active, setActive] = useState<TuanbenSummary | null>(null);
+  const [packs, setPacks] = useState<AdventureSummary[]>([]);
+  const [active, setActive] = useState<AdventureSummary | null>(null);
   const [files, setFiles] = useState<PackFile[]>([]);
   const [ctype, setCtype] = useState<CType>("world");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -103,7 +103,7 @@ export default function BuildPage() {
     const seed: PackFile[] = [{ path: "manifest.md", content: `# ${name}\n\n- id: ${name}` }, { path: "prologue.md", content: "（在此填写团本开场白 prompt：固定台词、导调指令、或让 GM 即兴的指导语）" }, { path: "lore/序章.md", content: "（在此填写世界设定）" }];
     const r = await commitPack(name, "init", seed);
     const list = await listCatalog(); setPacks(list);
-    setActive(list.find((x) => x.id === r.tuanbenId) ?? list[0] ?? null);
+    setActive(list.find((x) => x.id === r.adventureId) ?? list[0] ?? null);
   }
   function onImport(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]; if (!f) return;

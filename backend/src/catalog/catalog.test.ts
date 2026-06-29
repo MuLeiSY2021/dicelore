@@ -18,13 +18,13 @@ describe("catalog commit/history/checkout", () => {
     const db = openCatalog(":memory:");
     const r1 = commit(db, { name: "凡人", files: files(1), message: "init", createdAt: "2026-01-01" });
     const r2 = commit(db, { name: "凡人", files: files(2), message: "edit", createdAt: "2026-01-02" });
-    expect(r1.tuanbenId).toBe(resolveId("凡人"));
-    expect(r2.tuanbenId).toBe(r1.tuanbenId);
-    const h = history(db, r1.tuanbenId);
+    expect(r1.adventureId).toBe(resolveId("凡人"));
+    expect(r2.adventureId).toBe(r1.adventureId);
+    const h = history(db, r1.adventureId);
     expect(h.map((c) => c.message)).toEqual(["edit", "init"]); // newest first
     expect(h[0].parent).toBe(r1.commitId);
-    expect(checkout(db, r1.tuanbenId, r2.commitId)[0].content).toBe("# v2");
-    expect(checkout(db, r1.tuanbenId, r1.commitId)[0].content).toBe("# v1");
+    expect(checkout(db, r1.adventureId, r2.commitId)[0].content).toBe("# v2");
+    expect(checkout(db, r1.adventureId, r1.commitId)[0].content).toBe("# v1");
     db.close();
   });
 });
@@ -33,10 +33,10 @@ describe("catalog tag/list", () => {
   it("tag 后 checkout(label) 命中、list 列出团本+tags", () => {
     const db = openCatalog(":memory:");
     const r = commit(db, { name: "魔道", files: files(1), message: "init", createdAt: "2026-01-01" });
-    tag(db, { tuanbenId: r.tuanbenId, commitId: r.commitId, label: "v1.0" });
-    expect(checkout(db, r.tuanbenId, "v1.0")[0].content).toBe("# v1");
+    tag(db, { adventureId: r.adventureId, commitId: r.commitId, label: "v1.0" });
+    expect(checkout(db, r.adventureId, "v1.0")[0].content).toBe("# v1");
     const ls = list(db);
-    expect(ls.find((t) => t.id === r.tuanbenId)?.tags).toContain("v1.0");
+    expect(ls.find((t) => t.id === r.adventureId)?.tags).toContain("v1.0");
     db.close();
   });
 });

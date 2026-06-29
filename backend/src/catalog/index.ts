@@ -11,7 +11,7 @@ export { openCatalog, type CatalogDB } from "./db.js";
 export { uuidv5 } from "./uuid.js";
 export {
   resolveId, commit, history, checkout, tag, list,
-  type PackFile, type CommitRow, type TuanbenSummary,
+  type PackFile, type CommitRow, type AdventureSummary,
 } from "./catalog.js";
 export { importPack, validatePack, type ImportResult, type ImportIssue } from "./import.js";
 export { exportGit, importGit } from "./git.js";

@@ -29,7 +29,7 @@ export function createLoreApp(deps: LoreDeps): Hono {
   const app = new Hono();
 
   // 团本目录录(主页选团本玩 / 构建台列表)
-  app.get("/catalog", (c) => c.json({ tuanben: list(deps.catalog) }));
+  app.get("/catalog", (c) => c.json({ adventure: list(deps.catalog) }));
 
   // 直接提交一个团本版本(程序化建包:种子/前端表单;agent 路径见 /lore-sessions)
   app.post("/catalog/commit", async (c) => {
@@ -39,9 +39,9 @@ export function createLoreApp(deps: LoreDeps): Hono {
   });
 
   // 读某团本版本的全部包文件(团本制作页中央编辑器渲染来源)。ref 缺省=head。
-  app.get("/catalog/:tuanbenId/files", (c) => {
+  app.get("/catalog/:adventureId/files", (c) => {
     const ref = c.req.query("ref") ?? "head";
-    const files = checkout(deps.catalog, c.req.param("tuanbenId"), ref);
+    const files = checkout(deps.catalog, c.req.param("adventureId"), ref);
     return c.json({ files });
   });
 
@@ -52,9 +52,9 @@ export function createLoreApp(deps: LoreDeps): Hono {
   });
 
   // 打 tag(真发布)
-  app.post("/catalog/:tuanbenId/tag", async (c) => {
+  app.post("/catalog/:adventureId/tag", async (c) => {
     const body = (await c.req.json()) as { commitId: string; label: string };
-    tag(deps.catalog, { tuanbenId: c.req.param("tuanbenId"), commitId: body.commitId, label: body.label });
+    tag(deps.catalog, { adventureId: c.req.param("adventureId"), commitId: body.commitId, label: body.label });
     return c.json({ ok: true }, 201);
   });
 

@@ -104,6 +104,6 @@ export function openSessionBackend(db: DB): SessionBackend {
     buildPresentationModel: (opts) => buildPresentationModel(db, opts ?? {}),
 
     // ===== Catalog =====
-    importPack: (catalogDB, tuanbenId, ref) => importPack(catalogDB, db, tuanbenId, ref),
+    importPack: (catalogDB, adventureId, ref) => importPack(catalogDB, db, adventureId, ref),
   };
 }

@@ -75,16 +75,16 @@ export function createLiveApp(deps: LiveDeps): Hono {
     return { db, backend: openSessionBackend(db), agentFactory: deps.agentFactory, skills: deps.skills, model: deps.model, baseline: deps.baseline, debug: deps.debug, sessionsDir: deps.sessionsDir };
   };
 
-  // 开新局:选一个团本版本 import → 物化运行库(信任闸门)。body {tuanbenId, ref}。
+  // 开新局:选一个团本版本 import → 物化运行库(信任闸门)。body {adventureId, ref}。
   app.post("/sessions/:id/open", async (c) => {
     const id = c.req.param("id");
-    const body = (await c.req.json()) as { tuanbenId: string; ref: string };
+    const body = (await c.req.json()) as { adventureId: string; ref: string };
     if (!deps.catalog) {
       getLogger().warn({ sessionId: id }, "open:无 catalog 注入,返回 400 no_catalog");
       return c.json({ code: "no_catalog" }, 400);
     }
-    getOrCreateHost(id, { ...hostDeps(id), importFrom: { catalog: deps.catalog, tuanbenId: body.tuanbenId, ref: body.ref } });
-    getLogger().info({ sessionId: id, tuanbenId: body.tuanbenId, ref: body.ref }, "open:开新局,import 团本");
+    getOrCreateHost(id, { ...hostDeps(id), importFrom: { catalog: deps.catalog, adventureId: body.adventureId, ref: body.ref } });
+    getLogger().info({ sessionId: id, adventureId: body.adventureId, ref: body.ref }, "open:开新局,import 团本");
     return c.json({ sessionId: id, imported: true }, 201);
   });
 

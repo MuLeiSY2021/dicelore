@@ -59,8 +59,8 @@ export const doGetDraft = (sid: string) => jfetch(`/lore-sessions/${enc(sid)}/dr
 // 检视:已 commit 的团本目录(列所有团本 + 版本概要)。看哪些团本/版本已落 catalog。
 export const doListCatalog = () => jfetch(`/catalog`);
 // 检视:某团本某版本的全部包文件。ref 缺省=head(最新 commit)。看已 commit 团本的实际文件内容。
-export const doGetPackFiles = (tuanbenId: string, ref?: string) =>
-  jfetch(`/catalog/${enc(tuanbenId)}/files${ref ? `?ref=${encodeURIComponent(ref)}` : ""}`);
+export const doGetPackFiles = (adventureId: string, ref?: string) =>
+  jfetch(`/catalog/${enc(adventureId)}/files${ref ? `?ref=${encodeURIComponent(ref)}` : ""}`);
 
 async function main() {
   const server = new McpServer({ name: "dicelore-build", version: "0.1.0" });
@@ -70,7 +70,7 @@ async function main() {
   server.tool("send_to_builder", "作者自然语言指令驱动构建 GM 一轮(改 in-memory Draft)。REST only:只返回 {turnId},不回传 GM 散文——靠 get_draft/list_catalog 检视产物。name=在造团本名。", { sessionId: z.string(), name: z.string(), text: z.string() }, async ({ sessionId, name, text }) => json(await doSendToBuilder(sessionId, name, text)), rw);
   server.tool("get_draft", "检视未 commit 的 Draft 当前态(构建中途产物):{ files(将提交的包文件), snapshot(分域结构化回读) }。判断构建 GM 干了什么/进度的主检视面。", { sessionId: z.string() }, async ({ sessionId }) => json(await doGetDraft(sessionId)), ro);
   server.tool("list_catalog", "检视已 commit 的团本目录(列所有团本 + 版本概要)", {}, async () => json(await doListCatalog()), ro);
-  server.tool("get_pack_files", "检视某团本某版本的全部包文件(ref 缺省=head 最新 commit)", { tuanbenId: z.string(), ref: z.string().optional() }, async ({ tuanbenId, ref }) => json(await doGetPackFiles(tuanbenId, ref)), ro);
+  server.tool("get_pack_files", "检视某团本某版本的全部包文件(ref 缺省=head 最新 commit)", { adventureId: z.string(), ref: z.string().optional() }, async ({ adventureId, ref }) => json(await doGetPackFiles(adventureId, ref)), ro);
   await server.connect(new StdioServerTransport());
 }
 

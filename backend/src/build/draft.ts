@@ -167,6 +167,6 @@ export class Draft {
 export function commitDraft(
   catalogDB: CatalogDB,
   a: { name: string; message: string; draft: Draft; createdAt?: string },
-): { tuanbenId: string; commitId: string } {
+): { adventureId: string; commitId: string } {
   return commit(catalogDB, { name: a.name, files: a.draft.toPackFiles(), message: a.message, createdAt: a.createdAt });
 }

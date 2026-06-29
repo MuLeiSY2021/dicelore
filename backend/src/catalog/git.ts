@@ -75,15 +75,15 @@ function unixTs(iso: string): number {
 }
 
 // 导出某团本线性史 → outDir 下的真 git 仓库(裸 .git 结构)。
-export function exportGit(catalogDB: CatalogDB, tuanbenId: string, outDir: string): { head: string } {
+export function exportGit(catalogDB: CatalogDB, adventureId: string, outDir: string): { head: string } {
   const gitDir = join(outDir, ".git");
   const objectsDir = join(gitDir, "objects");
   mkdirSync(objectsDir, { recursive: true });
-  const commits = history(catalogDB, tuanbenId).reverse(); // oldest → newest
+  const commits = history(catalogDB, adventureId).reverse(); // oldest → newest
   let parentHex: string | null = null;
   const map = new Map<string, string>(); // dbCommitId → gitCommitHex
   for (const c of commits) {
-    const files = checkout(catalogDB, tuanbenId, c.id);
+    const files = checkout(catalogDB, adventureId, c.id);
     const treeHex = writeTree(buildTreeNodes(files, objectsDir), objectsDir);
     const ts = unixTs(c.createdAt);
     const lines = [`tree ${treeHex}`];
@@ -98,7 +98,7 @@ export function exportGit(catalogDB: CatalogDB, tuanbenId: string, outDir: strin
   writeFileSync(join(gitDir, "HEAD"), "ref: refs/heads/main\n");
   if (head) writeFileSync(join(gitDir, "refs", "heads", "main"), head + "\n");
   // tags → refs/tags/<label>
-  const tags = catalogDB.prepare("SELECT label, commit_id FROM tag WHERE tuanben_id=?").all(tuanbenId) as { label: string; commit_id: string }[];
+  const tags = catalogDB.prepare("SELECT label, commit_id FROM tag WHERE adventure_id=?").all(adventureId) as { label: string; commit_id: string }[];
   if (tags.length) {
     mkdirSync(join(gitDir, "refs", "tags"), { recursive: true });
     for (const t of tags) { const h = map.get(t.commit_id); if (h) writeFileSync(join(gitDir, "refs", "tags", t.label), h + "\n"); }
@@ -133,7 +133,7 @@ function readTree(objectsDir: string, hex: string, prefix: string, out: PackFile
 }
 
 // 从本格式 git 仓库读回 → 重建一份全新 DB 线性史(import 反序列化,§6.2)。name = 团本名(新录)。
-export function importGit(gitDir: string, catalogDB: CatalogDB, name: string): { tuanbenId: string; commits: number } {
+export function importGit(gitDir: string, catalogDB: CatalogDB, name: string): { adventureId: string; commits: number } {
   const objectsDir = join(gitDir, "objects");
   const headRef = readFileSync(join(gitDir, "refs", "heads", "main"), "utf8").trim();
   // 走 parent 链 newest→root,再反转 oldest→newest 逐个 commit。
@@ -146,12 +146,12 @@ export function importGit(gitDir: string, catalogDB: CatalogDB, name: string): {
     cur = c.parent;
   }
   chain.reverse();
-  let tuanbenId = "";
+  let adventureId = "";
   for (const c of chain) {
     const files: PackFile[] = [];
     readTree(objectsDir, c.tree, "", files);
     const r = commit(catalogDB, { name, files, message: c.message, createdAt: "1970-01-01" });
-    tuanbenId = r.tuanbenId;
+    adventureId = r.adventureId;
   }
   // tags
   const tagsDir = join(gitDir, "refs", "tags");
@@ -162,15 +162,15 @@ export function importGit(gitDir: string, catalogDB: CatalogDB, name: string): {
       const c = parseCommit(content);
       const files: PackFile[] = []; readTree(objectsDir, c.tree, "", files);
       // 重算该版本在新 DB 的 commitId(内容寻址,checkout 用 label 即可)
-      const ids = history(catalogDB, tuanbenId);
-      const match = ids.find((row) => checkoutMatches(catalogDB, tuanbenId, row.id, files));
-      if (match) tag(catalogDB, { tuanbenId, commitId: match.id, label });
+      const ids = history(catalogDB, adventureId);
+      const match = ids.find((row) => checkoutMatches(catalogDB, adventureId, row.id, files));
+      if (match) tag(catalogDB, { adventureId, commitId: match.id, label });
     }
   }
-  return { tuanbenId, commits: chain.length };
+  return { adventureId, commits: chain.length };
 }
-function checkoutMatches(db: CatalogDB, tuanbenId: string, commitId: string, files: PackFile[]): boolean {
-  const got = checkout(db, tuanbenId, commitId);
+function checkoutMatches(db: CatalogDB, adventureId: string, commitId: string, files: PackFile[]): boolean {
+  const got = checkout(db, adventureId, commitId);
   if (got.length !== files.length) return false;
   const a = JSON.stringify([...got].sort((x, y) => x.path.localeCompare(y.path)));
   const b = JSON.stringify([...files].sort((x, y) => x.path.localeCompare(y.path)));

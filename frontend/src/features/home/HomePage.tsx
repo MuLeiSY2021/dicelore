@@ -47,9 +47,9 @@ export default function HomePage() {
     setBusy(true);
     setError(null);
     try {
-      const { tuanbenId, commitId } = await commitPack("示例·黑风寨", "sample", SAMPLE_PACK);
+      const { adventureId, commitId } = await commitPack("示例·黑风寨", "sample", SAMPLE_PACK);
       const sid = `s-${commitId.slice(0, 8)}`;
-      await openPlaySession(sid, tuanbenId, commitId);
+      await openPlaySession(sid, adventureId, commitId);
       navigate(`/play/${sid}`);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));

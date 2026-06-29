@@ -10,7 +10,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BookMarked, Play, Pencil, Hammer, Sparkles } from "lucide-react";
-import { listCatalog, openPlaySession, commitPack, type TuanbenSummary } from "@/features/catalog/api.js";
+import { listCatalog, openPlaySession, commitPack, type AdventureSummary } from "@/features/catalog/api.js";
 import { useT } from "@/shared/i18n/index.js";
 
 // 团本名 → URL/文件名安全 slug(保留中文，去空格/分隔符)。会话 id 前缀团本名。
@@ -29,14 +29,14 @@ const SAMPLE_PACK = [
 export default function CatalogPage() {
   const t = useT();
   const navigate = useNavigate();
-  const [packs, setPacks] = useState<TuanbenSummary[] | null>(null);
+  const [packs, setPacks] = useState<AdventureSummary[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const reload = () => listCatalog().then(setPacks).catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
   useEffect(() => { reload(); }, []);
 
-  async function start(p: TuanbenSummary) {
+  async function start(p: AdventureSummary) {
     setBusy(p.id); setError(null);
     try {
       const ref = p.head ?? "head";

@@ -102,7 +102,7 @@ export function invokeBuildTool(ctx: BuildCtx, name: string, args: unknown): Bui
       const r = commitDraft(ctx.catalog, { name: ctx.name, message: a.message as string, draft: ctx.draft });
       return ok(r);
     }
-    case "tag": tag(ctx.catalog, { tuanbenId: resolveId(ctx.name), commitId: a.commitId as string, label: a.label as string }); return ok({ ok: true });
+    case "tag": tag(ctx.catalog, { adventureId: resolveId(ctx.name), commitId: a.commitId as string, label: a.label as string }); return ok({ ok: true });
     // ── 新增工具 ────────────────────────────────────────────────────────────
     case "ingest": {
       if (!ctx.retrievalDb) return err("NO_RETRIEVAL_DB", "BuildCtx 未设置 retrievalDb，无法 ingest");
@@ -165,7 +165,7 @@ const TOOL_META: Record<string, { description: string; annotations?: { readOnlyH
   write_rule:   { description: "写入一篇 rule（判定规则/机制）文档到 Draft。同名覆盖。", annotations: { idempotentHint: true } },
   add_pool:     { description: "追加行到随机池 CSV（world_pool）。非幂等——多次调用会追加行。", annotations: { destructiveHint: false } },
   set_state:    { description: "追加开局状态格（entity/attr/value）到 Draft。非幂等——多次调用追加行。", annotations: { destructiveHint: false } },
-  commit:       { description: "把 Draft 当前内容作为一个版本提交到 Catalog（linear commit）。返回 tuanbenId + commitId。", annotations: { destructiveHint: false } },
+  commit:       { description: "把 Draft 当前内容作为一个版本提交到 Catalog（linear commit）。返回 adventureId + commitId。", annotations: { destructiveHint: false } },
   tag:          { description: "给 Catalog 中某 commitId 打标签（如 v1.0.0）。同名标签会覆盖。", annotations: { idempotentHint: true } },
   ingest:       { description: "将原著/素材文本切块后写入素材检索库（build_material）。追加语义——多次调用追加块，不覆盖。", annotations: { destructiveHint: false } },
   search:       { description: "在素材检索库中用 jieba BM25 全文搜索，返回 top-k 相关块（{ hits: [{idx, text}] }）。只读。", annotations: { readOnlyHint: true } },

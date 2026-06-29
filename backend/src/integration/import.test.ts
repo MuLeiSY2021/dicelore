@@ -37,9 +37,9 @@ describe("importPack", () => {
     const cat = openCatalog(":memory:");
     const r = commit(cat, { name: "凡人修仙传", files: PACK, message: "init", createdAt: "2026-01-01" });
     const run = openDb(":memory:"); initSchema(run);
-    const res = importPack(cat, run, r.tuanbenId, r.commitId);
+    const res = importPack(cat, run, r.adventureId, r.commitId);
     expect(res).toMatchObject({ lore: 1, rules: 1, pools: 2, stateCells: 2, fronts: 0, plotlines: 0, foreshadows: 0, anchors: 0 });
-    expect(res.tuanbenName).toBe("凡人修仙传"); // manifest H1
+    expect(res.adventureName).toBe("凡人修仙传"); // manifest H1
     expect(loreGet(run, "黄枫谷")?.content).toBe("黄枫谷乃江南正道。");
     expect(ruleGet(run, "修炼体系")?.content).toBe("练气→筑基→结丹");
     expect((run.prepare("SELECT COUNT(*) n FROM pool").get() as { n: number }).n).toBe(2);
@@ -56,9 +56,9 @@ describe("importPack", () => {
       { path: "lore/x.md", content: "甲" },
     ], message: "init", createdAt: "2026-01-01" });
     const run = openDb(":memory:"); initSchema(run);
-    const res = importPack(cat, run, r.tuanbenId, r.commitId);
+    const res = importPack(cat, run, r.adventureId, r.commitId);
     expect(res.prologue).toBe("夜色如墨,你立于鹰愁涧口。");
-    expect(res.tuanbenName).toBe("魔道");
+    expect(res.adventureName).toBe("魔道");
     // prologue 不进 lore/store
     expect((run.prepare("SELECT COUNT(*) n FROM lore").get() as { n: number }).n).toBe(1);
     cat.close(); run.close();
@@ -67,9 +67,9 @@ describe("importPack", () => {
   it("checkout(tag label) 也能物化", () => {
     const cat = openCatalog(":memory:");
     const r = commit(cat, { name: "x", files: [{ path: "lore/a.md", content: "甲" }, { path: "prologue.md", content: "开场。" }], message: "init", createdAt: "2026-01-01" });
-    tag(cat, { tuanbenId: r.tuanbenId, commitId: r.commitId, label: "v1" });
+    tag(cat, { adventureId: r.adventureId, commitId: r.commitId, label: "v1" });
     const run = openDb(":memory:"); initSchema(run);
-    importPack(cat, run, r.tuanbenId, "v1");
+    importPack(cat, run, r.adventureId, "v1");
     expect(loreGet(run, "a")?.content).toBe("甲");
     cat.close(); run.close();
   });
@@ -85,7 +85,7 @@ describe("importPack", () => {
     const cat = openCatalog(":memory:");
     const r = commit(cat, { name: "bad", files: [{ path: "evil/x.md", content: "" }], message: "init", createdAt: "2026-01-01" });
     const run = openDb(":memory:"); initSchema(run);
-    expect(() => importPack(cat, run, r.tuanbenId, r.commitId)).toThrow(/信任闸门/);
+    expect(() => importPack(cat, run, r.adventureId, r.commitId)).toThrow(/信任闸门/);
     cat.close(); run.close();
   });
 });
@@ -180,7 +180,7 @@ describe("importPack front 物化(Clock init + 凶兆→watcher)", () => {
     const cat = openCatalog(":memory:");
     const r = commit(cat, { name: "侵略之战", files: buildPack(), message: "init", createdAt: "2026-01-01" });
     const run = openDb(":memory:"); initSchema(run);
-    importPack(cat, run, r.tuanbenId, r.commitId);
+    importPack(cat, run, r.adventureId, r.commitId);
     const front = run.prepare("SELECT id, name, clock_ref FROM front WHERE id='invasion'").get() as { id: string; name: string; clock_ref: string } | undefined;
     expect(front).toBeDefined();
     expect(front!.name).toBe("入侵威胁");
@@ -192,7 +192,7 @@ describe("importPack front 物化(Clock init + 凶兆→watcher)", () => {
     const cat = openCatalog(":memory:");
     const r = commit(cat, { name: "侵略之战", files: buildPack(), message: "init", createdAt: "2026-01-01" });
     const run = openDb(":memory:"); initSchema(run);
-    importPack(cat, run, r.tuanbenId, r.commitId);
+    importPack(cat, run, r.adventureId, r.commitId);
     const cell = run.prepare(
       "SELECT value, visible, clock_min, clock_max, clock_mode FROM state WHERE entity='世界' AND attr='入侵进度'"
     ).get() as { value: string; visible: number; clock_min: number; clock_max: number; clock_mode: string } | undefined;
@@ -209,7 +209,7 @@ describe("importPack front 物化(Clock init + 凶兆→watcher)", () => {
     const cat = openCatalog(":memory:");
     const r = commit(cat, { name: "侵略之战", files: buildPack(), message: "init", createdAt: "2026-01-01" });
     const run = openDb(":memory:"); initSchema(run);
-    importPack(cat, run, r.tuanbenId, r.commitId);
+    importPack(cat, run, r.adventureId, r.commitId);
     const watchers = watcherList(run).filter((w) => w.source === "front:invasion");
     expect(watchers).toHaveLength(3);
     expect(watchers[0].condition).toBe("{世界.入侵进度} >= 3");
@@ -224,7 +224,7 @@ describe("importPack front 物化(Clock init + 凶兆→watcher)", () => {
     const cat = openCatalog(":memory:");
     const r = commit(cat, { name: "侵略之战", files: buildPack(), message: "init", createdAt: "2026-01-01" });
     const run = openDb(":memory:"); initSchema(run);
-    const res = importPack(cat, run, r.tuanbenId, r.commitId);
+    const res = importPack(cat, run, r.adventureId, r.commitId);
     expect(res.fronts).toBe(1);
     cat.close(); run.close();
   });
@@ -252,7 +252,7 @@ describe("importPack 作者面 tools/*.json（DT-9）", () => {
     const cat = openCatalog(":memory:");
     const r = commit(cat, { name: "带工具的团本", files: buildPack(), message: "init", createdAt: "2026-01-01" });
     const run = openDb(":memory:"); initSchema(run);
-    const res = importPack(cat, run, r.tuanbenId, r.commitId);
+    const res = importPack(cat, run, r.adventureId, r.commitId);
     expect(res.toolDefs.map((t) => t.name).sort()).toEqual(["author_gold", "author_plant"]);
     // tools 不进 store：无意外 lore/state 行
     expect((run.prepare("SELECT COUNT(*) n FROM foreshadow").get() as { n: number }).n).toBe(0);
@@ -263,7 +263,7 @@ describe("importPack 作者面 tools/*.json（DT-9）", () => {
     const cat = openCatalog(":memory:");
     const r = commit(cat, { name: "带工具的团本", files: buildPack(), message: "init", createdAt: "2026-01-01" });
     const run = openDb(":memory:"); initSchema(run);
-    const res = importPack(cat, run, r.tuanbenId, r.commitId);
+    const res = importPack(cat, run, r.adventureId, r.commitId);
     // 仿 DiceSession：把 import 出的 toolDefs 经 extraTools 注入 MCP
     const invoke = wrapToolForTest(openSessionBackend(run), run, {}, res.toolDefs);
     // 作者写工具：埋伏笔（落 foreshadow 表）
@@ -288,7 +288,7 @@ describe("importPack 作者面 tools/*.json（DT-9）", () => {
       { path: "tools/evil.json", content: JSON.stringify([{ name: "evil", sql: "DROP TABLE state" }]) },
     ], message: "init", createdAt: "2026-01-01" });
     const run = openDb(":memory:"); initSchema(run);
-    expect(() => importPack(cat, run, r.tuanbenId, r.commitId)).toThrow(/信任闸门/);
+    expect(() => importPack(cat, run, r.adventureId, r.commitId)).toThrow(/信任闸门/);
     cat.close(); run.close();
   });
 });

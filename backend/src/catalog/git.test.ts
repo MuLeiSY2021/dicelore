@@ -25,10 +25,10 @@ describe("git 单向投影 export/import round-trip", () => {
     const src = openCatalog(":memory:");
     const r1 = commit(src, { name: "凡人", files: [{ path: "lore/世界.md", content: "# v1" }], message: "init", createdAt: "2026-01-01" });
     const r2 = commit(src, { name: "凡人", files: [{ path: "lore/世界.md", content: "# v2" }, { path: "rules/a.md", content: "规则" }], message: "edit", createdAt: "2026-01-02" });
-    tag(src, { tuanbenId: r1.tuanbenId, commitId: r2.commitId, label: "v1.0" });
+    tag(src, { adventureId: r1.adventureId, commitId: r2.commitId, label: "v1.0" });
 
     const dir = mkdtempSync(join(tmpdir(), "git-"));
-    const { head } = exportGit(src, r1.tuanbenId, dir);
+    const { head } = exportGit(src, r1.adventureId, dir);
     expect(head).toMatch(/^[0-9a-f]{40}$/); // 真 git commit sha
     expect(existsSync(join(dir, ".git", "objects"))).toBe(true);
     expect(readFileSync(join(dir, ".git", "HEAD"), "utf8")).toContain("refs/heads/main");
@@ -37,16 +37,16 @@ describe("git 单向投影 export/import round-trip", () => {
     const dst = openCatalog(":memory:");
     const imp = importGit(join(dir, ".git"), dst, "凡人");
     expect(imp.commits).toBe(2);
-    const h = history(dst, imp.tuanbenId);
+    const h = history(dst, imp.adventureId);
     expect(h.map((c) => c.message)).toEqual(["edit", "init"]); // newest first
     // 最新版内容一致
-    const top = checkout(dst, imp.tuanbenId, h[0].id);
+    const top = checkout(dst, imp.adventureId, h[0].id);
     expect(top.find((f) => f.path === "lore/世界.md")?.content).toBe("# v2");
     expect(top.find((f) => f.path === "rules/a.md")?.content).toBe("规则");
     // 旧版内容一致
-    expect(checkout(dst, imp.tuanbenId, h[1].id).find((f) => f.path === "lore/世界.md")?.content).toBe("# v1");
+    expect(checkout(dst, imp.adventureId, h[1].id).find((f) => f.path === "lore/世界.md")?.content).toBe("# v1");
     // tag 读回 → checkout(label) 命中最新版
-    expect(checkout(dst, imp.tuanbenId, "v1.0").find((f) => f.path === "lore/世界.md")?.content).toBe("# v2");
+    expect(checkout(dst, imp.adventureId, "v1.0").find((f) => f.path === "lore/世界.md")?.content).toBe("# v2");
 
     src.close(); dst.close();
   });
@@ -55,9 +55,9 @@ describe("git 单向投影 export/import round-trip", () => {
     const src = openCatalog(":memory:");
     const r1 = commit(src, { name: "魔道", files: [{ path: "lore/a.md", content: "v1" }], message: "init", createdAt: "2026-01-01" });
     const r2 = commit(src, { name: "魔道", files: [{ path: "lore/a.md", content: "v2" }], message: "edit", createdAt: "2026-01-02" });
-    tag(src, { tuanbenId: r1.tuanbenId, commitId: r2.commitId, label: "v1.0" });
+    tag(src, { adventureId: r1.adventureId, commitId: r2.commitId, label: "v1.0" });
     const dir = mkdtempSync(join(tmpdir(), "gitreal-"));
-    exportGit(src, r1.tuanbenId, dir);
+    exportGit(src, r1.adventureId, dir);
     const log = execFileSync("git", ["-C", dir, "log", "--format=%s"], { encoding: "utf8" }).trim().split("\n");
     expect(log).toEqual(["edit", "init"]);
     const tags = execFileSync("git", ["-C", dir, "tag"], { encoding: "utf8" }).trim();

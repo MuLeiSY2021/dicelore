@@ -36,7 +36,7 @@ export function listSessionSummaries(dir: string): SessionSummary[] {
       let updatedAt: number | undefined;
       try {
         const db = openDb(path);
-        const name = metaGet(db, "tuanben_name");
+        const name = metaGet(db, "adventure_name");
         if (name) packName = name;
         started = metaGet(db, "started") === "1";
         db.close();

@@ -6,7 +6,7 @@
     "draft→commit→import 物化映射（叙事域 CSV + front md → 运行库各表）",
     "front 凶兆阶梯 → watcher 预声明 + Clock 初始化"
   ],
-  "tuanben": "边境危局",
+  "adventure": "边境危局",
   "buildCalls": [
     {
       "tool": "set_manifest",

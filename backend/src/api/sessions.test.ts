@@ -43,7 +43,7 @@ describe("listSessionSummaries", () => {
     expect(listSessionSummaries(dir)).toEqual([]);
   });
 
-  it("无 tuanben_name 时 title=sessionId, packName 为 undefined", () => {
+  it("无 adventure_name 时 title=sessionId, packName 为 undefined", () => {
     makeSessionDb(dir, "sess-abc", {});
     const result = listSessionSummaries(dir);
     expect(result).toHaveLength(1);
@@ -52,8 +52,8 @@ describe("listSessionSummaries", () => {
     expect(result[0].packName).toBeUndefined();
   });
 
-  it("有 tuanben_name 时 packName 填入且 title 仍为 sessionId(非 packName)", () => {
-    makeSessionDb(dir, "sess-001", { tuanben_name: "魔道传说" });
+  it("有 adventure_name 时 packName 填入且 title 仍为 sessionId(非 packName)", () => {
+    makeSessionDb(dir, "sess-001", { adventure_name: "魔道传说" });
     const result = listSessionSummaries(dir);
     expect(result).toHaveLength(1);
     expect(result[0].sessionId).toBe("sess-001");
@@ -64,8 +64,8 @@ describe("listSessionSummaries", () => {
   });
 
   it("多会话：packName 各自正确填入", () => {
-    makeSessionDb(dir, "sess-a", { tuanben_name: "凡人修仙" });
-    makeSessionDb(dir, "sess-b", { tuanben_name: "凡人修仙" });
+    makeSessionDb(dir, "sess-a", { adventure_name: "凡人修仙" });
+    makeSessionDb(dir, "sess-b", { adventure_name: "凡人修仙" });
     makeSessionDb(dir, "sess-c", {});
     const result = listSessionSummaries(dir);
     expect(result).toHaveLength(3);

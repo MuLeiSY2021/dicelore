@@ -166,7 +166,7 @@ export interface Presentation {
 /** 开局物化：从 Catalog(团本包库)checkout 选定版本 → 本局运行库(信任闸门重验)。
  *  runDB 为端口实例已绑定的会话库;catalogDB 是外部团本库句柄(每次 import 传入)。 */
 export interface Catalog {
-  importPack(catalogDB: DB, tuanbenId: string, ref: string): ImportResult;
+  importPack(catalogDB: DB, adventureId: string, ref: string): ImportResult;
 }
 
 /**

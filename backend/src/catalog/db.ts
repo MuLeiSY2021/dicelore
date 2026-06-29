@@ -16,19 +16,19 @@ export function openCatalog(path: string): CatalogDB {
   const db = new Database(path);
   db.pragma("journal_mode = WAL");
   db.exec(`
-    CREATE TABLE IF NOT EXISTS tuanben (
+    CREATE TABLE IF NOT EXISTS adventure (
       id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, head TEXT, created_at TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS commits (
-      id TEXT PRIMARY KEY, tuanben_id TEXT NOT NULL, parent TEXT, message TEXT, created_at TEXT NOT NULL
+      id TEXT PRIMARY KEY, adventure_id TEXT NOT NULL, parent TEXT, message TEXT, created_at TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS file (
       commit_id TEXT NOT NULL, path TEXT NOT NULL, content TEXT NOT NULL,
       PRIMARY KEY (commit_id, path)
     );
     CREATE TABLE IF NOT EXISTS tag (
-      tuanben_id TEXT NOT NULL, label TEXT NOT NULL, commit_id TEXT NOT NULL,
-      PRIMARY KEY (tuanben_id, label)
+      adventure_id TEXT NOT NULL, label TEXT NOT NULL, commit_id TEXT NOT NULL,
+      PRIMARY KEY (adventure_id, label)
     );
   `);
   return db;

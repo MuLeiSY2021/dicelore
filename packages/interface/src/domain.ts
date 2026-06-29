@@ -258,7 +258,7 @@ export interface ImportResult {
   lore: number; rules: number; pools: number; stateCells: number;
   fronts: number; plotlines: number; foreshadows: number; anchors: number;
   prologue?: string;
-  tuanbenName?: string;
+  adventureName?: string;
   /** 作者面声明式工具编译产出(DT-9)——回传供 createMcpServer 经 extraTools 注入。 */
   toolDefs: ToolDef[];
 }

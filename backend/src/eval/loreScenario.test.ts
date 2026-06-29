@@ -25,7 +25,7 @@ import { loreGet } from "../store/world/world.js";
 describe("lore eval harness — frontier-saga 场景", () => {
   it("场景文件可加载，buildCalls 非空且含 commit", () => {
     const sc = loadLoreScenario("frontier-saga");
-    expect(sc.tuanben).toBe("边境危局");
+    expect(sc.adventure).toBe("边境危局");
     expect(sc.buildCalls.length).toBeGreaterThan(0);
     expect(sc.buildCalls.some((c) => c.tool === "commit")).toBe(true);
   });

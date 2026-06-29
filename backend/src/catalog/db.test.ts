@@ -11,10 +11,10 @@ import { describe, it, expect } from "vitest";
 import { openCatalog } from "./db.js";
 
 describe("openCatalog", () => {
-  it("建 tuanben/commits/file/tag 表", () => {
+  it("建 adventure/commits/file/tag 表", () => {
     const db = openCatalog(":memory:");
     const names = (db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as { name: string }[]).map((r) => r.name);
-    for (const t of ["tuanben", "commits", "file", "tag"]) expect(names).toContain(t);
+    for (const t of ["adventure", "commits", "file", "tag"]) expect(names).toContain(t);
     db.close();
   });
 });
