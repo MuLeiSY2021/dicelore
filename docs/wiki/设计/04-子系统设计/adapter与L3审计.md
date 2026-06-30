@@ -261,6 +261,53 @@ CC 的对话记录（transcript jsonl）本身是 **UUID 父子链树**（/rewin
 
 ---
 
+## 决策与权衡
+
+> 本节折叠落在「adapter 与 L3 审计」这一层（hook 接线 / 时序 / L3 烈度 / 终局）的关键设计决策与被否方案——**精炼重述，全文见 [归档/历史决策日志](../归档/历史决策日志.md)**。同一条决策横切多页时，本节只讲与本层（接线 / 审计 / 终局）相关的面。
+
+<details>
+<summary>watcher 从 hook 解绑（ADR-0013）</summary>
+
+- **决策（本层相关面）**：旧 `timer`（时间到期、靠 hook 回合轮询）泛化为 `watcher`（sheet 数据触发器）并**从 Claude Code hook 解绑**——触发改为 `sheet_update` 写完**就地比对**、非 hook 轮询。落点 = §5 watcher 不在 hook。
+- **后果（本层相关面）**：**hook 承重再缩一项**——timer 不再是 hook 的活，UserPromptSubmit（回合开始 hook）只剩被动 rule 召回（见 ADR-0014）；core 边界更干净（watcher 与基底无关、不绑 CC）。本页 hook 栈因此只剩 §3 三件事（开局 / rule 召回 / 物化 + 审计）。
+- **被否（本层相关面）**：维持 timer 时间专属 + hook 轮询（无谓特化、绑 hook）。
+
+</details>
+
+<details>
+<summary>L3 两档烈度 + 无独立裁判 subagent + hook 回合时序定稿（ADR-0014）</summary>
+
+- **违规两档烈度**（落点 = §4）：**档 A（block 当场纠偏）= 结构确凿、补救无歧义**——① 非终局轮没留暂存 choice、② 本轮有实质散文却没走 `narrate`；Stop hook `decision:"block"` + reason 让 agent 当回合补，靠 `stop_hook_active` 防重入（最多纠一次）。**档 B（只记录、不阻止）= 需语义判断或仅统计偏差**——疑似软着陆、该掷却用 `=`、掷骰绕过率；写 `kind=note` 审计 event 喂 eval-loop。
+- **无独立裁判 subagent**：机械比对由 Stop hook 纯 Node 脚本做（零 LLM、确定性）；语义判断 v1 不当场 block（误报率高、打断叙事），纯记录；「让主 agent 自查」经下一轮 UserPromptSubmit 轻推实现，不 spawn 子 agent。
+- **hook 回合时序定稿**（落点 = §3）：**SessionStart** = 开局上下文 + 常驻身份注入；**UserPromptSubmit（回合开始）** = 仅被动 rule 召回；**Stop（回合末）** = ① 物化暂存 choice ② L3 审计。**修正旧表述**：rule 召回从 Stop 拆出、归回合开始（Stop 注不进「下一轮」）。
+- **常驻保证**（落点 = §2）：`dicelore init` 写 `CLAUDE.md` 指针 + SessionStart 注入身份 / 极简纪律摘要；不每轮 UserPromptSubmit 强化（避免 token 累积 + 与 skill body 重复）。
+- **被否**：① 一致性问题也 block（误报率高、打断叙事、违 L3 事后兜底）；② 真·裁判 subagent（与主 agent 自纠重叠、成本高、依赖实验特性）；③ 每轮 hook 注全摘要（token 灾难、抵消渐进式披露）。
+
+</details>
+
+<details>
+<summary>快照 hook 接线：与 CC /rewind 自动同步 + CLI 兜底（ADR-0017）</summary>
+
+- **决策（本层相关面）**：快照树 core 是 agent 无关的（住内层 §4.5）；**本层只定「对话回退 ↔ 快照」怎么关联**——这半吃 CC transcript 专属概念，故住 adapter。落点 = §8、§3.2 / §3.3。
+- **两个既有 hook 承重（不新增 hook）**：**Stop**（§3.3 ③）回合末 `checkpoint()`、锚定 head UUID、parent = 原 head；**UserPromptSubmit**（§3.2）读 transcript head，若非 `current_snapshot` 后代（玩家 /rewind 过或切了分支）→ `restore` 到最近祖先快照再处理 prompt。
+- **检测点为何在 UserPromptSubmit**：/rewind 本身可能不触发任何 hook，但玩家回退后总要再说一句话 → turn-start 必跑，那一刻比对 transcript head ↔ store 位置即可发现错位并对齐。
+- **兜底 = 人类侧 CLI**：`dicelore rewind` / `checkpoints` 作 transcript 关联不可靠时的逃生口；auto-sync 是主 UX、CLI 是逃生阀。**比「人类 CLI 回滚」更精确的 ADR-0008 对冲**（换基底只重写关联 hook、不动快照 core）。
+- **rule 带外不随回滚**：rule 不注册为快照 participant → restore 永不碰 `rule_doc`，会话中途热更的 rule 自动留存。
+- **被否（本层相关面）**：把回滚绑死 CC 自带 file checkpoint（回滚不了 store；本层让二者正交、各管各——CC 管对话/文件、我们管 store）。
+
+</details>
+
+<details>
+<summary>终局机制：GM 自调 game_end + 软判据 + 玩家主动结束 + 终局后进复盘模式（ADR-0026）</summary>
+
+- **决策（四连）**：① **终局触发 = GM 自调 `game_end`**（gm-core 教条教何时收场），框架不硬拦——框架据 HP<=0 等硬条件自动敲会误判「复活」等可逆状态触发终局；②**软判据**（不用硬条件触发器）——gm-core 教条用「Front 钟满 / 主线收束 / 玩家死亡」等叙事判据引 GM 自收，复活靠 GM 教条自己判；③**玩家主动结束权**——玩家可随时主动结束游戏防 GM 永不收局（点「结束本局」即触发 `game_end`，框架不拦）；④**game_end 后直接进入「复盘模式」**（2026-06-26 PO 复核修改）——v1 **删「结束游戏」按钮**，终局后直接进复盘模式（GM 给复盘 + 行动建议），从复盘模式可重开新局。**回溯续命留 v2**（依赖快照接线）。
+- **与本层关系**：终局信号 `game_end` 落 note + `metaSet(ended)`（不加触发校验，GM 调即终局）；与 §6 narrate/终局信号、§7 输出层呈现接续。
+- **被否**：① 框架据 sheet 钟 / watcher 自动敲 game_end（HP<=0 等硬条件误判复活等可逆状态）；② 纯 GM 自调无玩家主动结束权（GM 讨好本能下永不收局无兜底）；③ game_end 后只能结束游戏无重开 / 复盘（玩家死一次卡死，违「随时能玩」卖点）。
+
+</details>
+
+---
+
 - 工具 schema、补刀 `reminders` 挂载点 → [MCP 工具面](MCP工具面.md)；教条 / Moves / Principles 内容 → [Skills 包](Skills包.md)
 - event/watcher/`pending_choice` 的**表 schema 与求值语义** → [内层能力库](内层能力库.md)（本页只定 hook 怎么读写它们）
 - 确切的 Claude Code hook stdin 字段名 / JSON 决策格式 → 实现期官方文档核实（本页定映射与意图）

@@ -229,6 +229,32 @@ Principles / Moves / 措辞表的**最终措辞**不在本页拍死——按 ski
 
 ---
 
+## 决策与权衡
+
+本页两条关键决策的"为什么 + 被否"重述于此（历史全文见归档，以本节为准）。
+
+### D1 · guideline（Principles）载体 = 焊进 skill 本体（静态 markdown），非运行时 MCP 读取
+
+- **背景**：填 L2 教条（dispatcher/guideline/补刀措辞）的载体时，曾在"安装时焊进 skill 本体（`dicelore init` 写进 `.claude/skills/` 的静态 markdown）"与"运行时 MCP 读取（MCP 工具 / `reminders` 动态供给）"两候选间待决——该选择直接决定 Skills 包形态。
+- **决策**：**焊进 skill 本体**。guideline 作静态 markdown，走 [跨agent §2/§4](../03-架构/跨agent与适配层.md) 既定的 Claude Code skill 装载路径（放 `.claude/skills/`）。**这不是回头路**——[技术选型 §2](../03-架构/技术选型.md)（Skill 承载 L2 / MCP 承载 L1）+ 跨agent §2（L2 教条放 `.claude/skills/` 装载）已蕴含焊进；本决策只把原"待决策"升格收口，不改 02/03。
+- **后果**：教条内容（markdown）是 **core 标准件、未来可搬**；装载机制绑 Claude Code skill。补刀分工随之确定——MCP `reminders` 只内置极小 L1 基线（terse 反射），丰富措辞活在焊进的 guideline 里（L2）；v1 不让 hook 往 `reminders` 塞 L2 富文本（详 §5）。
+- **被否**：**运行时 MCP 读取 guideline**——会让 MCP 承载 L2 = 范畴错误（[03 §5](../03-架构/总体架构.md) 警告"把正交轴误当一层"），且须开回头路改 [技术选型 §2](../03-架构/技术选型.md)。
+- **后续改名注解**：`guideline` 已统一更名为 **Principles**（PbtA 术语对齐，见 D2；语义不变）。
+
+### D2 · 全盘对齐 PbtA 术语 + 新增 Agenda 议程层 + F2 双边护栏（fail-forward）+ Front/Clock 团本内容类型
+
+- **背景**：04 全区定稿后做了一轮英文 TRPG 设计正典调研（PbtA / Dungeon World 的 Agenda·Principles·Moves、Alexandrian 节点式剧本、Gnome Stew 的 fail-forward、AW Fronts/Clocks），与现架构逐层比对。结论：Dicelore 独立重建出的 GM 塑形架构本质就是 PbtA 最硬核的分支——差别只在 PbtA 靠社会约定让人类 GM 自律，而 Dicelore 面对的"GM"是有讨好本能、无社交羞耻心的 LLM，凡 PbtA 信任 GM 自律之处 Dicelore 都须机械强制。比对暴露三处可落地缺口（F2 只防单边、缺顶层 Agenda、团本无"会自己推进的威胁"单元）+ 一处术语未对齐。
+- **决策（五连）**：
+  1. **术语全盘对齐**：有 PbtA 强对应物的升为一等术语——`guideline → Principles`、`dispatcher 形状表 + 两道闸 → Moves + 判定时机`、`resolve_outcome 三档结果对齐（完全/部分/失败）`（工具名不改，仅文档对齐）。**边界 = 保留独有抽象**：`resolver 二轴` / `四业务域` / `三层 L1·L2·L3` / `F1·F2·F3 失败诊断` / `watcher` 保留原名，不为对齐硬套 PbtA 壳。
+  2. **新增 Agenda 议程层**：L2 教条采三段式 **Agenda（为什么）→ Principles（怎么）→ Moves（做什么）**。Agenda 四条，第 0 条"诚实仲裁者"为 Dicelore 特有、凌驾其余（§1.2）；其余三条借自 DW。Agenda 给 F 轴提供"为什么"的根。
+  3. **F2 升级为双边护栏**：坏结果既不能被洗成好结果（上边界 anti-讨好），也不能退化成"什么都没发生"（下边界 anti-死胡同，借 PbtA fail-forward）。引入可教 craft（三档结果 / 软招·硬招 / 后果手法菜单 / Clock / "有时失败就是失败"），落 Principles + `references/consequences.md`（§3）。
+  4. **新增 Front/Clock 团本内容类型**：建在已有 `watcher` + `sheet 钟`之上，非新底层机制；把"团本预声明 watcher"从原"留未来"裁定**提前纳入 v1**（PbtA 正典表明 Front 是作者备团的核心单元）。格式与 import 映射归 [团本与 manifest](团本与manifest.md)。
+  5. **定位陈述 + 洋葱层旁证**（纯阐释，不改结构）：定位陈述（Dicelore = PbtA 纪律的机械强制版）入 02；AW 的"洋葱层优雅坍缩"≈ Dicelore 的"L2 漏 → L1 工具地板兜底 → L3 审计网"入 03。
+- **后果**：塑形层教条从两段式（guideline + dispatcher）升为**三段式（Agenda / Principles / Moves）**；团本多一类"会自己上发条"的 Front/Clock 内容；F2 有了可教的 fail-forward 手法表。
+- **被否**：① 只锚注不改名（框架不吸收新结构，放弃 Agenda / Front 的实际收益）；② 最大化套壳（连 resolver 二轴 / 四域 / F 轴也套 PbtA 词——用为人类设计的词去装 Dicelore 针对 AI 的独有机制，损失精度）；③ Front 仍留未来（放弃作者备团核心单元，与正典背离）。
+
+---
+
 ## 本页**不**负责定的
 
 - **skill 怎么注入 / 常驻的*保证*机制**（CLAUDE.md 指针、系统上下文、hook 强化、`narrate` 降级）→ [adapter 与 L3 审计](adapter与L3审计.md) / [跨agent §4](../03-架构/跨agent与适配层.md)
