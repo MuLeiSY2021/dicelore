@@ -29,11 +29,11 @@ const SAMPLE_PACK = [
 export default function CatalogPage() {
   const t = useT();
   const navigate = useNavigate();
-  const [packs, setPacks] = useState<AdventureSummary[] | null>(null);
+  const [adventures, setAdventures] = useState<AdventureSummary[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const reload = () => listCatalog().then(setPacks).catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
+  const reload = () => listCatalog().then(setAdventures).catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
   useEffect(() => { reload(); }, []);
 
   async function start(p: AdventureSummary) {
@@ -55,7 +55,7 @@ export default function CatalogPage() {
     finally { setBusy(null); }
   }
 
-  const list = packs ?? [];
+  const list = adventures ?? [];
   return (
     <main className="catalog">
       <div className="chead">
@@ -64,7 +64,7 @@ export default function CatalogPage() {
       </div>
       {error && <div className="herror">{error}</div>}
 
-      {packs !== null && list.length === 0 ? (
+      {adventures !== null && list.length === 0 ? (
         <div className="cempty">
           <BookMarked className="lucide" />
           <div className="et">{t("catalog.empty.title")}</div>

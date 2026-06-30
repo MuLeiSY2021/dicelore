@@ -14,8 +14,8 @@ import { getLogger } from "@dicelore/logs";
 import type { SessionSummary } from "@dicelore/shared";
 
 // 枚举 dir 下的 session 子目录(每子目录 = 一个自包含 session 文件夹),开其 session.db 读 session_meta → 摘要。
-// title = sessionId(=子目录名);packName = 团本名(分组前缀,无则省略);started = 是否已 kickoff;updatedAt = session.db mtime。目录不可读 → []。
-// catalog.db 在 dicelore/ 下而非 sessions/,无需排除。前端渲染格式: packName + " · " + title。
+// title = sessionId(=子目录名);adventureName = 团本名(分组前缀,无则省略);started = 是否已 kickoff;updatedAt = session.db mtime。目录不可读 → []。
+// catalog.db 在 dicelore/ 下而非 sessions/,无需排除。前端渲染格式: adventureName + " · " + title。
 export function listSessionSummaries(dir: string): SessionSummary[] {
   let entries: string[];
   try {
@@ -31,13 +31,13 @@ export function listSessionSummaries(dir: string): SessionSummary[] {
       const sessionId = sub;
       const path = join(dir, sub, "session.db");
       const title = sessionId;
-      let packName: string | undefined;
+      let adventureName: string | undefined;
       let started: boolean | undefined;
       let updatedAt: number | undefined;
       try {
         const db = openDb(path);
         const name = metaGet(db, "adventure_name");
-        if (name) packName = name;
+        if (name) adventureName = name;
         started = metaGet(db, "started") === "1";
         db.close();
       } catch (e) {
@@ -46,6 +46,6 @@ export function listSessionSummaries(dir: string): SessionSummary[] {
       try { updatedAt = statSync(path).mtimeMs; } catch (e) {
         getLogger().warn({ err: e, path }, "stat session.db mtime 失败");
       }
-      return { sessionId, title, status: "active" as const, packName, started, updatedAt };
+      return { sessionId, title, status: "active" as const, adventureName, started, updatedAt };
     });
 }

@@ -25,7 +25,7 @@ export function TopBar() {
   // shell 不依赖具体 feature 的会话数据(避免挂载时算一次、建档后不解禁的状态不一致)。
   const NAV = [
     { to: "/", label: t("nav.home"), Icon: Home, end: true, disabled: false },
-    { to: "/packs", label: t("nav.catalog"), Icon: BookMarked, end: false, disabled: false },
+    { to: "/adventures", label: t("nav.catalog"), Icon: BookMarked, end: false, disabled: false },
     { to: "/play", label: t("nav.play"), Icon: Dices, end: false, disabled: false },
     { to: "/build", label: t("nav.build"), Icon: Hammer, end: false, disabled: false },
     { to: "/config", label: t("nav.config"), Icon: Settings, end: false, disabled: false },

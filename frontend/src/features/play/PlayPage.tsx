@@ -156,7 +156,7 @@ export default function PlayPage() {
     try { localStorage.removeItem(`dicelore.stage.order.${id}`); } catch { /* 隐私模式忽略 */ } // 删会话清其拖拽布局，防 localStorage 泄漏
     const rest = sessions.filter((s) => s.sessionId !== id);
     setSessions(rest);
-    if (id === sid) navigate(rest[0] ? `/play/${encodeURIComponent(rest[0].sessionId)}` : "/packs");
+    if (id === sid) navigate(rest[0] ? `/play/${encodeURIComponent(rest[0].sessionId)}` : "/adventures");
   }
 
   // 设定按 tag 动态分组(兼容任意客制段)。
@@ -168,7 +168,7 @@ export default function PlayPage() {
     { key: "today", label: t("play.date.today") }, { key: "week", label: t("play.date.week") }, { key: "earlier", label: t("play.date.earlier") },
   ];
   const curRow = sessions.find((s) => s.sessionId === sid);
-  const sessTitle = (s: SessionSummary) => (s.packName ? `${s.packName} · ` : "") + s.title;
+  const sessTitle = (s: SessionSummary) => (s.adventureName ? `${s.adventureName} · ` : "") + s.title;
   const curTitle = curRow ? sessTitle(curRow) : sid;
 
   // 呈现台分类
@@ -222,7 +222,7 @@ export default function PlayPage() {
         <BookMarked className="lucide" />
         <div className="et">{t("play.session.empty.title")}</div>
         <div className="es">{t("play.session.empty.sub")}</div>
-        <Link className="btn go" to="/packs"><BookMarked className="lucide" />{t("play.session.empty.cta")}</Link>
+        <Link className="btn go" to="/adventures"><BookMarked className="lucide" />{t("play.session.empty.cta")}</Link>
       </div>
     </div>
   );

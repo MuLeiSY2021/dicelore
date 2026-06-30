@@ -20,13 +20,13 @@ test.describe("团本目录页", () => {
 
   test("列出团本 + 顶栏「团本」导航可达", async ({ page }) => {
     await page.locator("header.bar").getByRole("link", { name: "团本", exact: true }).click();
-    await expect(page).toHaveURL(/\/packs/);
+    await expect(page).toHaveURL(/\/adventures/);
     await expect(page.getByRole("heading", { name: /团本目录/ })).toBeVisible();
     await expect(page.locator(".ccard").first()).toBeVisible({ timeout: 10_000 });
   });
 
   test("开始游戏 → 进 Play 开场层(大金按钮)", async ({ page }) => {
-    await page.goto("/packs");
+    await page.goto("/adventures");
     await page.locator(".ccard .btn.go").first().click();
     await expect(page).toHaveURL(/\/play\//, { timeout: 15_000 });
     await expect(page.getByTestId("kickoff")).toBeVisible({ timeout: 10_000 });

@@ -88,9 +88,9 @@ Questions, suggestions, or want to contribute? Open an [issue](../../issues), or
 
 <p align="center"><sub>Home page · welcome screen · <a href="docs/wiki/04-子系统设计/玩家客户端-视觉草图/home.html">runnable sketch</a></sub></p>
 
-![Campaign builder](docs/wiki/04-子系统设计/玩家客户端-视觉草图/build.png)
+![Adventure builder](docs/wiki/04-子系统设计/玩家客户端-视觉草图/build.png)
 
-<p align="center"><sub>Campaign builder · build workbench · <a href="docs/wiki/04-子系统设计/玩家客户端-视觉草图/build.html">runnable sketch</a></sub></p>
+<p align="center"><sub>Adventure builder · build workbench · <a href="docs/wiki/04-子系统设计/玩家客户端-视觉草图/build.html">runnable sketch</a></sub></p>
 
 ![Settings](docs/wiki/04-子系统设计/玩家客户端-视觉草图/config.png)
 

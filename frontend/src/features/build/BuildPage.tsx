@@ -29,7 +29,7 @@ interface ChatMsg { role: "u" | "a"; text: string }
 // 团本制作（组件5 构建台 Web 门面）：接真 catalog（列/读包/校验/导出）+ 构建助手对话。
 export default function BuildPage() {
   const t = useT();
-  const [packs, setPacks] = useState<AdventureSummary[]>([]);
+  const [adventures, setAdventures] = useState<AdventureSummary[]>([]);
   const [active, setActive] = useState<AdventureSummary | null>(null);
   const [files, setFiles] = useState<PackFile[]>([]);
   const [ctype, setCtype] = useState<CType>("world");
@@ -41,7 +41,7 @@ export default function BuildPage() {
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    listCatalog().then((p) => { setPacks(p); if (p[0]) setActive(p[0]); }).catch(() => setPacks([]));
+    listCatalog().then((p) => { setAdventures(p); if (p[0]) setActive(p[0]); }).catch(() => setAdventures([]));
   }, []);
   useEffect(() => {
     if (!active) { setFiles([]); return; }
@@ -61,7 +61,7 @@ export default function BuildPage() {
   async function exportPack() {
     if (!active) return;
     setBusy(true);
-    try { await commitPack(active.name, `export ${new Date().toISOString()}`, files); const p = await listCatalog(); setPacks(p); }
+    try { await commitPack(active.name, `export ${new Date().toISOString()}`, files); const p = await listCatalog(); setAdventures(p); }
     finally { setBusy(false); }
   }
   async function newPack() {
@@ -69,7 +69,7 @@ export default function BuildPage() {
     if (!name) return;
     const seed: PackFile[] = [{ path: "manifest.md", content: `# ${name}\n\n- id: ${name}` }, { path: "prologue.md", content: "（在此填写团本开场白 prompt：固定台词、导调指令、或让 GM 即兴的指导语）" }, { path: "lore/序章.md", content: "（在此填写世界设定）" }];
     const r = await commitPack(name, "init", seed);
-    const list = await listCatalog(); setPacks(list);
+    const list = await listCatalog(); setAdventures(list);
     setActive(list.find((x) => x.id === r.adventureId) ?? list[0] ?? null);
   }
   function onImport(e: React.ChangeEvent<HTMLInputElement>) {
@@ -103,10 +103,10 @@ export default function BuildPage() {
     <div className="build">
       <div className="ctx">
         <BookMarked className="lucide" />
-        <select className="f" aria-label={t("build.select")} value={active?.id ?? ""} onChange={(e) => setActive(packs.find((p) => p.id === e.target.value) ?? null)}
+        <select className="f" aria-label={t("build.select")} value={active?.id ?? ""} onChange={(e) => setActive(adventures.find((p) => p.id === e.target.value) ?? null)}
           style={{ background: "var(--surface2)", color: "var(--text)", border: "1px solid var(--line)", borderRadius: 6, padding: "5px 8px", fontFamily: "var(--serif)" }}>
-          {packs.length === 0 && <option value="">{t("build.empty")}</option>}
-          {packs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          {adventures.length === 0 && <option value="">{t("build.empty")}</option>}
+          {adventures.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
         {active && <span className="badge">{(active.tags[0] ?? active.head?.slice(0, 7) ?? "draft")}</span>}
         <button className="act" onClick={newPack}><FilePlus2 className="lucide" />{t("build.create")}</button>

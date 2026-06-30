@@ -2,9 +2,9 @@
 name: dicelore-build-pack
 description: >
   Use when turning source material (a novel, fan-content, a setting bible, or pasted lore)
-  into a playable Dicelore campaign pack — extracting world/NPCs/pools/rules/fronts/initial
+  into a playable Dicelore Adventure — extracting world/NPCs/pools/rules/fronts/initial
   state and committing to the catalog. Trigger whenever the user wants to 做/造一个团本,
-  把设定/小说灌成 dicelore 团本, import 原著到 catalog, or build/author a campaign module.
+  把设定/小说灌成 dicelore 团本, import 原著到 catalog, or build/author an Adventure.
   Also trigger when the user asks to validate a pack or add a Front/Clock to an existing build.
 ---
 

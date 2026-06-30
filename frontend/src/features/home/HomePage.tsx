@@ -70,7 +70,7 @@ export default function HomePage() {
   const statusLabel = (s: SessionSummary["status"]) => t(`status.${s}`);
 
   const QUICK = [
-    { Icon: Dices, qt: t("home.quick.newgame"), qd: t("home.quick.newgame.d"), to: "/packs" },
+    { Icon: Dices, qt: t("home.quick.newgame"), qd: t("home.quick.newgame.d"), to: "/adventures" },
     { Icon: Hammer, qt: t("home.quick.build"), qd: t("home.quick.build.d"), to: "/build" },
     { Icon: MessagesSquare, qt: t("home.quick.sessions"), qd: t("home.quick.sessions.d"), to: "/play" },
     { Icon: Settings, qt: t("home.quick.config"), qd: t("home.quick.config.d"), to: "/config" },

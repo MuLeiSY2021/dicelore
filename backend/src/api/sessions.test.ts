@@ -43,36 +43,36 @@ describe("listSessionSummaries", () => {
     expect(listSessionSummaries(dir)).toEqual([]);
   });
 
-  it("无 adventure_name 时 title=sessionId, packName 为 undefined", () => {
+  it("无 adventure_name 时 title=sessionId, adventureName 为 undefined", () => {
     makeSessionDb(dir, "sess-abc", {});
     const result = listSessionSummaries(dir);
     expect(result).toHaveLength(1);
     expect(result[0].sessionId).toBe("sess-abc");
     expect(result[0].title).toBe("sess-abc");
-    expect(result[0].packName).toBeUndefined();
+    expect(result[0].adventureName).toBeUndefined();
   });
 
-  it("有 adventure_name 时 packName 填入且 title 仍为 sessionId(非 packName)", () => {
+  it("有 adventure_name 时 adventureName 填入且 title 仍为 sessionId(非 adventureName)", () => {
     makeSessionDb(dir, "sess-001", { adventure_name: "魔道传说" });
     const result = listSessionSummaries(dir);
     expect(result).toHaveLength(1);
     expect(result[0].sessionId).toBe("sess-001");
-    // packName 应为团本包名
-    expect(result[0].packName).toBe("魔道传说");
-    // title 应为 sessionId，而非 packName（前端格式: packName + " · " + title）
+    // adventureName 应为团本包名
+    expect(result[0].adventureName).toBe("魔道传说");
+    // title 应为 sessionId，而非 adventureName（前端格式: adventureName + " · " + title）
     expect(result[0].title).toBe("sess-001");
   });
 
-  it("多会话：packName 各自正确填入", () => {
+  it("多会话：adventureName 各自正确填入", () => {
     makeSessionDb(dir, "sess-a", { adventure_name: "凡人修仙" });
     makeSessionDb(dir, "sess-b", { adventure_name: "凡人修仙" });
     makeSessionDb(dir, "sess-c", {});
     const result = listSessionSummaries(dir);
     expect(result).toHaveLength(3);
     const byId = Object.fromEntries(result.map((r) => [r.sessionId, r]));
-    expect(byId["sess-a"].packName).toBe("凡人修仙");
-    expect(byId["sess-b"].packName).toBe("凡人修仙");
-    expect(byId["sess-c"].packName).toBeUndefined();
+    expect(byId["sess-a"].adventureName).toBe("凡人修仙");
+    expect(byId["sess-b"].adventureName).toBe("凡人修仙");
+    expect(byId["sess-c"].adventureName).toBeUndefined();
   });
 
   it("非目录条目(散落文件)被忽略——只枚举 session 子目录", () => {

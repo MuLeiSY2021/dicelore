@@ -29,7 +29,7 @@ export function AppRoutes() {
     <Routes>
       <Route element={<Shell />}>
         <Route index element={<HomePage />} />
-        <Route path="packs" element={<CatalogPage />} />
+        <Route path="adventures" element={<CatalogPage />} />
         <Route path="play" element={<PlayPage />} />
         <Route path="play/:sessionId" element={<PlayPage />} />
         <Route path="build" element={<BuildPage />} />
