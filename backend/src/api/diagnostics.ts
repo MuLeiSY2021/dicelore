@@ -9,6 +9,8 @@
 
 import { Hono } from "hono";
 import { existsSync } from "node:fs";
+import { lookup } from "node:dns/promises";
+import { isIP, BlockList } from "node:net";
 import { CLIENT_PROTOCOL } from "@dicelore/shared";
 import { BUILTIN_TOOL_COUNT } from "@dicelore/harness";
 import { getLogger } from "@dicelore/logs";
@@ -38,6 +40,97 @@ function withTimeout(ms: number): { signal: AbortSignal; cancel: () => void } {
   const ctrl = new AbortController();
   const id = setTimeout(() => ctrl.abort(), ms);
   return { signal: ctrl.signal, cancel: () => clearTimeout(id) };
+}
+
+// ── SSRF 白名单（SEC2，见 backlog-后端）─────────────────────────────────
+// model-test / mcp-test 的 baseUrl / endpoint 完全用户可控，未防护时可探测云元数据
+// (169.254.169.254)、环回、内网服务。裁决：挡私网/环回/元数据 IP 段 + 限 https；
+// 外部 host 走配置放行。对域名做 DNS 解析后再校验解析出的 IP，挡 DNS rebinding。
+
+// 私网 / 环回 / 链路本地 / 元数据 / 保留段——拒绝直连这些目标。
+const BLOCKED = new BlockList();
+// IPv4
+BLOCKED.addSubnet("0.0.0.0", 8); // "this" 网络 / 未指定
+BLOCKED.addSubnet("10.0.0.0", 8); // 私网 A
+BLOCKED.addSubnet("100.64.0.0", 10); // CGNAT (RFC6598)
+BLOCKED.addSubnet("127.0.0.0", 8); // 环回
+BLOCKED.addSubnet("169.254.0.0", 16); // 链路本地（含 169.254.169.254 云元数据）
+BLOCKED.addSubnet("172.16.0.0", 12); // 私网 B（172.16-31）
+BLOCKED.addSubnet("192.0.0.0", 24); // IETF 协议分配
+BLOCKED.addSubnet("192.168.0.0", 16); // 私网 C
+BLOCKED.addSubnet("198.18.0.0", 15); // benchmark
+BLOCKED.addSubnet("255.255.255.255", 32); // 广播
+// IPv6
+BLOCKED.addAddress("::1", "ipv6"); // 环回
+BLOCKED.addAddress("::", "ipv6"); // 未指定
+BLOCKED.addSubnet("fc00::", 7, "ipv6"); // 唯一本地地址 (ULA)
+BLOCKED.addSubnet("fe80::", 10, "ipv6"); // 链路本地（含 fe80::a9fe:a9fe 等）
+
+// IPv4-mapped IPv6 (::ffff:a.b.c.d) 归一化成内嵌的 IPv4 再判定，避免绕过。
+function unwrapV4Mapped(addr: string): { ip: string; family: "ipv4" | "ipv6" } {
+  const m = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(addr);
+  if (m && isIP(m[1]) === 4) return { ip: m[1], family: "ipv4" };
+  const fam = isIP(addr);
+  return { ip: addr, family: fam === 6 ? "ipv6" : "ipv4" };
+}
+
+function isBlockedIp(addr: string): boolean {
+  const { ip, family } = unwrapV4Mapped(addr);
+  if (isIP(ip) === 0) return true; // 无法解析当作不安全，拒绝
+  return BLOCKED.check(ip, family);
+}
+
+export interface SsrfCheck {
+  ok: boolean;
+  reason?: string;
+}
+
+// 校验一个用户提供的 URL 是否可安全发起探测：
+// 1) 必须 https；2) 字面量 IP 直接判段；3) 域名先 DNS 解析全部地址、任一落黑段即拒。
+// allowHosts：显式放行的 host（小写），命中则跳过 IP 段判定（默认放行用户已配 baseURL host）。
+export async function checkSsrf(rawUrl: string, allowHosts: Set<string> = new Set()): Promise<SsrfCheck> {
+  let u: URL;
+  try {
+    u = new URL(rawUrl);
+  } catch {
+    return { ok: false, reason: "URL 非法" };
+  }
+  if (u.protocol !== "https:") return { ok: false, reason: "仅允许 https" };
+
+  const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, ""); // 去 IPv6 字面量方括号
+  if (allowHosts.has(host)) return { ok: true };
+
+  // 字面量 IP：直接判段，不做 DNS。
+  if (isIP(host) !== 0) {
+    return isBlockedIp(host) ? { ok: false, reason: "目标 IP 属私网/环回/元数据段" } : { ok: true };
+  }
+
+  // 域名：解析所有地址，任一落黑段即拒（挡 DNS rebinding / 内网域名）。
+  let addrs: { address: string }[];
+  try {
+    addrs = await lookup(host, { all: true });
+  } catch {
+    return { ok: false, reason: "域名解析失败" };
+  }
+  if (addrs.length === 0) return { ok: false, reason: "域名无解析结果" };
+  for (const a of addrs) {
+    if (isBlockedIp(a.address)) return { ok: false, reason: "域名解析到私网/环回/元数据段" };
+  }
+  return { ok: true };
+}
+
+// 默认放行 host：用户已配的 ANTHROPIC_BASE_URL host + 官方 API host。
+function defaultAllowHosts(): Set<string> {
+  const hosts = new Set<string>(["api.anthropic.com"]);
+  const configured = process.env.ANTHROPIC_BASE_URL;
+  if (configured) {
+    try {
+      hosts.add(new URL(configured).hostname.toLowerCase());
+    } catch {
+      /* 配置非法则忽略，不放行 */
+    }
+  }
+  return hosts;
 }
 
 export function createDiagnosticsApp(deps: DiagDeps): Hono {
@@ -71,9 +164,15 @@ export function createDiagnosticsApp(deps: DiagDeps): Hono {
     }
     const base = (body.baseUrl || process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com").replace(/\/$/, "");
     const key = body.key || process.env.ANTHROPIC_AUTH_TOKEN || process.env.ANTHROPIC_API_KEY || "";
+    const target = `${base}/v1/models`;
+    const guard = await checkSsrf(target, defaultAllowHosts());
+    if (!guard.ok) {
+      getLogger().warn({ baseUrl: base, reason: guard.reason }, "model-test 被 SSRF 白名单拒绝");
+      return c.json({ ok: false, latencyMs: Date.now() - start, message: `目标被拒：${guard.reason}` }, 400);
+    }
     const { signal, cancel } = withTimeout(6000);
     try {
-      const res = await fetch(`${base}/v1/models`, {
+      const res = await fetch(target, {
         method: "GET",
         headers: { "x-api-key": key, "anthropic-version": "2023-06-01", authorization: key ? `Bearer ${key}` : "" },
         signal,
@@ -106,6 +205,12 @@ export function createDiagnosticsApp(deps: DiagDeps): Hono {
     }
     const { signal, cancel } = withTimeout(5000);
     const start = Date.now();
+    const guard = await checkSsrf(ep);
+    if (!guard.ok) {
+      cancel();
+      getLogger().warn({ endpoint: ep, reason: guard.reason }, "mcp-test 被 SSRF 白名单拒绝");
+      return c.json({ ok: false, latencyMs: Date.now() - start, message: `端点被拒：${guard.reason}` }, 400);
+    }
     try {
       const res = await fetch(ep, { method: "GET", signal });
       cancel();
