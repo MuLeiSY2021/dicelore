@@ -73,7 +73,7 @@ docs/audits/YYYY-MM-DD-<主题>/
 ## 流程
 
 ### 前置·worktree 隔离
-评估应在 worktree 内跑（并发隔离 + 不污染 main）。**关键坑**：subagent 的 cwd 不一定继承 worktree，用相对路径写文件会落错地方（落主仓库）。所以 `{{AUDIT_DIR}}` 必须注入 **worktree 绝对路径**（如 `/home/mulei/anko_driver/.claude/worktrees/<name>/docs/audits/YYYY-MM-DD-<主题>`），subagent 一律用此绝对路径读写。主流程建目录时也用该绝对路径。
+评估应在 worktree 内跑（并发隔离 + 不污染 main）。**关键坑**：subagent 的 cwd 不一定继承 worktree，用相对路径写文件会落错地方（落主仓库）。所以 `{{AUDIT_DIR}}` 必须注入 **worktree 绝对路径**（如 `/home/mulei/dicelore/.claude/worktrees/<name>/docs/audits/YYYY-MM-DD-<主题>`），subagent 一律用此绝对路径读写。主流程建目录时也用该绝对路径。
 
 ### 阶段 0·建目录 + 锚定
 主流程用 worktree 绝对路径建 `docs/audits/YYYY-MM-DD-<主题>/`。派**产品** subagent（单独一轮，注入 worktree 绝对路径作 `{{AUDIT_DIR}}`），产出 `00-锚定-产品.md`：用户画像 / 核心场景 / 需求边界 / 验收口径 + 产品自扫漏洞。**没有这份锚定单，下游无从验真。**
